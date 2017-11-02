@@ -23,7 +23,7 @@
 
 #include "GStreamerUtilities.h"
 
-#if ENABLE(VIDEO) && USE(GSTREAMER) && ENABLE(MEDIA_SOURCE)
+#if ENABLE(VIDEO) && USE(GSTREAMER)
 
 namespace WebCore {
 
@@ -98,6 +98,12 @@ void GStreamerMediaSample::offsetTimestampsBy(const MediaTime& timestampOffset)
     }
 }
 
+PlatformSample GStreamerMediaSample::platformSample()
+{
+    PlatformSample sample = { PlatformSample::GStreamerSampleType, { .gstSample = m_sample.get() } };
+    return sample;
+}
+
 Ref<MediaSample> GStreamerMediaSample::createNonDisplayingCopy() const
 {
     if (!m_sample)
@@ -117,4 +123,4 @@ Ref<MediaSample> GStreamerMediaSample::createNonDisplayingCopy() const
 
 } // namespace WebCore.
 
-#endif // USE(GSTREAMER)
+#endif // ENABLE(VIDEO) && USE(GSTREAMER)

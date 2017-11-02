@@ -8,6 +8,7 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
     list(APPEND WebCore_SOURCES
         platform/graphics/gstreamer/AudioTrackPrivateGStreamer.cpp
         platform/graphics/gstreamer/GRefPtrGStreamer.cpp
+        platform/graphics/gstreamer/GStreamerMediaSample.cpp
         platform/graphics/gstreamer/GStreamerUtilities.cpp
         platform/graphics/gstreamer/InbandTextTrackPrivateGStreamer.cpp
         platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.cpp
@@ -25,7 +26,6 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
 
         platform/graphics/gstreamer/mse/AppendPipeline.cpp
         platform/graphics/gstreamer/mse/GStreamerMediaDescription.cpp
-        platform/graphics/gstreamer/mse/GStreamerMediaSample.cpp
         platform/graphics/gstreamer/mse/MediaPlayerPrivateGStreamerMSE.cpp
         platform/graphics/gstreamer/mse/MediaSourceClientGStreamerMSE.cpp
         platform/graphics/gstreamer/mse/MediaSourceGStreamer.cpp

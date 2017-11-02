@@ -20,7 +20,7 @@
 
 #pragma once
 
-#if ENABLE(VIDEO) && USE(GSTREAMER) && ENABLE(MEDIA_SOURCE)
+#if ENABLE(VIDEO) && USE(GSTREAMER)
 
 #include "FloatSize.h"
 #include "GRefPtrGStreamer.h"
@@ -46,7 +46,6 @@ public:
     AtomicString trackID() const override { return m_trackId; }
     void setTrackID(const String& trackId) override { m_trackId = trackId; }
     size_t sizeInBytes() const override { return m_size; }
-    GstSample* sample() const { return m_sample.get(); }
     FloatSize presentationSize() const override { return m_presentationSize; }
     void offsetTimestampsBy(const MediaTime&) override;
     void setTimestamps(const MediaTime&, const MediaTime&) override { }
@@ -54,7 +53,7 @@ public:
     std::pair<RefPtr<MediaSample>, RefPtr<MediaSample>> divide(const MediaTime&) override  { return { nullptr, nullptr }; }
     Ref<MediaSample> createNonDisplayingCopy() const override;
     SampleFlags flags() const override { return m_flags; }
-    PlatformSample platformSample() override  { return PlatformSample(); }
+    PlatformSample platformSample() override;
     void dump(PrintStream&) const override { }
 
 private:
@@ -73,4 +72,4 @@ private:
 
 } // namespace WebCore.
 
-#endif // USE(GSTREAMER)
+#endif // ENABLE(VIDEO) && USE(GSTREAMER)
