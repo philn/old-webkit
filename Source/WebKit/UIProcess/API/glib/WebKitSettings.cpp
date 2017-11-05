@@ -158,6 +158,7 @@ enum {
 #if PLATFORM(GTK)
     PROP_HARDWARE_ACCELERATION_POLICY,
 #endif
+    PROP_ENABLE_MOCK_CAPTURE_DEVICES,
 };
 
 static void webKitSettingsDispose(GObject* object)
@@ -363,6 +364,9 @@ static void webKitSettingsSetProperty(GObject* object, guint propId, const GValu
         webkit_settings_set_hardware_acceleration_policy(settings, static_cast<WebKitHardwareAccelerationPolicy>(g_value_get_enum(value)));
         break;
 #endif
+    case PROP_ENABLE_MOCK_CAPTURE_DEVICES:
+        webkit_settings_set_enable_mock_capture_devices(settings, g_value_get_boolean(value));
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, propId, paramSpec);
         break;
@@ -534,6 +538,9 @@ static void webKitSettingsGetProperty(GObject* object, guint propId, GValue* val
         g_value_set_enum(value, webkit_settings_get_hardware_acceleration_policy(settings));
         break;
 #endif
+    case PROP_ENABLE_MOCK_CAPTURE_DEVICES:
+        g_value_set_boolean(value, webkit_settings_get_enable_mock_capture_devices(settings));
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, propId, paramSpec);
         break;
@@ -1377,6 +1384,22 @@ static void webkit_settings_class_init(WebKitSettingsClass* klass)
             WEBKIT_HARDWARE_ACCELERATION_POLICY_ON_DEMAND,
             readWriteConstructParamFlags));
 #endif // PLATFOTM(GTK)
+
+    /**
+     * WebKitSettings:enable-mock-capture-devices:
+     *
+     * Whether Mock audio/video capture devices should be exposed as test media streams or not.
+     *
+     * Since: 2.20
+     */
+    g_object_class_install_property(gObjectClass,
+                                    PROP_ENABLE_MOCK_CAPTURE_DEVICES,
+                                    g_param_spec_boolean("enable-mock-capture-devices",
+                                                         _("Allow mock audio/video capture devices"),
+                                                         _("Whether mock audio/video capture devices are enabled."),
+                                                         FALSE,
+                                                         readWriteConstructParamFlags));
+
 }
 
 WebPreferences* webkitSettingsGetPreferences(WebKitSettings* settings)
@@ -3402,3 +3425,39 @@ guint32 webkit_settings_font_size_to_pixels(guint32 points)
     return std::round(points * WebCore::screenDPI() / 72);
 }
 #endif // PLATFORM(GTK)
+
+/**
+ * webkit_settings_get_enable_mock_capture_devices:
+ * @settings: a #WebKitSettings
+ *
+ * Get the #WebKitSettings:enable-mock-capture-devices property.
+ *
+ * Returns: %TRUE If mock capture audio/video devices are enabled or %FALSE otherwise.
+ *
+ * Since: 2.20
+ */
+gboolean webkit_settings_get_enable_mock_capture_devices(WebKitSettings* settings)
+{
+    g_return_val_if_fail(WEBKIT_IS_SETTINGS(settings), FALSE);
+
+    return settings->priv->preferences->mockCaptureDevicesEnabled();
+}
+
+/**
+ * webkit_settings_set_enable_mock_capture_devices
+ * @settings: a #WebKitSettings
+ * @enabled: Value to be set
+ *
+ * Set the #WebKitSettings:enable-mock-capture-devices property.
+ */
+void webkit_settings_set_enable_mock_capture_devices(WebKitSettings* settings, gboolean enabled)
+{
+    g_return_if_fail(WEBKIT_IS_SETTINGS(settings));
+
+    WebKitSettingsPrivate* priv = settings->priv;
+    if (priv->preferences->mockCaptureDevicesEnabled() == enabled)
+        return;
+
+    priv->preferences->setMockCaptureDevicesEnabled(enabled);
+    g_object_notify(G_OBJECT(settings), "enable-mock-capture-devices");
+}
