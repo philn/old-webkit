@@ -197,6 +197,13 @@ private:
         webkitWebViewMakePermissionRequest(m_webView, WEBKIT_PERMISSION_REQUEST(notificationPermissionRequest.get()));
     }
 
+    bool checkUserMediaPermissionForOrigin(WebPageProxy&, WebFrameProxy&, API::SecurityOrigin&, API::SecurityOrigin&, UserMediaPermissionCheckProxy& request) final
+    {
+        // FIXME: Implement this properly.
+        request.setUserMediaAccessInfo(/* salt */ "foo", /* authorized */ true);
+        return true;
+    }
+
 #if PLATFORM(GTK)
     void printFrame(WebPageProxy&, WebFrameProxy& frame) final
     {
