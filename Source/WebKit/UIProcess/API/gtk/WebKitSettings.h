@@ -471,6 +471,13 @@ WEBKIT_API void
 webkit_settings_set_enable_mock_capture_devices                (WebKitSettings *settings,
                                                                 gboolean        enabled);
 
+WEBKIT_API gboolean
+webkit_settings_get_enable_webrtc_legacy_api                (WebKitSettings *settings);
+
+WEBKIT_API void
+webkit_settings_set_enable_webrtc_legacy_api                (WebKitSettings *settings,
+                                                             gboolean        enabled);
+
 G_END_DECLS
 
 #endif /* WebKitSettings_h */

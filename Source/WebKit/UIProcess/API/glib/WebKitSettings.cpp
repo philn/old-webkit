@@ -159,6 +159,7 @@ enum {
     PROP_HARDWARE_ACCELERATION_POLICY,
 #endif
     PROP_ENABLE_MOCK_CAPTURE_DEVICES,
+    PROP_ENABLE_WEBRTC_LEGACY_API,
 };
 
 static void webKitSettingsDispose(GObject* object)
@@ -367,6 +368,9 @@ static void webKitSettingsSetProperty(GObject* object, guint propId, const GValu
     case PROP_ENABLE_MOCK_CAPTURE_DEVICES:
         webkit_settings_set_enable_mock_capture_devices(settings, g_value_get_boolean(value));
         break;
+    case PROP_ENABLE_WEBRTC_LEGACY_API:
+        webkit_settings_set_enable_webrtc_legacy_api(settings, g_value_get_boolean(value));
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, propId, paramSpec);
         break;
@@ -540,6 +544,9 @@ static void webKitSettingsGetProperty(GObject* object, guint propId, GValue* val
 #endif
     case PROP_ENABLE_MOCK_CAPTURE_DEVICES:
         g_value_set_boolean(value, webkit_settings_get_enable_mock_capture_devices(settings));
+        break;
+    case PROP_ENABLE_WEBRTC_LEGACY_API:
+        g_value_set_boolean(value, webkit_settings_get_enable_webrtc_legacy_api(settings));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, propId, paramSpec);
@@ -1398,6 +1405,21 @@ static void webkit_settings_class_init(WebKitSettingsClass* klass)
                                                          _("Allow mock audio/video capture devices"),
                                                          _("Whether mock audio/video capture devices are enabled."),
                                                          FALSE,
+                                                         readWriteConstructParamFlags));
+
+    /**
+     * WebKitSettings:enable-webrtc-legacy-api:
+     *
+     * Whether the legacy (non-track based) WebRTC API should be enabled or not.
+     *
+     * Since: 2.20
+     */
+    g_object_class_install_property(gObjectClass,
+                                    PROP_ENABLE_WEBRTC_LEGACY_API,
+                                    g_param_spec_boolean("enable-webrtc-legacy-api",
+                                                         _("Enable the legacy WebRTC API"),
+                                                         _("Whether the legacy WebRTC API should be enabled or not"),
+                                                         TRUE,
                                                          readWriteConstructParamFlags));
 
 }
@@ -3460,4 +3482,40 @@ void webkit_settings_set_enable_mock_capture_devices(WebKitSettings* settings, g
 
     priv->preferences->setMockCaptureDevicesEnabled(enabled);
     g_object_notify(G_OBJECT(settings), "enable-mock-capture-devices");
+}
+
+/**
+ * webkit_settings_get_enable_webrtc_legacy_api:
+ * @settings: a #WebKitSettings
+ *
+ * Get the #WebKitSettings:enable-webrtc-legacy-api property.
+ *
+ * Returns: %TRUE If the WebRTC API is enabled or %FALSE otherwise.
+ *
+ * Since: 2.20
+ */
+gboolean webkit_settings_get_enable_webrtc_legacy_api(WebKitSettings* settings)
+{
+    g_return_val_if_fail(WEBKIT_IS_SETTINGS(settings), FALSE);
+
+    return !settings->priv->preferences->webRTCLegacyAPIDisabled();
+}
+
+/**
+ * webkit_settings_set_enable_webrtc_legacy_api
+ * @settings: a #WebKitSettings
+ * @enabled: Value to be set
+ *
+ * Set the #WebKitSettings:enable-webrtc-legacy-api property.
+ */
+void webkit_settings_set_enable_webrtc_legacy_api(WebKitSettings* settings, gboolean enabled)
+{
+    g_return_if_fail(WEBKIT_IS_SETTINGS(settings));
+
+    WebKitSettingsPrivate* priv = settings->priv;
+    if (priv->preferences->webRTCLegacyAPIDisabled() == !enabled)
+        return;
+
+    priv->preferences->setWebRTCLegacyAPIDisabled(!enabled);
+    g_object_notify(G_OBJECT(settings), "enable-webrtc-legacy-api");
 }
