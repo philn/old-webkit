@@ -69,7 +69,7 @@ public:
         if (other.platformDescription().type != PlatformDescription::CAAudioStreamBasicType)
             return false;
 
-        return operator==(*WTF::get<const AudioStreamBasicDescription*>(other.platformDescription().description));
+        return operator==(*WTF::get<const AudioStreamBasicDescription*>(other.platformDescription().description.description));
     }
     bool operator!=(const AudioStreamDescription& other) { return !operator == (other); }
 
@@ -102,7 +102,7 @@ bool CAAudioStreamDescription::decode(Decoder& decoder, CAAudioStreamDescription
 inline CAAudioStreamDescription toCAAudioStreamDescription(const AudioStreamDescription& description)
 {
     ASSERT(description.platformDescription().type == PlatformDescription::CAAudioStreamBasicType);
-    return CAAudioStreamDescription(*WTF::get<const AudioStreamBasicDescription*>(description.platformDescription().description));
+    return CAAudioStreamDescription(*WTF::get<const AudioStreamBasicDescription*>(description.platformDescription().description.description));
 }
 
 }

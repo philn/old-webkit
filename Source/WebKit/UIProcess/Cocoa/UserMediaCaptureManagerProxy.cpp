@@ -83,7 +83,7 @@ public:
     void audioSamplesAvailable(const MediaTime& time, const PlatformAudioData& audioData, const AudioStreamDescription& description, size_t numberOfFrames) final {
         if (m_description != description) {
             ASSERT(description.platformDescription().type == PlatformDescription::CAAudioStreamBasicType);
-            m_description = *WTF::get<const AudioStreamBasicDescription*>(description.platformDescription().description);
+            m_description = *WTF::get<const AudioStreamBasicDescription*>(description.platformDescription().description.description);
 
             // Allocate a ring buffer large enough to contain 2 seconds of audio.
             m_numberOfFrames = m_description.sampleRate() * 2;

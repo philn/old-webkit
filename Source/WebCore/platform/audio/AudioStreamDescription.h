@@ -25,9 +25,8 @@
 
 #pragma once
 
-#include <wtf/Variant.h>
-
 typedef struct AudioStreamBasicDescription AudioStreamBasicDescription;
+typedef struct _GstCaps GstCaps;
 
 namespace WebCore {
 
@@ -35,8 +34,12 @@ struct PlatformDescription {
     enum {
         None,
         CAAudioStreamBasicType,
+        GStreamerAudioStreamType,
     } type;
-    Variant<std::nullptr_t, const AudioStreamBasicDescription*> description;
+    union {
+        GstCaps* caps;
+        AudioStreamBasicDescription* description;
+    } description;
 };
 
 class AudioStreamDescription {

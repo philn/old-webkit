@@ -162,7 +162,7 @@ void WebAudioSourceProviderAVFObjC::unprepare()
 void WebAudioSourceProviderAVFObjC::audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData& data, const AudioStreamDescription& description, size_t frameCount)
 {
     ASSERT(description.platformDescription().type == PlatformDescription::CAAudioStreamBasicType);
-    auto& basicDescription = *WTF::get<const AudioStreamBasicDescription*>(description.platformDescription().description);
+    auto& basicDescription = *WTF::get<const AudioStreamBasicDescription*>(description.platformDescription().description.description);
     if (!m_inputDescription || m_inputDescription->streamDescription() != basicDescription)
         prepare(basicDescription);
 

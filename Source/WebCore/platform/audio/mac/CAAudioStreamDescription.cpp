@@ -86,7 +86,7 @@ CAAudioStreamDescription::CAAudioStreamDescription(double sampleRate, uint32_t n
 
 const PlatformDescription& CAAudioStreamDescription::platformDescription() const
 {
-    m_platformDescription = { PlatformDescription::CAAudioStreamBasicType, &m_streamDescription };
+    m_platformDescription = { PlatformDescription::CAAudioStreamBasicType, { .description = &m_streamDescription } };
     return m_platformDescription;
 }
 
