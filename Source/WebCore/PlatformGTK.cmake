@@ -147,6 +147,15 @@ if (USE_OPENGL)
     )
 endif ()
 
+if (USE_LIBWEBRTC)
+    list(APPEND WebCore_SOURCES
+        platform/mediastream/RealtimeIncomingAudioSource.cpp
+        platform/mediastream/RealtimeIncomingVideoSource.cpp
+        platform/mediastream/RealtimeOutgoingAudioSource.cpp
+        platform/mediastream/RealtimeOutgoingVideoSource.cpp
+    )
+endif ()
+
 if (ENABLE_PLUGIN_PROCESS_GTK2)
     # WebKitPluginProcess2 needs a version of WebCore compiled against GTK+2, so we've isolated all the GTK+
     # dependent files into a separate library which can be used to construct a GTK+2 WebCore

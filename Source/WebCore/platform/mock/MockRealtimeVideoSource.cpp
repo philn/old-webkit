@@ -84,7 +84,7 @@ private:
 #endif
 };
 
-#if !PLATFORM(MAC) && !PLATFORM(IOS)
+#if !PLATFORM(MAC) && !PLATFORM(IOS) && !USE(GSTREAMER)
 CaptureSourceOrError MockRealtimeVideoSource::create(const String& deviceID, const String& name, const MediaConstraints* constraints)
 {
     auto source = adoptRef(*new MockRealtimeVideoSource(deviceID, name));

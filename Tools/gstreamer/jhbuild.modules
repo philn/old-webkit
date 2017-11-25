@@ -28,7 +28,7 @@
   </autotools>
 
   <autotools id="openh264" supports-non-srcdir-builds="no" autogen-sh="pseudo-configure">
-    <branch module="cisco/openh264/archive/v${version}.tar.gz" version="1.5.0"
+    <branch module="cisco/openh264/archive/v${version}.tar.gz" version="1.7.0"
             checkoutdir="openh264-${version}" repo="github-tarball">
       <patch file="openh264-configure.patch" strip="0"/>
     </branch>

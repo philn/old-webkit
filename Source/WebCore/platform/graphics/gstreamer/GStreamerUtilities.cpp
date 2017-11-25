@@ -195,6 +195,17 @@ bool gstRegistryHasElementForMediaType(GList* elementFactories, const char* caps
     return result;
 }
 
+GstClockTime getWebRTCBaseTime()
+{
+    static GstClockTime webrtcBaseTime = GST_CLOCK_TIME_NONE;
+    if(!GST_CLOCK_TIME_IS_VALID(webrtcBaseTime)) {
+        GstClock* clock = gst_system_clock_obtain();
+        webrtcBaseTime = gst_clock_get_time(clock);
+        gst_object_unref(clock);
+    }
+    return webrtcBaseTime;
+}
+
 }
 
 #endif // USE(GSTREAMER)

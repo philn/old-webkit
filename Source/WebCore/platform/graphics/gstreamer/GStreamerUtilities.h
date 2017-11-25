@@ -70,4 +70,6 @@ inline GstClockTime toGstClockTime(const MediaTime &mediaTime)
 }
 
 bool gstRegistryHasElementForMediaType(GList* elementFactories, const char* capsString);
+
+ GstClockTime getWebRTCBaseTime();
 }

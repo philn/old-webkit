@@ -308,6 +308,10 @@ platform/mac/WebCoreObjCExtras.mm
 
 platform/mediastream/mac/MockRealtimeVideoSourceMac.mm
 platform/mediastream/mac/AudioTrackPrivateMediaStreamCocoa.cpp
+platform/mediastream/RealtimeIncomingAudioSource.cpp
+platform/mediastream/RealtimeIncomingVideoSource.cpp
+platform/mediastream/RealtimeOutgoingAudioSource.cpp
+platform/mediastream/RealtimeOutgoingVideoSource.cpp
 
 platform/mock/MediaPlaybackTargetPickerMock.cpp
 platform/mock/MediaPlaybackTargetMock.cpp

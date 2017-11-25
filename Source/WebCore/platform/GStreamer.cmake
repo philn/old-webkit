@@ -112,6 +112,36 @@ if (ENABLE_WEB_AUDIO)
     )
 endif ()
 
+if (ENABLE_WEB_RTC)
+    list(APPEND WebCore_INCLUDE_DIRECTORIES "${WEBCORE_DIR}/platform/mediastream/gstreamer/")
+    list(APPEND WebCore_SOURCES
+        platform/graphics/gstreamer/MediaPlayerPrivateGStreamerWebRTC.cpp
+        platform/mediastream/gstreamer/DecoderSourceGStreamer.cpp
+        platform/mediastream/gstreamer/GStreamerCaptureDeviceManager.cpp
+        platform/mediastream/gstreamer/GStreamerMediaEndpoint.cpp
+        platform/mediastream/gstreamer/GStreamerPeerConnectionBackend.cpp
+        platform/mediastream/gstreamer/MockRealtimeAudioSourceGStreamer.cpp
+        platform/mediastream/gstreamer/MockRealtimeVideoSourceGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeAudioSourceGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeIncomingAudioSourceGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeIncomingVideoSourceGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeMediaSourceCenterGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeMediaSourceGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeOutgoingAudioSourceGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeOutgoingVideoSourceGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeVideoSourceGStreamer.cpp
+    )
+    list(APPEND WebCore_SYSTEM_INCLUDE_DIRECTORIES
+        ${GSTREAMER_SDP_INCLUDE_DIRS}
+        ${GSTREAMER_WEBRTC_INCLUDE_DIRS}
+    )
+
+    list(APPEND WebCore_LIBRARIES
+        ${GSTREAMER_SDP_LIBRARIES}
+        ${GSTREAMER_WEBRTC_LIBRARIES}
+    )
+endif ()
+
 if (ENABLE_ENCRYPTED_MEDIA)
     list(APPEND WebCore_INCLUDE_DIRECTORIES
         "${WEBCORE_DIR}/platform/encryptedmedia/clearkey"
