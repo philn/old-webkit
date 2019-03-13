@@ -36,12 +36,6 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         platform/graphics/gstreamer/mse/SourceBufferPrivateGStreamer.cpp
         platform/graphics/gstreamer/mse/WebKitMediaSourceGStreamer.cpp
 
-        platform/mediastream/libwebrtc/GStreamerVideoDecoderFactory.cpp
-        platform/mediastream/libwebrtc/GStreamerVideoEncoder.cpp
-        platform/mediastream/libwebrtc/GStreamerVideoEncoderFactory.cpp
-        platform/mediastream/libwebrtc/LibWebRTCAudioModule.cpp
-        platform/mediastream/libwebrtc/LibWebRTCProviderGStreamer.cpp
-
         platform/mediastream/gstreamer/GStreamerAudioCaptureSource.cpp
         platform/mediastream/gstreamer/GStreamerAudioCapturer.cpp
         platform/mediastream/gstreamer/GStreamerCaptureDeviceManager.cpp
@@ -49,14 +43,8 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         platform/mediastream/gstreamer/GStreamerMediaStreamSource.cpp
         platform/mediastream/gstreamer/GStreamerVideoCaptureSource.cpp
         platform/mediastream/gstreamer/GStreamerVideoCapturer.cpp
-        platform/mediastream/gstreamer/GStreamerVideoFrameLibWebRTC.cpp
         platform/mediastream/gstreamer/MockGStreamerAudioCaptureSource.cpp
         platform/mediastream/gstreamer/MockGStreamerVideoCaptureSource.cpp
-        platform/mediastream/gstreamer/RealtimeIncomingAudioSourceLibWebRTC.cpp
-        platform/mediastream/gstreamer/RealtimeIncomingVideoSourceLibWebRTC.cpp
-        platform/mediastream/gstreamer/RealtimeMediaSourceCenterLibWebRTC.cpp
-        platform/mediastream/gstreamer/RealtimeOutgoingAudioSourceLibWebRTC.cpp
-        platform/mediastream/gstreamer/RealtimeOutgoingVideoSourceLibWebRTC.cpp
     )
 
     list(APPEND WebCore_PRIVATE_FRAMEWORK_HEADERS
@@ -121,17 +109,50 @@ if (ENABLE_VIDEO)
         )
     endif ()
 
-    if (ENABLE_MEDIA_STREAM OR ENABLE_WEB_RTC)
-        if (PC_GSTREAMER_VERSION VERSION_LESS "1.10")
-            message(FATAL_ERROR "GStreamer 1.10 is needed for ENABLE_MEDIA_STREAM or ENABLE_WEB_RTC")
-        else ()
-            list(APPEND WebCore_SYSTEM_INCLUDE_DIRECTORIES
-                ${GSTREAMER_CODECPARSERS_INCLUDE_DIRS}
-            )
-            list(APPEND WebCore_LIBRARIES
-                ${GSTREAMER_CODECPARSERS_LIBRARIES}
-            )
-        endif ()
+    if (USE_LIBWEBRTC)
+        list(APPEND WebCore_SYSTEM_INCLUDE_DIRECTORIES
+            ${GSTREAMER_CODECPARSERS_INCLUDE_DIRS}
+        )
+        list(APPEND WebCore_LIBRARIES
+            ${GSTREAMER_CODECPARSERS_LIBRARIES}
+        )
+        list(APPEND WebCore_SOURCES
+            platform/mediastream/libwebrtc/GStreamerVideoDecoderFactory.cpp
+            platform/mediastream/libwebrtc/GStreamerVideoEncoder.cpp
+            platform/mediastream/libwebrtc/GStreamerVideoEncoderFactory.cpp
+            platform/mediastream/libwebrtc/LibWebRTCAudioModule.cpp
+            platform/mediastream/libwebrtc/LibWebRTCProviderGStreamer.cpp
+
+            platform/mediastream/gstreamer/GStreamerVideoFrameLibWebRTC.cpp
+            platform/mediastream/gstreamer/RealtimeIncomingAudioSourceLibWebRTC.cpp
+            platform/mediastream/gstreamer/RealtimeIncomingVideoSourceLibWebRTC.cpp
+            platform/mediastream/gstreamer/RealtimeMediaSourceCenterLibWebRTC.cpp
+            platform/mediastream/gstreamer/RealtimeOutgoingAudioSourceLibWebRTC.cpp
+            platform/mediastream/gstreamer/RealtimeOutgoingVideoSourceLibWebRTC.cpp
+        )
+    endif ()
+
+    if (USE_GSTREAMER_WEBRTC)
+        list(APPEND WebCore_SYSTEM_INCLUDE_DIRECTORIES
+            ${GSTREAMER_SDP_INCLUDE_DIRS}
+            ${GSTREAMER_WEBRTC_INCLUDE_DIRS}
+        )
+        list(APPEND WebCore_LIBRARIES
+            ${GSTREAMER_SDP_LIBRARIES}
+            ${GSTREAMER_WEBRTC_LIBRARIES}
+        )
+        list(APPEND WebCore_SOURCES
+            platform/mediastream/gstreamer/GStreamerMediaEndpoint.cpp
+            platform/mediastream/gstreamer/GStreamerPeerConnectionBackend.cpp
+            platform/mediastream/gstreamer/RealtimeAudioSourceGStreamer.cpp
+            platform/mediastream/gstreamer/RealtimeIncomingAudioSourceGStreamer.cpp
+            platform/mediastream/gstreamer/RealtimeIncomingVideoSourceGStreamer.cpp
+            platform/mediastream/gstreamer/RealtimeMediaSourceCenterGStreamer.cpp
+            platform/mediastream/gstreamer/RealtimeMediaSourceGStreamer.cpp
+            platform/mediastream/gstreamer/RealtimeOutgoingAudioSourceGStreamer.cpp
+            platform/mediastream/gstreamer/RealtimeOutgoingVideoSourceGStreamer.cpp
+            platform/mediastream/gstreamer/RealtimeVideoSourceGStreamer.cpp
+        )
     endif ()
 endif ()
 
