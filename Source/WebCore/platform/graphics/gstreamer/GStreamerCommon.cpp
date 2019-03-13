@@ -54,6 +54,7 @@
 
 #if ENABLE(MEDIA_STREAM)
 #include "GStreamerMediaStreamSource.h"
+#include "GStreamerVideoEncoder.h"
 #endif
 
 #if ENABLE(ENCRYPTED_MEDIA)
@@ -186,6 +187,9 @@ const char* capsMediaType(const GstCaps* caps)
     if (gst_structure_has_name(structure, "application/x-cenc") || gst_structure_has_name(structure, "application/x-cbcs") || gst_structure_has_name(structure, "application/x-webm-enc"))
         return gst_structure_get_string(structure, "original-media-type");
 #endif
+    if (gst_structure_has_name(structure, "application/x-rtp"))
+        return gst_structure_get_string(structure, "media");
+
     return gst_structure_get_name(structure);
 }
 
@@ -315,6 +319,7 @@ void registerWebKitGStreamerElements()
 
 #if ENABLE(MEDIA_STREAM)
         gst_element_register(nullptr, "mediastreamsrc", GST_RANK_PRIMARY, WEBKIT_TYPE_MEDIA_STREAM_SRC);
+        gst_element_register(nullptr, "webrtcvideoencoder", GST_RANK_NONE, WEBKIT_TYPE_WEBRTC_VIDEO_ENCODER);
 #endif
 
 #if ENABLE(MEDIA_SOURCE)
@@ -572,6 +577,37 @@ String structureToJSONString(const GstStructure* structure)
 {
     auto value = structureToJSON(structure);
     return value->toJSONString();
+}
+
+GstClockTime getSharedBaseTime()
+{
+    static GstClockTime sharedBaseTime = GST_CLOCK_TIME_NONE;
+    static std::once_flag onceFlag;
+    std::call_once(onceFlag, [] {
+        GstClock* clock = gst_system_clock_obtain();
+        sharedBaseTime = gst_clock_get_time(clock);
+        gst_object_unref(clock);
+    });
+    return sharedBaseTime;
+}
+
+GStreamerProxy createProxy()
+{
+    auto* sink = gst_element_factory_make("proxysink", nullptr);
+    auto* src = gst_element_factory_make("proxysrc", nullptr);
+    g_object_set(src, "proxysink", sink, nullptr);
+
+    // Workaround to reduce the latency introduced by the queue in the proxysrc element.
+    GUniquePtr<GstIterator> iterator(gst_bin_iterate_elements(GST_BIN_CAST(src)));
+    while (gst_iterator_foreach(iterator.get(), static_cast<GstIteratorForeachFunction>([](const GValue* item, gpointer) {
+        GstElement* element = GST_ELEMENT_CAST(g_value_get_object(item));
+        GUniquePtr<char> name(gst_element_get_name(element));
+        if (g_str_has_prefix(name.get(), "queue"))
+            g_object_set(element, "max-size-buffers", 1, nullptr);
+    }), nullptr) == GST_ITERATOR_RESYNC)
+        gst_iterator_resync(iterator.get());
+
+    return { src, sink };
 }
 
 }

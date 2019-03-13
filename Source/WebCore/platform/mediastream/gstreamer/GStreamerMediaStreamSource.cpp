@@ -34,7 +34,15 @@
 #include "MediaStreamTrackPrivate.h"
 #include "VideoTrackPrivate.h"
 
+#if USE(GSTREAMER_WEBRTC)
+#include "GStreamerAudioCaptureSource.h"
+#include "GStreamerVideoCaptureSource.h"
+#include "RealtimeIncomingAudioSourceGStreamer.h"
+#include "RealtimeIncomingVideoSourceGStreamer.h"
+#endif
+
 #include <gst/app/gstappsrc.h>
+#include <gst/base/gstflowcombiner.h>
 #include <wtf/UUID.h>
 #include <wtf/glib/WTFGType.h>
 
@@ -49,10 +57,10 @@ static void webkitMediaStreamSrcPostStreamCollection(WebKitMediaStreamSrc*);
 static void webkitMediaStreamSrcRemovePad(WebKitMediaStreamSrc*, const char* padName);
 
 static GstStaticPadTemplate videoSrcTemplate = GST_STATIC_PAD_TEMPLATE("video_src", GST_PAD_SRC, GST_PAD_SOMETIMES,
-    GST_STATIC_CAPS("video/x-raw;video/x-h264;video/x-vp8"));
+    GST_STATIC_CAPS("video/x-raw;video/x-h264;video/x-vp8;video/x-vp9;application/x-rtp, media=(string)video"));
 
 static GstStaticPadTemplate audioSrcTemplate = GST_STATIC_PAD_TEMPLATE("audio_src", GST_PAD_SRC, GST_PAD_SOMETIMES,
-    GST_STATIC_CAPS("audio/x-raw(ANY);"));
+    GST_STATIC_CAPS("audio/x-raw(ANY);application/x-rtp, media=(string)audio"));
 
 GST_DEBUG_CATEGORY_STATIC(webkitMediaStreamSrcDebug);
 #define GST_CAT_DEFAULT webkitMediaStreamSrcDebug
@@ -185,20 +193,25 @@ private:
 class InternalSource {
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    InternalSource(bool isCaptureTrack, RealtimeMediaSource::Type type)
+    InternalSource(bool isCaptureTrack, RealtimeMediaSource::Type type, GstElement* src)
         : m_type(type)
     {
-        m_src = gst_element_factory_make("appsrc", nullptr);
-        RELEASE_ASSERT_WITH_MESSAGE(GST_IS_APP_SRC(m_src.get()), "GStreamer appsrc element not found. Please make sure to install gst-plugins-base");
+        if (src)
+            m_src = src;
+        else {
+            m_src = gst_element_factory_make("appsrc", nullptr);
+            RELEASE_ASSERT_WITH_MESSAGE(GST_IS_APP_SRC(m_src.get()), "GStreamer appsrc element not found. Please make sure to install gst-plugins-base");
 
-        g_object_set(m_src.get(), "is-live", TRUE, "format", GST_FORMAT_TIME, "emit-signals", TRUE, "min-percent", 100,
-            "do-timestamp", isCaptureTrack, nullptr);
-        g_signal_connect(m_src.get(), "enough-data", G_CALLBACK(+[](GstElement*, InternalSource* data) {
-            data->m_enoughData = true;
-        }), this);
-        g_signal_connect(m_src.get(), "need-data", G_CALLBACK(+[](GstElement*, unsigned, InternalSource* data) {
-            data->m_enoughData = false;
-        }), this);
+            g_object_set(m_src.get(), "is-live", TRUE, "format", GST_FORMAT_TIME, "emit-signals", TRUE, "min-percent", 100,
+                "do-timestamp", isCaptureTrack, nullptr);
+            g_signal_connect(m_src.get(), "enough-data", G_CALLBACK(+[](GstElement*, InternalSource* data) {
+                data->m_enoughData = true;
+            }), this);
+            g_signal_connect(m_src.get(), "need-data", G_CALLBACK(+[](GstElement*, unsigned, InternalSource* data) {
+                data->m_enoughData = false;
+            }), this);
+        }
+        GST_DEBUG_OBJECT(m_src.get(), "Capture track: %s", boolForPrinting(isCaptureTrack));
     }
 
     ~InternalSource()
@@ -223,7 +236,8 @@ public:
     void pushSample(GstSample* sample)
     {
         ASSERT(m_src);
-        if (!m_src)
+        ASSERT(GST_IS_APP_SRC(m_src.get()));
+        if (!m_src || !GST_IS_APP_SRC(m_src.get()))
             return;
 
         bool drop = m_enoughData;
@@ -240,7 +254,7 @@ public:
 
         if (drop) {
             m_needsDiscont = true;
-            GST_INFO_OBJECT(m_src.get(), "%s queue full already... not pushing", m_type == RealtimeMediaSource::Type::Video ? "Video" : "Audio");
+            GST_TRACE_OBJECT(m_src.get(), "%s queue full already... not pushing", m_type == RealtimeMediaSource::Type::Video ? "Video" : "Audio");
             return;
         }
 
@@ -553,17 +567,19 @@ static void webkitMediaStreamSrcSetupSrc(WebKitMediaStreamSrc* self, MediaStream
         webkitMediaStreamSrcAddPad(self, pad.get(), padTemplate, WTFMove(tags), track->source().type());
     }
 
-    auto* priv = self->priv;
-    track->addObserver(*priv->mediaStreamTrackObserver);
-    switch (track->type()) {
-    case RealtimeMediaSource::Type::Audio:
-        track->source().addAudioSampleObserver(*priv->mediaStreamTrackObserver);
-        break;
-    case RealtimeMediaSource::Type::Video:
-        track->source().addVideoSampleObserver(*priv->mediaStreamTrackObserver);
-        break;
-    case RealtimeMediaSource::Type::None:
-        ASSERT_NOT_REACHED();
+    if (GST_IS_APP_SRC(element)) {
+        auto* priv = self->priv;
+        track->addObserver(*priv->mediaStreamTrackObserver);
+        switch (track->type()) {
+        case RealtimeMediaSource::Type::Audio:
+            track->source().addAudioSampleObserver(*priv->mediaStreamTrackObserver);
+            break;
+        case RealtimeMediaSource::Type::Video:
+            track->source().addVideoSampleObserver(*priv->mediaStreamTrackObserver);
+            break;
+        case RealtimeMediaSource::Type::None:
+            ASSERT_NOT_REACHED();
+        }
     }
 
     gst_element_sync_state_with_parent(element);
@@ -593,14 +609,41 @@ static void webkitMediaStreamSrcPostStreamCollection(WebKitMediaStreamSrc* self)
 void webkitMediaStreamSrcAddTrack(WebKitMediaStreamSrc* self, MediaStreamTrackPrivate* track, bool onlyTrack)
 {
     auto* priv = self->priv;
+    GstElement* src = nullptr;
+    bool isCaptureTrack = track->isCaptureTrack();
+#if USE(GSTREAMER_WEBRTC)
+    bool isMockTrack = track->source().isMockSource();
+#endif
+
+    const char* kind = track->type() == RealtimeMediaSource::Type::Audio ? "audio" : "video";
+    GST_INFO_OBJECT(self, "Attaching to %s track with ID: %s", kind, track->id().ascii().data());
+
     if (track->type() == RealtimeMediaSource::Type::Audio) {
-        priv->audioSrc.emplace(track->isCaptureTrack(), track->type());
+#if USE(GSTREAMER_WEBRTC)
+        if (isCaptureTrack && !isMockTrack) {
+            auto& source = static_cast<GStreamerAudioCaptureSource&>(track->source());
+            src = source.registerClient();
+        } else if (track->source().isIncomingAudioSource()) {
+            auto& source = static_cast<RealtimeIncomingAudioSourceGStreamer&>(track->source());
+            src = source.registerClient();
+        }
+#endif
+        priv->audioSrc.emplace(isCaptureTrack, track->type(), src);
         webkitMediaStreamSrcSetupSrc(self, track, priv->audioSrc->get(), &audioSrcTemplate, onlyTrack);
     } else if (track->type() == RealtimeMediaSource::Type::Video) {
-        priv->videoSrc.emplace(track->isCaptureTrack(), track->type());
+#if USE(GSTREAMER_WEBRTC)
+        if (isCaptureTrack && !isMockTrack) {
+            auto& source = static_cast<GStreamerVideoCaptureSource&>(track->source());
+            src = source.registerClient();
+        } else if (track->source().isIncomingVideoSource()) {
+            auto& source = static_cast<RealtimeIncomingVideoSourceGStreamer&>(track->source());
+            src = source.registerClient();
+        }
+#endif
+        priv->videoSrc.emplace(isCaptureTrack, track->type(), src);
         webkitMediaStreamSrcSetupSrc(self, track, priv->videoSrc->get(), &videoSrcTemplate, onlyTrack);
     } else
-        GST_INFO_OBJECT(self, "Unsupported track type: %d", static_cast<int>(track->type()));
+        RELEASE_ASSERT_NOT_REACHED();
 
     self->priv->tracks.append(track);
 }

@@ -23,6 +23,7 @@
 #include "config.h"
 
 #if ENABLE(MEDIA_STREAM)
+
 #include "RealtimeMediaSourceCenter.h"
 
 #include "GStreamerAudioCaptureSource.h"

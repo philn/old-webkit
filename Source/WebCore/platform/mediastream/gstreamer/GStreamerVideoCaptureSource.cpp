@@ -150,33 +150,11 @@ void GStreamerVideoCaptureSource::startProducingData()
     m_capturer->setupPipeline();
     m_capturer->setSize(size().width(), size().height());
     m_capturer->setFrameRate(frameRate());
-    g_signal_connect(m_capturer->sink(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer->play();
-}
-
-void GStreamerVideoCaptureSource::processNewFrame(Ref<MediaSample>&& sample)
-{
-    if (!isProducingData() || muted())
-        return;
-
-    dispatchMediaSampleToObservers(WTFMove(sample));
-}
-
-GstFlowReturn GStreamerVideoCaptureSource::newSampleCallback(GstElement* sink, GStreamerVideoCaptureSource* source)
-{
-    auto gstSample = adoptGRef(gst_app_sink_pull_sample(GST_APP_SINK(sink)));
-    auto mediaSample = MediaSampleGStreamer::create(WTFMove(gstSample), WebCore::FloatSize(), String());
-
-    source->scheduleDeferredTask([source, sample = WTFMove(mediaSample)] () mutable {
-        source->processNewFrame(WTFMove(sample));
-    });
-
-    return GST_FLOW_OK;
 }
 
 void GStreamerVideoCaptureSource::stopProducingData()
 {
-    g_signal_handlers_disconnect_by_func(m_capturer->sink(), reinterpret_cast<gpointer>(newSampleCallback), this);
     m_capturer->stop();
 
     GST_INFO("Reset height and width after stopping source");
@@ -284,6 +262,14 @@ void GStreamerVideoCaptureSource::generatePresets()
     }
 
     setSupportedPresets(WTFMove(presets));
+}
+
+GstElement* GStreamerVideoCaptureSource::registerClient()
+{
+    auto proxy = createProxy();
+    m_capturer->addSink(proxy.sink);
+    m_capturer->play();
+    return proxy.source;
 }
 
 } // namespace WebCore

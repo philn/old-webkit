@@ -302,6 +302,14 @@ bool webkitGstSetElementStateSynchronously(GstElement*, GstState, Function<bool(
 
 String structureToJSONString(const GstStructure*);
 
+GstClockTime getSharedBaseTime();
+
+struct GStreamerProxy {
+    GstElement* source;
+    GstElement* sink;
+};
+GStreamerProxy createProxy();
+
 }
 
 #ifndef GST_BUFFER_DTS_OR_PTS

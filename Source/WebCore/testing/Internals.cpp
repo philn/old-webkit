@@ -574,6 +574,9 @@ void Internals::resetToConsistentState(Page& page)
     LibWebRTCProvider::setH264HardwareEncoderAllowed(true);
     RuntimeEnabledFeatures::sharedFeatures().setWebRTCH265CodecEnabled(true);
     page.settings().setWebRTCEncryptionEnabled(true);
+#elif USE(GSTREAMER_WEBRTC)
+    RuntimeEnabledFeatures::sharedFeatures().setPeerConnectionEnabled(true);
+    page.settings().setWebRTCEncryptionEnabled(true);
 #endif
 
     page.setFullscreenAutoHideDuration(0_s);

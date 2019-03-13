@@ -765,6 +765,7 @@ class WebkitFlatpak:
             "JSC",
             "MESA",
             "LIBGL",
+            "NICE",
             "RUST",
             "SCCACHE",
             "WAYLAND",

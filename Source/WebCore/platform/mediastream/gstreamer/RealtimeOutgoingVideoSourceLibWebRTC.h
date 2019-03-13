@@ -29,6 +29,7 @@
 #if USE(LIBWEBRTC) && USE(GSTREAMER)
 
 #include "RealtimeOutgoingVideoSource.h"
+#include <gst/gst.h>
 
 namespace WebCore {
 
@@ -37,6 +38,7 @@ public:
     static Ref<RealtimeOutgoingVideoSourceLibWebRTC> create(Ref<MediaStreamTrackPrivate>&&);
 
 private:
+    static GstFlowReturn newSampleCallback(GstElement*, RealtimeOutgoingVideoSourceLibWebRTC*);
     explicit RealtimeOutgoingVideoSourceLibWebRTC(Ref<MediaStreamTrackPrivate>&&);
 
     rtc::scoped_refptr<webrtc::VideoFrameBuffer> createBlackFrame(size_t, size_t) final;
