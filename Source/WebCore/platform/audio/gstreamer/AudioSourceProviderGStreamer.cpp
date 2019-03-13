@@ -27,7 +27,7 @@
 #include <gst/audio/audio-info.h>
 #include <gst/base/gstadapter.h>
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#if ENABLE(MEDIA_STREAM)
 #include "GStreamerAudioData.h"
 #include "GStreamerMediaStreamSource.h"
 #endif
@@ -98,7 +98,7 @@ AudioSourceProviderGStreamer::AudioSourceProviderGStreamer()
     m_frontRightAdapter = gst_adapter_new();
 }
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#if ENABLE(MEDIA_STREAM)
 AudioSourceProviderGStreamer::AudioSourceProviderGStreamer(MediaStreamTrackPrivate& source)
     : m_notifier(MainThreadNotifier<MainThreadNotification>::create())
     , m_client(nullptr)

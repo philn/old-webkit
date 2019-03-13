@@ -88,7 +88,9 @@ ExceptionOr<Ref<RTCPeerConnection>> RTCPeerConnection::create(Document& document
     if (!peerConnection->isClosed()) {
         if (auto* page = document.page()) {
             peerConnection->registerToController(page->rtcController());
+#if USE(LIBWEBRTC)
             page->libWebRTCProvider().setEnableLogging(!page->sessionID().isEphemeral());
+#endif
         }
     }
     return peerConnection;

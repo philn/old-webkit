@@ -28,7 +28,7 @@
 #include <wtf/Forward.h>
 #include <wtf/Noncopyable.h>
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#if ENABLE(MEDIA_STREAM)
 #include "GStreamerAudioStreamDescription.h"
 #include "MediaStreamTrackPrivate.h"
 #include "WebAudioSourceProvider.h"
@@ -39,7 +39,7 @@ typedef struct _GstAppSink GstAppSink;
 
 namespace WebCore {
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#if ENABLE(MEDIA_STREAM)
 class AudioSourceProviderGStreamer final : public WebAudioSourceProvider {
 public:
     static Ref<AudioSourceProviderGStreamer> create(MediaStreamTrackPrivate& source)
