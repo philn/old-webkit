@@ -10,6 +10,10 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         SET_AND_EXPOSE_TO_BUILD(USE_WEBAUDIO_GSTREAMER TRUE)
     endif ()
 
+    if (USE_GSTREAMER_WEB_RTC)
+        list(APPEND GSTREAMER_COMPONENTS webrtc)
+    endif ()
+
     find_package(GStreamer 1.10.0 REQUIRED COMPONENTS ${GSTREAMER_COMPONENTS})
 
     if (ENABLE_WEB_AUDIO)
@@ -32,6 +36,17 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
 
     if (USE_GSTREAMER_GL AND NOT PC_GSTREAMER_GL_FOUND)
         message(FATAL_ERROR "GStreamerGL is needed for USE_GSTREAMER_GL.")
+    endif ()
+
+    if (USE_GSTREAMER_WEBRTC)
+        if (PC_GSTREAMER_VERSION VERSION_LESS "1.17")
+            set(USE_GSTREAMER_WEBRTC OFF)
+            message(STATUS "Disabling GSTREAMER_WEBRTC as the GStreamer version is older than 1.17.")
+        else ()
+            if (NOT PC_GSTREAMER_WEBRTC_FOUND)
+                message(FATAL_ERROR "GStreamerWebRTC is needed for USE_GSTREAMER_WEBRTC.")
+            endif ()
+        endif ()
     endif ()
 
     SET_AND_EXPOSE_TO_BUILD(USE_GSTREAMER TRUE)
