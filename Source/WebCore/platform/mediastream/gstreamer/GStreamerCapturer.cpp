@@ -21,13 +21,16 @@
 
 #include "config.h"
 
-#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "GStreamerCapturer.h"
 
 #include <gst/app/gstappsink.h>
 #include <gst/app/gstappsrc.h>
 #include <mutex>
+
+#if USE(LIBWEBRTC)
 #include <webrtc/api/mediastreaminterface.h>
+#endif
 
 GST_DEBUG_CATEGORY(webkit_capturer_debug);
 #define GST_CAT_DEFAULT webkit_capturer_debug

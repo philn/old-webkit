@@ -21,7 +21,7 @@
 
 #pragma once
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 
 #include "GRefPtrGStreamer.h"
 #include "PlatformAudioData.h"

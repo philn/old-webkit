@@ -21,7 +21,7 @@
 
 #pragma once
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "CaptureDevice.h"
 #include "GStreamerVideoCapturer.h"
 #include "RealtimeVideoCaptureSource.h"

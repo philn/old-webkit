@@ -551,8 +551,7 @@ void PeerConnectionBackend::generateCertificate(Document& document, const Certif
     LibWebRTCCertificateGenerator::generateCertificate(document.securityOrigin(), document.page()->libWebRTCProvider(), info, WTFMove(promise));
 #else
     UNUSED_PARAM(document);
-    UNUSED_PARAM(expires);
-    UNUSED_PARAM(type);
+    UNUSED_PARAM(info);
     promise.reject(NotSupportedError);
 #endif
 }

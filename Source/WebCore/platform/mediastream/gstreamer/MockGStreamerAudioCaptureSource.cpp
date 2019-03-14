@@ -21,7 +21,7 @@
 
 #include "config.h"
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "MockGStreamerAudioCaptureSource.h"
 
 #include "GStreamerAudioStreamDescription.h"

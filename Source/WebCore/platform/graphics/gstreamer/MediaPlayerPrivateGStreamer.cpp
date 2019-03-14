@@ -54,6 +54,7 @@
 #include <wtf/text/StringConcatenateNumbers.h>
 
 #if ENABLE(MEDIA_STREAM)
+#include "MediaStreamPrivate.h"
 #include "GStreamerMediaStreamSource.h"
 #endif
 
@@ -694,7 +695,7 @@ void MediaPlayerPrivateGStreamer::clearTracks()
 
 FloatSize MediaPlayerPrivateGStreamer::naturalSize() const
 {
-#if ENABLE(MEDIA_STREAM)
+#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
     if (!m_isLegacyPlaybin && !m_currentVideoStreamId.isEmpty()) {
         RefPtr<VideoTrackPrivateGStreamer> videoTrack = m_videoTracks.get(m_currentVideoStreamId);
 

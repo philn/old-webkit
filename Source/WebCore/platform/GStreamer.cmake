@@ -142,16 +142,17 @@ if (ENABLE_VIDEO)
             ${GSTREAMER_WEBRTC_LIBRARIES}
         )
         list(APPEND WebCore_SOURCES
-            platform/mediastream/gstreamer/GStreamerMediaEndpoint.cpp
-            platform/mediastream/gstreamer/GStreamerPeerConnectionBackend.cpp
-            platform/mediastream/gstreamer/RealtimeAudioSourceGStreamer.cpp
-            platform/mediastream/gstreamer/RealtimeIncomingAudioSourceGStreamer.cpp
-            platform/mediastream/gstreamer/RealtimeIncomingVideoSourceGStreamer.cpp
-            platform/mediastream/gstreamer/RealtimeMediaSourceCenterGStreamer.cpp
-            platform/mediastream/gstreamer/RealtimeMediaSourceGStreamer.cpp
-            platform/mediastream/gstreamer/RealtimeOutgoingAudioSourceGStreamer.cpp
-            platform/mediastream/gstreamer/RealtimeOutgoingVideoSourceGStreamer.cpp
-            platform/mediastream/gstreamer/RealtimeVideoSourceGStreamer.cpp
+            platform/mediastream/gstreamer/DecoderSourceGStreamer.cpp
+            #platform/mediastream/gstreamer/GStreamerMediaEndpoint.cpp
+            #platform/mediastream/gstreamer/GStreamerPeerConnectionBackend.cpp
+            #platform/mediastream/gstreamer/RealtimeAudioSourceGStreamer.cpp
+            #platform/mediastream/gstreamer/RealtimeIncomingAudioSourceGStreamer.cpp
+            #platform/mediastream/gstreamer/RealtimeIncomingVideoSourceGStreamer.cpp
+            #platform/mediastream/gstreamer/RealtimeMediaSourceCenterGStreamer.cpp
+            #platform/mediastream/gstreamer/RealtimeMediaSourceGStreamer.cpp
+            #platform/mediastream/gstreamer/RealtimeOutgoingAudioSourceGStreamer.cpp
+            #platform/mediastream/gstreamer/RealtimeOutgoingVideoSourceGStreamer.cpp
+            #platform/mediastream/gstreamer/RealtimeVideoSourceGStreamer.cpp
         )
     endif ()
 endif ()

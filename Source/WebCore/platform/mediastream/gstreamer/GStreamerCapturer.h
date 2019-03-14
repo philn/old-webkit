@@ -21,11 +21,14 @@
 
 #pragma once
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 
 #include "GStreamerCaptureDevice.h"
 #include "GStreamerCommon.h"
+
+#if USE(LIBWEBRTC)
 #include "LibWebRTCMacros.h"
+#endif
 
 #include <gst/gst.h>
 

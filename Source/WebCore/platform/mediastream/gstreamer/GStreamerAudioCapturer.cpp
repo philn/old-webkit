@@ -21,22 +21,27 @@
 
 #include "config.h"
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "GStreamerAudioCapturer.h"
 
+#if USE(LIBWEBRTC)
 #include "LibWebRTCAudioFormat.h"
+#define SAMPLE_RATE LibWebRTCAudioFormat::sampleRate
+#else
+#define SAMPLE_RATE 44100
+#endif
 
 #include <gst/app/gstappsink.h>
 
 namespace WebCore {
 
 GStreamerAudioCapturer::GStreamerAudioCapturer(GStreamerCaptureDevice device)
-    : GStreamerCapturer(device, adoptGRef(gst_caps_new_simple("audio/x-raw", "rate", G_TYPE_INT, LibWebRTCAudioFormat::sampleRate, nullptr)))
+    : GStreamerCapturer(device, adoptGRef(gst_caps_new_simple("audio/x-raw", "rate", G_TYPE_INT, SAMPLE_RATE, nullptr)))
 {
 }
 
 GStreamerAudioCapturer::GStreamerAudioCapturer()
-    : GStreamerCapturer("appsrc", adoptGRef(gst_caps_new_simple("audio/x-raw", "rate", G_TYPE_INT, LibWebRTCAudioFormat::sampleRate, nullptr)))
+    : GStreamerCapturer("appsrc", adoptGRef(gst_caps_new_simple("audio/x-raw", "rate", G_TYPE_INT, SAMPLE_RATE, nullptr)))
 {
 }
 
@@ -70,5 +75,7 @@ bool GStreamerAudioCapturer::setSampleRate(int sampleRate)
 }
 
 } // namespace WebCore
+
+#undef SAMPLE_RATE
 
 #endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
