@@ -74,7 +74,9 @@ Ref<RTCPeerConnection> RTCPeerConnection::create(ScriptExecutionContext& context
         peerConnection->m_pendingActivity = peerConnection->makePendingActivity(peerConnection.get());
         if (auto* page = downcast<Document>(context).page()) {
             peerConnection->registerToController(page->rtcController());
+#if USE(LIBWEBRTC)
             page->libWebRTCProvider().setEnableLogging(!context.sessionID().isEphemeral());
+#endif
         }
     }
     return peerConnection;
