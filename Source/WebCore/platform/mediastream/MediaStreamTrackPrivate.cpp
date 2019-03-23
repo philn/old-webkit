@@ -36,7 +36,7 @@
 
 #if PLATFORM(COCOA)
 #include "WebAudioSourceProviderAVFObjC.h"
-#elif ENABLE(WEB_AUDIO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#elif ENABLE(WEB_AUDIO) && ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "AudioSourceProviderGStreamer.h"
 #else
 #include "WebAudioSourceProvider.h"
@@ -193,7 +193,7 @@ AudioSourceProvider* MediaStreamTrackPrivate::audioSourceProvider()
 #if PLATFORM(COCOA)
     if (!m_audioSourceProvider)
         m_audioSourceProvider = WebAudioSourceProviderAVFObjC::create(*this);
-#elif USE(LIBWEBRTC) && USE(GSTREAMER)
+#elif USE(GSTREAMER)
     if (!m_audioSourceProvider)
         m_audioSourceProvider = AudioSourceProviderGStreamer::create(*this);
 #endif

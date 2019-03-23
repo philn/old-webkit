@@ -52,7 +52,7 @@ namespace WebCore {
 
 using namespace PAL;
 
-#if !USE(LIBWEBRTC)
+#if !USE(LIBWEBRTC) && !USE(GSTREAMER_WEBRTC)
 static std::unique_ptr<PeerConnectionBackend> createNoPeerConnectionBackend(RTCPeerConnection&)
 {
     return nullptr;
