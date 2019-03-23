@@ -45,6 +45,8 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         platform/mediastream/gstreamer/GStreamerVideoCapturer.cpp
         platform/mediastream/gstreamer/MockGStreamerAudioCaptureSource.cpp
         platform/mediastream/gstreamer/MockGStreamerVideoCaptureSource.cpp
+        # TODO: Rename this one? vvv
+        platform/mediastream/gstreamer/RealtimeMediaSourceCenterLibWebRTC.cpp
     )
 
     list(APPEND WebCore_PRIVATE_FRAMEWORK_HEADERS
@@ -126,7 +128,6 @@ if (ENABLE_VIDEO)
             platform/mediastream/gstreamer/GStreamerVideoFrameLibWebRTC.cpp
             platform/mediastream/gstreamer/RealtimeIncomingAudioSourceLibWebRTC.cpp
             platform/mediastream/gstreamer/RealtimeIncomingVideoSourceLibWebRTC.cpp
-            platform/mediastream/gstreamer/RealtimeMediaSourceCenterLibWebRTC.cpp
             platform/mediastream/gstreamer/RealtimeOutgoingAudioSourceLibWebRTC.cpp
             platform/mediastream/gstreamer/RealtimeOutgoingVideoSourceLibWebRTC.cpp
         )

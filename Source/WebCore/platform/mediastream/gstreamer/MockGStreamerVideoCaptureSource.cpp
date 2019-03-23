@@ -21,7 +21,7 @@
 
 #include "config.h"
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "MockGStreamerVideoCaptureSource.h"
 
 #include "MediaSampleGStreamer.h"
@@ -139,4 +139,4 @@ void MockGStreamerVideoCaptureSource::captureFailed()
 
 } // namespace WebCore
 
-#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#endif // ENABLE(MEDIA_STREAM) && USE(GSTREAMER)

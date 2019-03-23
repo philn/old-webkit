@@ -21,19 +21,22 @@
 
 #include "config.h"
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "GStreamerVideoCaptureSource.h"
 
 #include "GStreamerCaptureDeviceManager.h"
 #include "MediaSampleGStreamer.h"
 
 #include <gst/app/gstappsink.h>
+
+#if USE(LIBWEBRTC)
 #include <webrtc/api/mediastreaminterface.h>
 #include <webrtc/api/peerconnectioninterface.h>
 #include <webrtc/media/base/videocommon.h>
 #include <webrtc/media/engine/webrtcvideocapturer.h>
 #include <webrtc/media/engine/webrtcvideocapturerfactory.h>
 #include <webrtc/modules/video_capture/video_capture_defines.h>
+#endif
 
 namespace WebCore {
 
@@ -287,4 +290,4 @@ void GStreamerVideoCaptureSource::generatePresets()
 
 } // namespace WebCore
 
-#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#endif // ENABLE(MEDIA_STREAM) && USE(GSTREAMER)

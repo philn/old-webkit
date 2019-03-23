@@ -21,7 +21,7 @@
 
 #pragma once
 
-#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 
 #include "MediaStreamPrivate.h"
 #include "MediaStreamTrackPrivate.h"
@@ -45,4 +45,4 @@ bool webkitMediaStreamSrcAddTrack(WebKitMediaStreamSrc*, MediaStreamTrackPrivate
 GstElement * webkitMediaStreamSrcNew(void);
 } // WebCore
 
-#endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(GSTREAMER)

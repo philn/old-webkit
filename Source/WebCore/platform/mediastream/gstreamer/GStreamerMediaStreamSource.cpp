@@ -21,7 +21,7 @@
 
 #include "config.h"
 
-#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "GStreamerMediaStreamSource.h"
 
 #include "AudioTrackPrivate.h"
@@ -613,4 +613,4 @@ GstElement* webkitMediaStreamSrcNew(void)
 
 } // WebCore
 
-#endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(GSTREAMER)

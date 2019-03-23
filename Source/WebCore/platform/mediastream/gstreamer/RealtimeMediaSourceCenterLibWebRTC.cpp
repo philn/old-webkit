@@ -21,7 +21,7 @@
 
 #include "config.h"
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "RealtimeMediaSourceCenter.h"
 
 #include "GStreamerAudioCaptureSource.h"
@@ -48,4 +48,4 @@ DisplayCaptureFactory& RealtimeMediaSourceCenter::defaultDisplayCaptureFactory()
 
 } // namespace WebCore
 
-#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#endif // ENABLE(MEDIA_STREAM) && USE(GSTREAMER)

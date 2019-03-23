@@ -695,7 +695,7 @@ void MediaPlayerPrivateGStreamer::clearTracks()
 
 FloatSize MediaPlayerPrivateGStreamer::naturalSize() const
 {
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#if ENABLE(MEDIA_STREAM)
     if (!m_isLegacyPlaybin && !m_currentVideoStreamId.isEmpty()) {
         RefPtr<VideoTrackPrivateGStreamer> videoTrack = m_videoTracks.get(m_currentVideoStreamId);
 
