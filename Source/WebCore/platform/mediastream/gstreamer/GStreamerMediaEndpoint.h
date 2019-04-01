@@ -21,23 +21,27 @@
 #if USE(GSTREAMER_WEBRTC)
 
 #include "GRefPtrGStreamer.h"
+#include "GStreamerRtpSenderBackend.h"
 #include "PeerConnectionBackend.h"
 #include "RTCRtpReceiver.h"
+
 #include <Timer.h>
-#include <wtf/ThreadSafeRefCounted.h>
 #include <gst/gst.h>
 #define GST_USE_UNSTABLE_API
 #include <gst/webrtc/webrtc.h>
 #undef GST_USE_UNSTABLE_API
+#include <wtf/ThreadSafeRefCounted.h>
 
 namespace WebCore {
 
 class GStreamerPeerConnectionBackend;
+class GStreamerRtpReceiverBackend;
+class GStreamerRtpTransceiverBackend;
 class MediaStreamTrack;
 class RTCSessionDescription;
 
 class GStreamerMediaEndpoint
-    : public ThreadSafeRefCounted<GStreamerMediaEndpoint>
+    : public ThreadSafeRefCounted<GStreamerMediaEndpoint, WTF::DestructionThread::Main>
 {
 public:
     static Ref<GStreamerMediaEndpoint> create(GStreamerPeerConnectionBackend& peerConnection) { return adoptRef(*new GStreamerMediaEndpoint(peerConnection)); }
@@ -51,8 +55,9 @@ public:
     void doSetRemoteDescription(RTCSessionDescription&);
     void doCreateOffer(const RTCOfferOptions&);
     void doCreateAnswer();
-    void getStats(MediaStreamTrack*, const DeferredPromise&);
-    bool addIceCandidate(RTCIceCandidate&);
+    void getStats(Ref<DeferredPromise>&&);
+    // FIXME
+    /* bool addIceCandidate(RTCIceCandidate&); */
     void stop();
     bool isStopped() const { return false; /* !m_backend; */ }
 
@@ -63,9 +68,20 @@ public:
     RefPtr<RTCSessionDescription> pendingLocalDescription() const;
     RefPtr<RTCSessionDescription> pendingRemoteDescription() const;
 
-    void addTrack(RTCRtpSender&, MediaStreamTrack&, const Vector<String>&);
-    void removeTrack(RTCRtpSender&);
-    RTCRtpParameters getRTCRtpSenderParameters(RTCRtpSender&);
+    bool addTrack(GStreamerRtpSenderBackend&, MediaStreamTrack&, const Vector<String>&);
+    void removeTrack(GStreamerRtpSenderBackend&);
+
+    struct Backends {
+        std::unique_ptr<GStreamerRtpSenderBackend> senderBackend;
+        std::unique_ptr<GStreamerRtpReceiverBackend> receiverBackend;
+        std::unique_ptr<GStreamerRtpTransceiverBackend> transceiverBackend;
+    };
+    Optional<Backends> addTransceiver(const String& trackKind, const RTCRtpTransceiverInit&);
+    Optional<Backends> addTransceiver(MediaStreamTrack&, const RTCRtpTransceiverInit&);
+    std::unique_ptr<GStreamerRtpTransceiverBackend> transceiverBackendFromSender(GStreamerRtpSenderBackend&);
+
+    void setSenderSourceFromTrack(GStreamerRtpSenderBackend&, MediaStreamTrack&);
+    void collectTransceivers();
 
     void createSessionDescriptionSucceeded(GstWebRTCSessionDescription*);
 
@@ -113,8 +129,12 @@ private:
 
     void sourceFromGstPad(GstPad*);
 
-    int AddRef() const { ref(); return static_cast<int>(refCount()); }
-    int Release() const { deref(); return static_cast<int>(refCount()); }
+    void AddRef() const { ref(); }
+    int Release() const {
+        auto result = refCount() - 1;
+        deref();
+        return result;
+    }
 
     bool shouldOfferAllowToReceiveAudio() const;
     bool shouldOfferAllowToReceiveVideo() const;
@@ -122,6 +142,9 @@ private:
     GStreamerPeerConnectionBackend& m_peerConnectionBackend;
     GRefPtr<GstElement> m_webrtcBin;
     GRefPtr<GstElement> m_pipeline;
+
+    HashMap<String, RefPtr<MediaStream>> m_remoteStreamsById;
+    HashMap<MediaStreamTrack*, Vector<String>> m_remoteStreamsFromRemoteTrack;
 
     HashMap<GstPad*, Ref<RealtimeMediaSource>> m_audioSources;
     HashMap<GstPad*, Ref<RealtimeMediaSource>> m_videoSources;

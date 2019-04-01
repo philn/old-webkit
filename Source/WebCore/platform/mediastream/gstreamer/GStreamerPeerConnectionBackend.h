@@ -26,6 +26,8 @@
 namespace WebCore {
 
 class GStreamerMediaEndpoint;
+class GStreamerRTCRtpSenderBackend;
+class GStreamerRTCRtpTransceiverBackend;
 class RTCRtpReceiver;
 class RTCRtpReceiverBackend;
 class RTCSessionDescription;
@@ -59,8 +61,6 @@ private:
     void getStats(RTCRtpSender&, Ref<DeferredPromise>&&) final;
     void getStats(RTCRtpReceiver&, Ref<DeferredPromise>&&) final;
 
-    /* Ref<RTCRtpReceiver> createReceiver(const String& transceiverMid, const String& trackKind, const String& trackId) final; */
-
     RefPtr<RTCSessionDescription> localDescription() const final;
     RefPtr<RTCSessionDescription> currentLocalDescription() const final;
     RefPtr<RTCSessionDescription> pendingLocalDescription() const final;
@@ -72,7 +72,8 @@ private:
     void emulatePlatformEvent(const String&) final { }
     void applyRotationForOutgoingVideoSources() final;
 
-    friend GStreamerMediaEndpoint;
+    friend class GStreamerMediaEndpoint;
+    friend class GStreamerRtpSenderBackend;
     RTCPeerConnection& connection() { return m_peerConnection; }
 
     void getStatsSucceeded(const DeferredPromise&, Ref<RTCStatsReport>&&);
@@ -87,6 +88,10 @@ private:
 
     ExceptionOr<Ref<RTCRtpTransceiver>> addTransceiver(const String&, const RTCRtpTransceiverInit&) final;
     ExceptionOr<Ref<RTCRtpTransceiver>> addTransceiver(Ref<MediaStreamTrack>&&, const RTCRtpTransceiverInit&) final;
+    void setSenderSourceFromTrack(GStreamerRtpSenderBackend&, MediaStreamTrack&);
+
+    RTCRtpTransceiver* existingTransceiver(WTF::Function<bool(GStreamerRtpTransceiverBackend&)>&&);
+    RTCRtpTransceiver& newRemoteTransceiver(std::unique_ptr<GStreamerRtpTransceiverBackend>&&, Ref<RealtimeMediaSource>&&);
 
     void collectTransceivers() final;
 
@@ -116,7 +121,7 @@ private:
     Ref<RTCRtpReceiver> createReceiver(const String& trackKind, const String& trackId);
 
     template<typename T>
-        ExceptionOr<Ref<RTCRtpTransceiver>> addUnifiedPlanTransceiver(T&& trackOrKind, const RTCRtpTransceiverInit&);
+    ExceptionOr<Ref<RTCRtpTransceiver>> addUnifiedPlanTransceiver(T&& trackOrKind, const RTCRtpTransceiverInit&);
 
     Ref<RTCRtpReceiver> createReceiverForSource(Ref<RealtimeMediaSource>&&, std::unique_ptr<RTCRtpReceiverBackend>&&);
 

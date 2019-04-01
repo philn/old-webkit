@@ -23,53 +23,62 @@
 
 #include "GStreamerRtpReceiverBackend.h"
 #include "GStreamerRtpSenderBackend.h"
-// #include "GStreamerUtils.h"
+#include "GStreamerWebRTCUtils.h"
 
 namespace WebCore {
 
 std::unique_ptr<GStreamerRtpReceiverBackend> GStreamerRtpTransceiverBackend::createReceiverBackend()
 {
-    return std::make_unique<GStreamerRtpReceiverBackend>(m_rtcTransceiver->receiver());
+    GstWebRTCRTPReceiver* receiver;
+    g_object_get(m_rtcTransceiver.get(), "receiver", &receiver, nullptr);
+    return std::make_unique<GStreamerRtpReceiverBackend>(receiver);
 }
 
 std::unique_ptr<GStreamerRtpSenderBackend> GStreamerRtpTransceiverBackend::createSenderBackend(GStreamerPeerConnectionBackend& backend, GStreamerRtpSenderBackend::Source&& source)
 {
-    return std::make_unique<GStreamerRtpSenderBackend>(backend, m_rtcTransceiver->sender(), WTFMove(source));
+    GstWebRTCRTPSender* sender;
+    g_object_get(m_rtcTransceiver.get(), "sender", &sender, nullptr);
+    return std::make_unique<GStreamerRtpSenderBackend>(backend, sender, WTFMove(source));
 }
 
 RTCRtpTransceiverDirection GStreamerRtpTransceiverBackend::direction() const
 {
-    return toRTCRtpTransceiverDirection(m_rtcTransceiver->direction());
+    // FIXME: Why no direction GObject property in GstWebRTCRTPTransceiver?
+    return toRTCRtpTransceiverDirection(m_rtcTransceiver->direction);
 }
 
 Optional<RTCRtpTransceiverDirection> GStreamerRtpTransceiverBackend::currentDirection() const
 {
-    auto value = m_rtcTransceiver->current_direction();
+    // FIXME: Why no current-direction GObject property in GstWebRTCRTPTransceiver?
+    GstWebRTCRTPTransceiverDirection value = m_rtcTransceiver->current_direction;
     if (!value)
         return WTF::nullopt;
-    return toRTCRtpTransceiverDirection(*value);
+    return toRTCRtpTransceiverDirection(value);
 }
 
 void GStreamerRtpTransceiverBackend::setDirection(RTCRtpTransceiverDirection direction)
 {
-    m_rtcTransceiver->SetDirection(fromRTCRtpTransceiverDirection(direction));
+    // FIXME: Why no direction GObject property in GstWebRTCRTPTransceiver?
+    m_rtcTransceiver->direction = fromRTCRtpTransceiverDirection(direction);
 }
 
 String GStreamerRtpTransceiverBackend::mid()
 {
-    if (auto mid = m_rtcTransceiver->mid())
-        return fromStdString(*mid);
+    // FIXME: Why no mid GObject property in GstWebRTCRTPTransceiver?
+    if (char* mid = m_rtcTransceiver->mid)
+        return fromStdString(mid);
     return String { };
 }
 
 void GStreamerRtpTransceiverBackend::stop()
 {
-    m_rtcTransceiver->Stop();
+    notImplemented();
 }
 
 bool GStreamerRtpTransceiverBackend::stopped() const
 {
-    return m_rtcTransceiver->stopped();
+    // FIXME: Why no stopped GObject property in GstWebRTCRTPTransceiver?
+    return m_rtcTransceiver->stopped;
 }
 
 } // namespace WebCore
