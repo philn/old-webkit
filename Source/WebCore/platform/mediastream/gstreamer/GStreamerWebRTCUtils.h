@@ -22,12 +22,13 @@
 
 #include "RTCRtpTransceiverDirection.h"
 #include "RTCRtpSendParameters.h"
+#include "RTCSdpType.h"
+#include "RTCSignalingState.h"
+#include "RTCIceConnectionState.h"
 
-#if USE(GSTREAMER_WEBRTC)
 #define GST_USE_UNSTABLE_API
 #include <gst/webrtc/webrtc.h>
 #undef GST_USE_UNSTABLE_API
-#endif
 
 namespace WebCore {
 
@@ -70,7 +71,7 @@ inline GstWebRTCRTPTransceiverDirection fromRTCRtpTransceiverDirection(RTCRtpTra
 /*     // FIXME */
 /* } */
 
-GstClockTime getWebRTCBaseTime()
+static GstClockTime getWebRTCBaseTime()
 {
     static GstClockTime webrtcBaseTime = GST_CLOCK_TIME_NONE;
     if(!GST_CLOCK_TIME_IS_VALID(webrtcBaseTime)) {
@@ -80,6 +81,80 @@ GstClockTime getWebRTCBaseTime()
     }
     return webrtcBaseTime;
 }
- 
+
+
+static inline GstWebRTCSDPType toSessionDescriptionType(RTCSdpType sdpType)
+{
+    switch (sdpType) {
+    case RTCSdpType::Offer:
+        return GST_WEBRTC_SDP_TYPE_OFFER;
+    case RTCSdpType::Pranswer:
+        return GST_WEBRTC_SDP_TYPE_PRANSWER;
+    case RTCSdpType::Answer:
+        return GST_WEBRTC_SDP_TYPE_ANSWER;
+    case RTCSdpType::Rollback:
+        return GST_WEBRTC_SDP_TYPE_ROLLBACK;
+    }
+
+    ASSERT_NOT_REACHED();
+    return GST_WEBRTC_SDP_TYPE_OFFER;
+}
+
+static inline RTCSdpType fromSessionDescriptionType(GstWebRTCSessionDescription* description)
+{
+    auto type = description->type;
+    if (type == GST_WEBRTC_SDP_TYPE_OFFER)
+        return RTCSdpType::Offer;
+    if (type == GST_WEBRTC_SDP_TYPE_ANSWER)
+        return RTCSdpType::Answer;
+    ASSERT(type == GST_WEBRTC_SDP_TYPE_PRANSWER);
+    return RTCSdpType::Pranswer;
+}
+
+static RTCSignalingState toSignalingState(GstWebRTCSignalingState state)
+{
+    switch (state) {
+    case GST_WEBRTC_SIGNALING_STATE_STABLE:
+        return RTCSignalingState::Stable;
+    case GST_WEBRTC_SIGNALING_STATE_HAVE_LOCAL_OFFER:
+        return RTCSignalingState::HaveLocalOffer;
+    case GST_WEBRTC_SIGNALING_STATE_HAVE_LOCAL_PRANSWER:
+        return RTCSignalingState::HaveLocalPranswer;
+    case GST_WEBRTC_SIGNALING_STATE_HAVE_REMOTE_OFFER:
+        return RTCSignalingState::HaveRemoteOffer;
+    case GST_WEBRTC_SIGNALING_STATE_HAVE_REMOTE_PRANSWER:
+        return RTCSignalingState::HaveRemotePranswer;
+    case GST_WEBRTC_SIGNALING_STATE_CLOSED:
+        // ¯\_(ツ)_/¯
+        return RTCSignalingState::Stable;
+    }
+
+    ASSERT_NOT_REACHED();
+    return RTCSignalingState::Stable;
+}
+
+static inline RTCIceConnectionState toRTCIceConnectionState(GstWebRTCICEConnectionState state)
+{
+    switch (state) {
+    case GST_WEBRTC_ICE_CONNECTION_STATE_NEW:
+        return RTCIceConnectionState::New;
+    case GST_WEBRTC_ICE_CONNECTION_STATE_CHECKING:
+        return RTCIceConnectionState::Checking;
+    case GST_WEBRTC_ICE_CONNECTION_STATE_CONNECTED:
+        return RTCIceConnectionState::Connected;
+    case GST_WEBRTC_ICE_CONNECTION_STATE_COMPLETED:
+        return RTCIceConnectionState::Completed;
+    case GST_WEBRTC_ICE_CONNECTION_STATE_FAILED:
+        return RTCIceConnectionState::Failed;
+    case GST_WEBRTC_ICE_CONNECTION_STATE_DISCONNECTED:
+        return RTCIceConnectionState::Disconnected;
+    case GST_WEBRTC_ICE_CONNECTION_STATE_CLOSED:
+        return RTCIceConnectionState::Closed;
+    }
+
+    ASSERT_NOT_REACHED();
+    return RTCIceConnectionState::New;
+}
+
 }
 #endif

@@ -39,13 +39,18 @@ class RealtimeMediaSourceGStreamer;
 class RealtimeOutgoingAudioSourceGStreamer;
 class RealtimeOutgoingVideoSourceGStreamer;
 
+struct GStreamerIceCandidate {
+    unsigned sdpMLineIndex;
+    String candidate;
+};
+
 class GStreamerPeerConnectionBackend final : public PeerConnectionBackend {
     WTF_MAKE_FAST_ALLOCATED;
 public:
     explicit GStreamerPeerConnectionBackend(RTCPeerConnection&);
     ~GStreamerPeerConnectionBackend();
 
-    void replaceTrack(RTCRtpSender&, RefPtr<MediaStreamTrack>&&, DOMPromiseDeferred<void>&&);
+    /* void replaceTrack(RTCRtpSender&, RefPtr<MediaStreamTrack>&&, DOMPromiseDeferred<void>&&); */
 
     bool shouldOfferAllowToReceive(const char*) const;
 
@@ -135,6 +140,7 @@ private:
     /* Vector<Ref<RealtimeOutgoingAudioSourceGStreamer>> m_audioSources; */
     /* Vector<Ref<RealtimeOutgoingVideoSourceGStreamer>> m_videoSources; */
     /* HashMap<const DeferredPromise*, Ref<DeferredPromise>> m_statsPromises; */
+    Vector<std::unique_ptr<GStreamerIceCandidate>> m_pendingCandidates;
     Vector<Ref<RTCRtpReceiver>> m_pendingReceivers;
 };
 

@@ -90,7 +90,7 @@ void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
 
     GRefPtr<GstElement> webrtcBin = gst_bin_get_by_name(GST_BIN_CAST(m_pipeline.get()), "webkit-webrtcbin");
     GstElement* videoSourceElement = gst_element_factory_make("proxysrc", nullptr);
-    g_object_set(videoSourceElement, "proxysink", videoSource.proxySink(), nullptr);
+    // g_object_set(videoSourceElement, "proxysink", videoSource.proxySink(), nullptr);
 
     // FIXME: properly configure output-selector, somehow!
     m_outputSelector = gst_element_factory_make("identity", nullptr);

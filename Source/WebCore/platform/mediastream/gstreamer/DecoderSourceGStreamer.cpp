@@ -29,7 +29,7 @@ static void onDecodeBinPadAddedCallback(GstElement*, GstPad* pad, gpointer userD
     GRefPtr<GstPad> srcPad = gst_ghost_pad_new(nullptr, pad);
     gst_pad_set_active(srcPad.get(), TRUE);
     gst_element_add_pad(source->sourceBin(), srcPad.get());
-    source->padExposed(srcPad.get());
+    //source->padExposed(srcPad.get());
 }
 
 static void onDecodeBinReady(GstElement* decodebin, gpointer)

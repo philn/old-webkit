@@ -25,19 +25,25 @@
 
 namespace WebCore {
 
-    class RealtimeIncomingVideoSourceGStreamer : public GStreamerRealtimeVideoSource, public DecoderSourceGStreamer {
+class RealtimeIncomingVideoSourceGStreamer : public RealtimeMediaSource, public DecoderSourceGStreamer {
 public:
     static Ref<RealtimeIncomingVideoSourceGStreamer> create(String&& videoTrackId) { return adoptRef(*new RealtimeIncomingVideoSourceGStreamer(WTFMove(videoTrackId))); }
     static Ref<RealtimeIncomingVideoSourceGStreamer> create(GstElement* sourceElement) { return adoptRef(*new RealtimeIncomingVideoSourceGStreamer(sourceElement)); }
     ~RealtimeIncomingVideoSourceGStreamer() = default; //{ stopProducingData(); }
 
-    void padExposed(GstPad*) final;
-    const RealtimeMediaSourceCapabilities& capabilities() final;
-    const RealtimeMediaSourceSettings& settings() final;
+    /* void padExposed(GstPad*) final; */
 
 protected:
     RealtimeIncomingVideoSourceGStreamer(String&&);
     RealtimeIncomingVideoSourceGStreamer(GstElement*);
+
+private:
+    // RealtimeMediaSource API
+    void startProducingData() final;
+    void stopProducingData()  final;
+
+    const RealtimeMediaSourceCapabilities& capabilities() final;
+    const RealtimeMediaSourceSettings& settings() final;
 
     RealtimeMediaSourceSettings m_currentSettings;
 
@@ -45,5 +51,9 @@ protected:
 };
 
 } // namespace WebCore
+
+SPECIALIZE_TYPE_TRAITS_BEGIN(WebCore::RealtimeIncomingVideoSourceGStreamer)
+    static bool isType(const WebCore::RealtimeMediaSource& source) { return source.isIncomingVideoSource(); }
+SPECIALIZE_TYPE_TRAITS_END()
 
 #endif // USE(GSTREAMER_WEBRTC)

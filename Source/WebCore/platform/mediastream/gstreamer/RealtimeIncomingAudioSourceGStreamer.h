@@ -30,7 +30,7 @@ public:
     static Ref<RealtimeIncomingAudioSourceGStreamer> create(String&& audioTrackId) { return adoptRef(*new RealtimeIncomingAudioSourceGStreamer(WTFMove(audioTrackId))); }
     static Ref<RealtimeIncomingAudioSourceGStreamer> create(GstElement* sourceElement) { return adoptRef(*new RealtimeIncomingAudioSourceGStreamer(sourceElement)); }
 
-    void padExposed(GstPad*) final;
+    /* void padExposed(GstPad*) final; */
 
 protected:
     RealtimeIncomingAudioSourceGStreamer(String&&);

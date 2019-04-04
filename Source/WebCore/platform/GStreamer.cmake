@@ -149,7 +149,7 @@ if (ENABLE_VIDEO)
             platform/mediastream/gstreamer/GStreamerRtpTransceiverBackend.cpp
             platform/mediastream/gstreamer/GStreamerRtpReceiverBackend.cpp
             platform/mediastream/gstreamer/GStreamerRtpSenderBackend.cpp
-            p#latform/mediastream/gstreamer/RealtimeAudioSourceGStreamer.cpp
+            #platform/mediastream/gstreamer/RealtimeAudioSourceGStreamer.cpp
             platform/mediastream/gstreamer/RealtimeIncomingAudioSourceGStreamer.cpp
             platform/mediastream/gstreamer/RealtimeIncomingVideoSourceGStreamer.cpp
             #platform/mediastream/gstreamer/RealtimeMediaSourceCenterGStreamer.cpp

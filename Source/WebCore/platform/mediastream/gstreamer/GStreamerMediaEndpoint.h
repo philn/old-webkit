@@ -22,7 +22,8 @@
 
 #include "GRefPtrGStreamer.h"
 #include "GStreamerRtpSenderBackend.h"
-#include "PeerConnectionBackend.h"
+//#include "PeerConnectionBackend.h"
+#include "GStreamerPeerConnectionBackend.h"
 #include "RTCRtpReceiver.h"
 
 #include <Timer.h>
@@ -34,7 +35,6 @@
 
 namespace WebCore {
 
-class GStreamerPeerConnectionBackend;
 class GStreamerRtpReceiverBackend;
 class GStreamerRtpTransceiverBackend;
 class MediaStreamTrack;
@@ -56,8 +56,9 @@ public:
     void doCreateOffer(const RTCOfferOptions&);
     void doCreateAnswer();
     void getStats(Ref<DeferredPromise>&&);
-    // FIXME
-    /* bool addIceCandidate(RTCIceCandidate&); */
+    void getStats(GstWebRTCRTPReceiver*, Ref<DeferredPromise>&&);
+    void getStats(GstWebRTCRTPSender*, Ref<DeferredPromise>&&);
+    bool addIceCandidate(GStreamerIceCandidate&);
     void stop();
     bool isStopped() const { return false; /* !m_backend; */ }
 

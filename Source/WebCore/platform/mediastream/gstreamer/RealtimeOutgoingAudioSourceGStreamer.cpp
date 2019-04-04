@@ -56,7 +56,7 @@ void RealtimeOutgoingAudioSourceGStreamer::initializeConverter()
     GRefPtr<GstElement> webrtcBin = gst_bin_get_by_name(GST_BIN_CAST(m_pipeline.get()), "webkit-webrtcbin");
 
     GstElement* audioSourceElement = gst_element_factory_make("proxysrc", nullptr);
-    g_object_set(audioSourceElement, "proxysink", audioSource.proxySink(), nullptr);
+    // g_object_set(audioSourceElement, "proxysink", audioSource.proxySink(), nullptr);
 
     GstElement* audioconvert = gst_element_factory_make("audioconvert", nullptr);
     GstElement* audioresample = gst_element_factory_make("audioresample", nullptr);

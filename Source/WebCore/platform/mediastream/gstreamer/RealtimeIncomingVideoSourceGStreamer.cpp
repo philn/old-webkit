@@ -27,7 +27,7 @@
 namespace WebCore {
 
 RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(String&& videoTrackId)
-    : GStreamerRealtimeVideoSource({})
+    : RealtimeMediaSource(RealtimeMediaSource::Type::Video, WTFMove(videoTrackId))
     , DecoderSourceGStreamer(nullptr)
 {
     notImplemented();
@@ -35,24 +35,34 @@ RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(Strin
 
 
 RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(GstElement* sourceElement)
-    : GStreamerRealtimeVideoSource({})
+    : RealtimeMediaSource(RealtimeMediaSource::Type::Video, String { })
     , DecoderSourceGStreamer(sourceElement)
 {
     m_currentSettings.setWidth(640);
     m_currentSettings.setHeight(480);
     // notifyMutedChange(!m_videoTrack);
 
-    setGstSourceElement(sourceBin());
+    // setGstSourceElement(sourceBin());
     preroll();
     // setWidth(640);
     // setHeight(480);
     start();
 }
 
-void RealtimeIncomingVideoSourceGStreamer::padExposed(GstPad* pad)
+// void RealtimeIncomingVideoSourceGStreamer::padExposed(GstPad* pad)
+// {
+//     GRefPtr<GstPad> sinkPad = gst_element_get_static_pad(capsFilter(), "sink");
+//     gst_pad_link(pad, sinkPad.get());
+// }
+
+void RealtimeIncomingVideoSourceGStreamer::startProducingData()
 {
-    GRefPtr<GstPad> sinkPad = gst_element_get_static_pad(capsFilter(), "sink");
-    gst_pad_link(pad, sinkPad.get());
+    notImplemented();
+}
+
+void RealtimeIncomingVideoSourceGStreamer::stopProducingData()
+{
+    notImplemented();
 }
 
 const RealtimeMediaSourceCapabilities& RealtimeIncomingVideoSourceGStreamer::capabilities()
