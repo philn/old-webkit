@@ -23,6 +23,7 @@
 
 #include "GStreamerPeerConnectionBackend.h"
 #include "GStreamerWebRTCUtils.h"
+#include "NotImplemented.h"
 #include "RTCPeerConnection.h"
 #include "RTCRtpSender.h"
 #include "RuntimeEnabledFeatures.h"

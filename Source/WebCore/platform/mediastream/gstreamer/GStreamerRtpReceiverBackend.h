@@ -21,6 +21,7 @@
 #if ENABLE(WEB_RTC) && USE(GSTREAMER_WEBRTC)
 
 #include "RTCRtpReceiverBackend.h"
+#include "GRefPtrGStreamer.h"
 
 namespace WebCore {
 

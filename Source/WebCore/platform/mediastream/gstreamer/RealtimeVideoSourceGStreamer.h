@@ -41,16 +41,16 @@ public:
 
 protected:
     GStreamerRealtimeVideoSource(const CaptureDevice&);
-    bool applySize(const IntSize&) override;
+    /* bool applySize(const IntSize&) override; */
 
 private:
-    void updateSettings(RealtimeMediaSourceSettings&) override;
-    void initializeCapabilities(RealtimeMediaSourceCapabilities&) override;
-    void initializeSupportedConstraints(RealtimeMediaSourceSupportedConstraints&) override;
+    /* void updateSettings(RealtimeMediaSourceSettings&) override; */
+    /* void initializeCapabilities(RealtimeMediaSourceCapabilities&) override; */
+    /* void initializeSupportedConstraints(RealtimeMediaSourceSupportedConstraints&) override; */
 
-    bool applyFrameRate(double) override;
-    bool applyFacingMode(RealtimeMediaSourceSettings::VideoFacingMode) override { return true; }
-    bool applyAspectRatio(double) override { return true; }
+    /* bool applyFrameRate(double) override; */
+    /* bool applyFacingMode(RealtimeMediaSourceSettings::VideoFacingMode) override { return true; } */
+    /* bool applyAspectRatio(double) override { return true; } */
     bool isCaptureSource() const final { return true; }
 
     VideoFormat m_format { VideoFormat::Raw };

@@ -20,15 +20,16 @@
 
 #if USE(GSTREAMER_WEBRTC)
 
-#include "RealtimeAudioSourceGStreamer.h"
+#include "RealtimeMediaSource.h"
 #include "DecoderSourceGStreamer.h"
 
 namespace WebCore {
 
-    class RealtimeIncomingAudioSourceGStreamer : public GStreamerRealtimeAudioSource, public DecoderSourceGStreamer {
+class RealtimeIncomingAudioSourceGStreamer : public RealtimeMediaSource, public DecoderSourceGStreamer {
 public:
     static Ref<RealtimeIncomingAudioSourceGStreamer> create(String&& audioTrackId) { return adoptRef(*new RealtimeIncomingAudioSourceGStreamer(WTFMove(audioTrackId))); }
     static Ref<RealtimeIncomingAudioSourceGStreamer> create(GstElement* sourceElement) { return adoptRef(*new RealtimeIncomingAudioSourceGStreamer(sourceElement)); }
+
     void padExposed(GstPad*) final;
 
 protected:
@@ -37,12 +38,22 @@ protected:
     ~RealtimeIncomingAudioSourceGStreamer();
 
 private:
-    const RealtimeMediaSourceCapabilities& capabilities() const final;
-    const RealtimeMediaSourceSettings& settings() const final;
+    // RealtimeMediaSource API
+    void startProducingData() final;
+    void stopProducingData()  final;
+
+    const RealtimeMediaSourceCapabilities& capabilities() final;
+    const RealtimeMediaSourceSettings& settings() final;
+
+    bool isIncomingAudioSource() const final { return true; }
 
     RealtimeMediaSourceSettings m_currentSettings;
 };
 
 } // namespace WebCore
+
+SPECIALIZE_TYPE_TRAITS_BEGIN(WebCore::RealtimeIncomingAudioSourceGStreamer)
+    static bool isType(const WebCore::RealtimeMediaSource& source) { return source.isIncomingAudioSource(); }
+SPECIALIZE_TYPE_TRAITS_END()
 
 #endif // USE(GSTREAMER_WEBRTC)

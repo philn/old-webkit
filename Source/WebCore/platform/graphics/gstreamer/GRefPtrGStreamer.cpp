@@ -23,6 +23,12 @@
 #if USE(GSTREAMER)
 #include <gst/gst.h>
 
+#if USE(GSTREAMER_WEBRTC)
+#define GST_USE_UNSTABLE_API
+#include <gst/webrtc/webrtc.h>
+#undef GST_USE_UNSTABLE_API
+#endif
+
 namespace WTF {
 
 template <> GRefPtr<GstElement> adoptGRef(GstElement* ptr)
@@ -484,6 +490,70 @@ template<> void derefGPtr<GstGLContext>(GstGLContext* ptr)
 }
 
 #endif // USE(GSTREAMER_GL)
+
+#if USE(GSTREAMER_WEBRTC)
+
+template <> GRefPtr<GstWebRTCRTPReceiver> adoptGRef(GstWebRTCRTPReceiver* ptr)
+{
+    ASSERT(!ptr || !g_object_is_floating(ptr));
+    return GRefPtr<GstWebRTCRTPReceiver>(ptr, GRefPtrAdopt);
+}
+
+template <> GstWebRTCRTPReceiver* refGPtr<GstWebRTCRTPReceiver>(GstWebRTCRTPReceiver* ptr)
+{
+    if (ptr)
+        gst_object_ref_sink(GST_OBJECT(ptr));
+
+    return ptr;
+}
+
+template <> void derefGPtr<GstWebRTCRTPReceiver>(GstWebRTCRTPReceiver* ptr)
+{
+    if (ptr)
+        gst_object_unref(ptr);
+}
+
+template <> GRefPtr<GstWebRTCRTPSender> adoptGRef(GstWebRTCRTPSender* ptr)
+{
+    ASSERT(!ptr || !g_object_is_floating(ptr));
+    return GRefPtr<GstWebRTCRTPSender>(ptr, GRefPtrAdopt);
+}
+
+template <> GstWebRTCRTPSender* refGPtr<GstWebRTCRTPSender>(GstWebRTCRTPSender* ptr)
+{
+    if (ptr)
+        gst_object_ref_sink(GST_OBJECT(ptr));
+
+    return ptr;
+}
+
+template <> void derefGPtr<GstWebRTCRTPSender>(GstWebRTCRTPSender* ptr)
+{
+    if (ptr)
+        gst_object_unref(ptr);
+}
+
+template <> GRefPtr<GstWebRTCRTPTransceiver> adoptGRef(GstWebRTCRTPTransceiver* ptr)
+{
+    ASSERT(!ptr || !g_object_is_floating(ptr));
+    return GRefPtr<GstWebRTCRTPTransceiver>(ptr, GRefPtrAdopt);
+}
+
+template <> GstWebRTCRTPTransceiver* refGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver* ptr)
+{
+    if (ptr)
+        gst_object_ref_sink(GST_OBJECT(ptr));
+
+    return ptr;
+}
+
+template <> void derefGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver* ptr)
+{
+    if (ptr)
+        gst_object_unref(ptr);
+}
+
+#endif // USE(GSTREAMER_WEBRTC)
 
 } // namespace WTF
 

@@ -22,6 +22,7 @@
 
 #include "GStreamerRtpSenderBackend.h"
 #include "RTCRtpTransceiverBackend.h"
+#include "GRefPtrGStreamer.h"
 
 namespace WebCore {
 

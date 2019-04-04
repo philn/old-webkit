@@ -23,6 +23,7 @@
 
 #include "CaptureDevice.h"
 #include "GStreamerCommon.h"
+#include "GStreamerWebRTCUtils.h"
 #include "MediaConstraints.h"
 #include "RealtimeMediaSourceSettings.h"
 
@@ -35,8 +36,8 @@ static GstPadProbeReturn dropReconfigureEvent(GstPad*, GstPadProbeInfo* info, gp
     return GST_PAD_PROBE_OK;
 }
 
-GStreamerRealtimeMediaSource::GStreamerRealtimeMediaSource(const String& id, RealtimeMediaSource::Type type, const String& name)
-    : RealtimeMediaSource(id, type, name)
+GStreamerRealtimeMediaSource::GStreamerRealtimeMediaSource(RealtimeMediaSource::Type type, String&& name)
+    : RealtimeMediaSource(type, name)
 {
     m_pipeline = adoptGRef(gst_pipeline_new(nullptr));
     gst_pipeline_use_clock(GST_PIPELINE(m_pipeline.get()), gst_system_clock_obtain());
@@ -72,46 +73,46 @@ void GStreamerRealtimeMediaSource::setGstSourceElement(GstElement* element)
         gst_element_sync_state_with_parent(m_element.get());
 }
 
-void GStreamerRealtimeMediaSource::initializeCapabilities()
-{
-    m_capabilities = std::make_unique<RealtimeMediaSourceCapabilities>(supportedConstraints());
-    m_capabilities->setDeviceId(id());
-    initializeCapabilities(*m_capabilities.get());
-}
+// void GStreamerRealtimeMediaSource::initializeCapabilities()
+// {
+//     m_capabilities = std::make_unique<RealtimeMediaSourceCapabilities>(supportedConstraints());
+//     m_capabilities->setDeviceId(id());
+//     initializeCapabilities(*m_capabilities.get());
+// }
 
-const RealtimeMediaSourceCapabilities& GStreamerRealtimeMediaSource::capabilities()
-{
-    if (!m_capabilities)
-        const_cast<GStreamerRealtimeMediaSource&>(*this).initializeCapabilities();
-    return *m_capabilities;
-}
+// const RealtimeMediaSourceCapabilities& GStreamerRealtimeMediaSource::capabilities()
+// {
+//     if (!m_capabilities)
+//         const_cast<GStreamerRealtimeMediaSource&>(*this).initializeCapabilities();
+//     return *m_capabilities;
+// }
 
-void GStreamerRealtimeMediaSource::initializeSettings()
-{
-    if (m_currentSettings.deviceId().isEmpty()) {
-        m_currentSettings.setSupportedConstraints(supportedConstraints());
-        m_currentSettings.setDeviceId(id());
-    }
+// void GStreamerRealtimeMediaSource::initializeSettings()
+// {
+//     if (m_currentSettings.deviceId().isEmpty()) {
+//         m_currentSettings.setSupportedConstraints(supportedConstraints());
+//         m_currentSettings.setDeviceId(id());
+//     }
 
-    updateSettings(m_currentSettings);
-}
+//     updateSettings(m_currentSettings);
+// }
 
-const RealtimeMediaSourceSettings& GStreamerRealtimeMediaSource::settings()
-{
-    const_cast<GStreamerRealtimeMediaSource&>(*this).initializeSettings();
-    return m_currentSettings;
-}
+// const RealtimeMediaSourceSettings& GStreamerRealtimeMediaSource::settings()
+// {
+//     const_cast<GStreamerRealtimeMediaSource&>(*this).initializeSettings();
+//     return m_currentSettings;
+// }
 
-RealtimeMediaSourceSupportedConstraints& GStreamerRealtimeMediaSource::supportedConstraints()
-{
-    if (m_supportedConstraints.supportsDeviceId())
-        return m_supportedConstraints;
+// RealtimeMediaSourceSupportedConstraints& GStreamerRealtimeMediaSource::supportedConstraints()
+// {
+//     if (m_supportedConstraints.supportsDeviceId())
+//         return m_supportedConstraints;
 
-    m_supportedConstraints.setSupportsDeviceId(true);
-    initializeSupportedConstraints(m_supportedConstraints);
+//     m_supportedConstraints.setSupportsDeviceId(true);
+//     initializeSupportedConstraints(m_supportedConstraints);
 
-    return m_supportedConstraints;
-}
+//     return m_supportedConstraints;
+// }
 
 void GStreamerRealtimeMediaSource::startProducingData()
 {

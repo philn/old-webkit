@@ -32,6 +32,12 @@ typedef struct _GstGLDisplay GstGLDisplay;
 typedef struct _GstGLContext GstGLContext;
 #endif
 
+#if USE(GSTREAMER_WEBRTC)
+typedef struct _GstWebRTCRTPReceiver GstWebRTCRTPReceiver;
+typedef struct _GstWebRTCRTPSender GstWebRTCRTPSender;
+typedef struct _GstWebRTCRTPTransceiver GstWebRTCRTPTransceiver;
+#endif
+
 namespace WTF {
 
 template<> GRefPtr<GstElement> adoptGRef(GstElement* ptr);
@@ -127,6 +133,20 @@ template<> void derefGPtr<GstGLDisplay>(GstGLDisplay* ptr);
 template<> GRefPtr<GstGLContext> adoptGRef(GstGLContext* ptr);
 template<> GstGLContext* refGPtr<GstGLContext>(GstGLContext* ptr);
 template<> void derefGPtr<GstGLContext>(GstGLContext* ptr);
+#endif
+
+#if USE(GSTREAMER_WEBRTC)
+template <> GRefPtr<GstWebRTCRTPReceiver> adoptGRef(GstWebRTCRTPReceiver* ptr);
+template <> GstWebRTCRTPReceiver* refGPtr<GstWebRTCRTPReceiver>(GstWebRTCRTPReceiver* ptr);
+template <> void derefGPtr<GstWebRTCRTPReceiver>(GstWebRTCRTPReceiver* ptr);
+
+template <> GRefPtr<GstWebRTCRTPSender> adoptGRef(GstWebRTCRTPSender* ptr);
+template <> GstWebRTCRTPSender* refGPtr<GstWebRTCRTPSender>(GstWebRTCRTPSender* ptr);
+template <> void derefGPtr<GstWebRTCRTPSender>(GstWebRTCRTPSender* ptr);
+
+template <> GRefPtr<GstWebRTCRTPTransceiver> adoptGRef(GstWebRTCRTPTransceiver* ptr);
+template <> GstWebRTCRTPTransceiver* refGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver* ptr);
+template <> void derefGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver* ptr);
 #endif
 
 } // namespace WTF

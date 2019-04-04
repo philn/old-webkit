@@ -59,7 +59,7 @@ RealtimeMediaSource::AudioCaptureFactory& GStreamerRealtimeAudioSource::factory(
 }
 
 GStreamerRealtimeAudioSource::GStreamerRealtimeAudioSource(const CaptureDevice& device)
-    : GStreamerRealtimeMediaSource(device.persistentId(), RealtimeMediaSource::Type::Audio, device.label())
+    : GStreamerRealtimeMediaSource(RealtimeMediaSource::Type::Audio, device.label())
 {
     auto gstDevice = GStreamerAudioCaptureDeviceManager::singleton().gstreamerDeviceWithUID(device.persistentId());
     if (device) {
@@ -69,26 +69,26 @@ GStreamerRealtimeAudioSource::GStreamerRealtimeAudioSource(const CaptureDevice& 
     m_caps = adoptGRef(gst_caps_new_empty_simple("audio/x-raw"));
 }
 
-void GStreamerRealtimeAudioSource::updateSettings(RealtimeMediaSourceSettings& settings)
-{
-    settings.setVolume(volume());
-    settings.setEchoCancellation(echoCancellation());
-    settings.setSampleRate(sampleRate());
-}
+// void GStreamerRealtimeAudioSource::updateSettings(RealtimeMediaSourceSettings& settings)
+// {
+//     settings.setVolume(volume());
+//     settings.setEchoCancellation(echoCancellation());
+//     settings.setSampleRate(sampleRate());
+// }
 
-void GStreamerRealtimeAudioSource::initializeCapabilities(RealtimeMediaSourceCapabilities& capabilities)
-{
-    capabilities.setVolume(CapabilityValueOrRange(0.0, 1.0));
-    capabilities.setEchoCancellation(RealtimeMediaSourceCapabilities::EchoCancellation::ReadWrite);
-    capabilities.setSampleRate(CapabilityValueOrRange(44100, 48000));
-}
+// void GStreamerRealtimeAudioSource::initializeCapabilities(RealtimeMediaSourceCapabilities& capabilities)
+// {
+//     capabilities.setVolume(CapabilityValueOrRange(0.0, 1.0));
+//     capabilities.setEchoCancellation(RealtimeMediaSourceCapabilities::EchoCancellation::ReadWrite);
+//     capabilities.setSampleRate(CapabilityValueOrRange(44100, 48000));
+// }
 
-void GStreamerRealtimeAudioSource::initializeSupportedConstraints(RealtimeMediaSourceSupportedConstraints& supportedConstraints)
-{
-    supportedConstraints.setSupportsVolume(true);
-    supportedConstraints.setSupportsEchoCancellation(true);
-    supportedConstraints.setSupportsSampleRate(true);
-}
+// void GStreamerRealtimeAudioSource::initializeSupportedConstraints(RealtimeMediaSourceSupportedConstraints& supportedConstraints)
+// {
+//     supportedConstraints.setSupportsVolume(true);
+//     supportedConstraints.setSupportsEchoCancellation(true);
+//     supportedConstraints.setSupportsSampleRate(true);
+// }
 
 double GStreamerRealtimeAudioSource::elapsedTime()
 {

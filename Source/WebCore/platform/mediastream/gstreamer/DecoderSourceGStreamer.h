@@ -29,13 +29,14 @@ class DecoderSourceGStreamer {
  public:
     GstElement* sourceBin() const { return m_sourceBin.get(); }
     void preroll();
-    virtual void padExposed(GstPad*) = 0;
+    /* virtual void padExposed(GstPad*) = 0; */
  protected:
     DecoderSourceGStreamer(GstElement*);
 
  private:
     GRefPtr<GstElement> m_sourceBin;
     GRefPtr<GstElement> m_decoder;
+    GRefPtr<GstElement> m_sink;
 };
 
 } // namespace WebCore

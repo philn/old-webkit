@@ -24,6 +24,7 @@
 #include "GStreamerRtpReceiverBackend.h"
 #include "GStreamerRtpSenderBackend.h"
 #include "GStreamerWebRTCUtils.h"
+#include "NotImplemented.h"
 
 namespace WebCore {
 
@@ -66,7 +67,7 @@ String GStreamerRtpTransceiverBackend::mid()
 {
     // FIXME: Why no mid GObject property in GstWebRTCRTPTransceiver?
     if (char* mid = m_rtcTransceiver->mid)
-        return fromStdString(mid);
+        return mid;
     return String { };
 }
 

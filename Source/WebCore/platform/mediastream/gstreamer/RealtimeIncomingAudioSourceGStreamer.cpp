@@ -47,21 +47,21 @@ RealtimeIncomingAudioSourceGStreamer::~RealtimeIncomingAudioSourceGStreamer()
     stop();
 }
 
-const RealtimeMediaSourceCapabilities& RealtimeIncomingAudioSourceGStreamer::capabilities() const
+const RealtimeMediaSourceCapabilities& RealtimeIncomingAudioSourceGStreamer::capabilities()
 {
     return RealtimeMediaSourceCapabilities::emptyCapabilities();
 }
 
-const RealtimeMediaSourceSettings& RealtimeIncomingAudioSourceGStreamer::settings() const
+const RealtimeMediaSourceSettings& RealtimeIncomingAudioSourceGStreamer::settings()
 {
     return m_currentSettings;
 }
 
-void RealtimeIncomingAudioSourceGStreamer::padExposed(GstPad* pad)
-{
-    GRefPtr<GstPad> sinkPad = gst_element_get_static_pad(capsFilter(), "sink");
-    gst_pad_link(pad, sinkPad.get());
-}
+// void RealtimeIncomingAudioSourceGStreamer::padExposed(GstPad* pad)
+// {
+//     GRefPtr<GstPad> sinkPad = gst_element_get_static_pad(capsFilter(), "sink");
+//     gst_pad_link(pad, sinkPad.get());
+// }
 
 
 }

@@ -26,14 +26,15 @@
 namespace WebCore {
 
 class GStreamerMediaEndpoint;
-class GStreamerRTCRtpSenderBackend;
-class GStreamerRTCRtpTransceiverBackend;
+class GStreamerRtpSenderBackend;
+class GStreamerRtpTransceiverBackend;
 class RTCRtpReceiver;
 class RTCRtpReceiverBackend;
 class RTCSessionDescription;
 class RTCStatsReport;
 class RealtimeIncomingAudioSourceGStreamer;
 class RealtimeIncomingVideoSourceGStreamer;
+class RealtimeMediaSource;
 class RealtimeMediaSourceGStreamer;
 class RealtimeOutgoingAudioSourceGStreamer;
 class RealtimeOutgoingVideoSourceGStreamer;

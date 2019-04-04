@@ -20,6 +20,7 @@
 #include "GStreamerRtpReceiverBackend.h"
 
 #include "GStreamerWebRTCUtils.h"
+#include "NotImplemented.h"
 
 #if ENABLE(WEB_RTC) && USE(GSTREAMER_WEBRTC)
 

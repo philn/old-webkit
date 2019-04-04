@@ -32,17 +32,16 @@ public:
     ~RealtimeIncomingVideoSourceGStreamer() = default; //{ stopProducingData(); }
 
     void padExposed(GstPad*) final;
+    const RealtimeMediaSourceCapabilities& capabilities() final;
+    const RealtimeMediaSourceSettings& settings() final;
+
 protected:
     RealtimeIncomingVideoSourceGStreamer(String&&);
     RealtimeIncomingVideoSourceGStreamer(GstElement*);
 
     RealtimeMediaSourceSettings m_currentSettings;
 
-private:
-    const RealtimeMediaSourceCapabilities& capabilities() const final;
-    const RealtimeMediaSourceSettings& settings() const final;
-
-    bool applySize(const IntSize&) final { return true; }
+    /* bool applySize(const IntSize&) final { return true; } */
 };
 
 } // namespace WebCore

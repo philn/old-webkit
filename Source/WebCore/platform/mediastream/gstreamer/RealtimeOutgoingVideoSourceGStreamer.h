@@ -63,7 +63,7 @@ private:
     void trackEnded(MediaStreamTrackPrivate&) final { }
 
     Ref<MediaStreamTrackPrivate> m_videoSource;
-    std::optional<RealtimeMediaSourceSettings> m_initialSettings;
+    WTF::Optional<RealtimeMediaSourceSettings> m_initialSettings;
     bool m_isStopped { false };
     GRefPtr<GstElement> m_pipeline;
     GRefPtr<GstElement> m_outputSelector;

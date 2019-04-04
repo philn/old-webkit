@@ -36,17 +36,17 @@ public:
     GstElement* proxySink();
 
 protected:
-    GStreamerRealtimeMediaSource(const String& id, Type, const String& name);
+    GStreamerRealtimeMediaSource(Type, String&& name);
     ~GStreamerRealtimeMediaSource();
 
-    virtual void updateSettings(RealtimeMediaSourceSettings&) = 0;
-    virtual void initializeCapabilities(RealtimeMediaSourceCapabilities&) = 0;
-    virtual void initializeSupportedConstraints(RealtimeMediaSourceSupportedConstraints&) = 0;
+    /* virtual void updateSettings(RealtimeMediaSourceSettings&) = 0; */
+    /* virtual void initializeCapabilities(RealtimeMediaSourceCapabilities&) = 0; */
+    /* virtual void initializeSupportedConstraints(RealtimeMediaSourceSupportedConstraints&) = 0; */
 
-    const RealtimeMediaSourceCapabilities& capabilities() override;
-    const RealtimeMediaSourceSettings& settings() override;
+    /* const RealtimeMediaSourceCapabilities& capabilities() override; */
+    /* const RealtimeMediaSourceSettings& settings() override; */
 
-    RealtimeMediaSourceSupportedConstraints& supportedConstraints();
+    /* RealtimeMediaSourceSupportedConstraints& supportedConstraints(); */
 
     unsigned deviceIndex() { return m_deviceIndex; }
 
@@ -54,8 +54,8 @@ protected:
     GstElement* capsFilter() const { return m_capsFilter.get(); }
 
 private:
-    void initializeCapabilities();
-    void initializeSettings();
+    /* void initializeCapabilities(); */
+    /* void initializeSettings(); */
 
     void startProducingData() final;
     void stopProducingData() final;
@@ -64,9 +64,9 @@ private:
     GRefPtr<GstElement> m_capsFilter;
     GRefPtr<GstElement> m_element;
     GRefPtr<GstElement> m_tee;
-    RealtimeMediaSourceSettings m_currentSettings;
-    RealtimeMediaSourceSupportedConstraints m_supportedConstraints;
-    std::unique_ptr<RealtimeMediaSourceCapabilities> m_capabilities;
+    /* RealtimeMediaSourceSettings m_currentSettings; */
+    /* RealtimeMediaSourceSupportedConstraints m_supportedConstraints; */
+    /* std::unique_ptr<RealtimeMediaSourceCapabilities> m_capabilities; */
     unsigned m_deviceIndex { 0 };
 };
 

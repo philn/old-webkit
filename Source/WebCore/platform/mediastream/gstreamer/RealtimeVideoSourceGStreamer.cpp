@@ -28,13 +28,13 @@
 
 namespace WebCore {
 
-class GStreamerRealtimeVideoSourceFactory : public RealtimeMediaSource::VideoCaptureFactory
-{
-public:
-    CaptureSourceOrError createVideoCaptureSource(const CaptureDevice& device, const MediaConstraints* constraints) final {
-        return GStreamerRealtimeVideoSource::create(device, constraints);
-    }
-};
+// class GStreamerRealtimeVideoSourceFactory : public RealtimeMediaSource::VideoCaptureFactory
+// {
+// public:
+//     CaptureSourceOrError createVideoCaptureSource(const CaptureDevice& device, const MediaConstraints* constraints) final {
+//         return GStreamerRealtimeVideoSource::create(device, constraints);
+//     }
+// };
 
 CaptureSourceOrError GStreamerRealtimeVideoSource::create(const CaptureDevice& device, const MediaConstraints* constraints)
 {
@@ -57,7 +57,7 @@ RealtimeMediaSource::VideoCaptureFactory& GStreamerRealtimeVideoSource::factory(
 }
 
 GStreamerRealtimeVideoSource::GStreamerRealtimeVideoSource(const CaptureDevice& device)
-    : GStreamerRealtimeMediaSource(device.persistentId(), RealtimeMediaSource::Type::Video, device.label())
+    : GStreamerRealtimeMediaSource(RealtimeMediaSource::Type::Video, device.label())
 {
     auto gstDevice = GStreamerVideoCaptureDeviceManager::singleton().gstreamerDeviceWithUID(device.persistentId());
     String videoFormat("video/x-raw");
@@ -89,58 +89,58 @@ GStreamerRealtimeVideoSource::GStreamerRealtimeVideoSource(const CaptureDevice& 
     m_caps = adoptGRef(gst_caps_new_empty_simple(videoFormat.utf8().data()));
 }
 
-void GStreamerRealtimeVideoSource::updateSettings(RealtimeMediaSourceSettings& settings)
-{
-    settings.setFacingMode(facingMode());
-    settings.setFrameRate(frameRate());
-    IntSize size = this->size();
-    settings.setWidth(size.width());
-    settings.setHeight(size.height());
-    if (aspectRatio())
-        settings.setAspectRatio(aspectRatio());
-}
+// void GStreamerRealtimeVideoSource::updateSettings(RealtimeMediaSourceSettings& settings)
+// {
+//     settings.setFacingMode(facingMode());
+//     settings.setFrameRate(frameRate());
+//     IntSize size = this->size();
+//     settings.setWidth(size.width());
+//     settings.setHeight(size.height());
+//     if (aspectRatio())
+//         settings.setAspectRatio(aspectRatio());
+// }
 
-void GStreamerRealtimeVideoSource::initializeCapabilities(RealtimeMediaSourceCapabilities& capabilities)
-{
-    // FIXME: Get these from the gst device provider.
-    capabilities.setWidth(CapabilityValueOrRange(320, 1920));
-    capabilities.setHeight(CapabilityValueOrRange(240, 1080));
-    capabilities.setFrameRate(CapabilityValueOrRange(15.0, 60.0));
-    capabilities.setAspectRatio(CapabilityValueOrRange(4 / 3.0, 16 / 9.0));
-}
+// void GStreamerRealtimeVideoSource::initializeCapabilities(RealtimeMediaSourceCapabilities& capabilities)
+// {
+//     // FIXME: Get these from the gst device provider.
+//     capabilities.setWidth(CapabilityValueOrRange(320, 1920));
+//     capabilities.setHeight(CapabilityValueOrRange(240, 1080));
+//     capabilities.setFrameRate(CapabilityValueOrRange(15.0, 60.0));
+//     capabilities.setAspectRatio(CapabilityValueOrRange(4 / 3.0, 16 / 9.0));
+// }
 
-void GStreamerRealtimeVideoSource::initializeSupportedConstraints(RealtimeMediaSourceSupportedConstraints& supportedConstraints)
-{
-    supportedConstraints.setSupportsWidth(true);
-    supportedConstraints.setSupportsHeight(true);
-    supportedConstraints.setSupportsAspectRatio(true);
-    supportedConstraints.setSupportsFrameRate(true);
-    supportedConstraints.setSupportsFacingMode(true);
-}
+// void GStreamerRealtimeVideoSource::initializeSupportedConstraints(RealtimeMediaSourceSupportedConstraints& supportedConstraints)
+// {
+//     supportedConstraints.setSupportsWidth(true);
+//     supportedConstraints.setSupportsHeight(true);
+//     supportedConstraints.setSupportsAspectRatio(true);
+//     supportedConstraints.setSupportsFrameRate(true);
+//     supportedConstraints.setSupportsFacingMode(true);
+// }
 
-bool GStreamerRealtimeVideoSource::applyFrameRate(double rate)
-{
-    int numerator = 0;
-    int denumerator = 0;
-    gst_util_double_to_fraction(rate, &numerator, &denumerator);
-    if (!numerator || !denumerator)
-        return true;
+// bool GStreamerRealtimeVideoSource::applyFrameRate(double rate)
+// {
+//     int numerator = 0;
+//     int denumerator = 0;
+//     gst_util_double_to_fraction(rate, &numerator, &denumerator);
+//     if (!numerator || !denumerator)
+//         return true;
 
-    GstStructure* structure = gst_caps_get_structure(m_caps.get(), 0);
-    gst_structure_set(structure, "framerate", GST_TYPE_FRACTION, numerator, denumerator, nullptr);
-    return true;
-}
+//     GstStructure* structure = gst_caps_get_structure(m_caps.get(), 0);
+//     gst_structure_set(structure, "framerate", GST_TYPE_FRACTION, numerator, denumerator, nullptr);
+//     return true;
+// }
 
-bool GStreamerRealtimeVideoSource::applySize(const IntSize& size)
-{
-    GstStructure* structure = gst_caps_get_structure(m_caps.get(), 0);
+// bool GStreamerRealtimeVideoSource::applySize(const IntSize& size)
+// {
+//     GstStructure* structure = gst_caps_get_structure(m_caps.get(), 0);
 
-    if (size.width() > 0)
-        gst_structure_set(structure, "width", G_TYPE_INT, size.width(), nullptr);
-    if (size.height() > 0)
-        gst_structure_set(structure, "height", G_TYPE_INT, size.height(), nullptr);
-    return true;
-}
+//     if (size.width() > 0)
+//         gst_structure_set(structure, "width", G_TYPE_INT, size.width(), nullptr);
+//     if (size.height() > 0)
+//         gst_structure_set(structure, "height", G_TYPE_INT, size.height(), nullptr);
+//     return true;
+// }
 
 } // namespace WebCore
 

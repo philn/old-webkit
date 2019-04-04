@@ -44,8 +44,8 @@ RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(GstEl
 
     setGstSourceElement(sourceBin());
     preroll();
-    setWidth(640);
-    setHeight(480);
+    // setWidth(640);
+    // setHeight(480);
     start();
 }
 
@@ -55,12 +55,12 @@ void RealtimeIncomingVideoSourceGStreamer::padExposed(GstPad* pad)
     gst_pad_link(pad, sinkPad.get());
 }
 
-const RealtimeMediaSourceCapabilities& RealtimeIncomingVideoSourceGStreamer::capabilities() const
+const RealtimeMediaSourceCapabilities& RealtimeIncomingVideoSourceGStreamer::capabilities()
 {
     return RealtimeMediaSourceCapabilities::emptyCapabilities();
 }
 
-const RealtimeMediaSourceSettings& RealtimeIncomingVideoSourceGStreamer::settings() const
+const RealtimeMediaSourceSettings& RealtimeIncomingVideoSourceGStreamer::settings()
 {
     return m_currentSettings;
 }

@@ -21,6 +21,13 @@
 #if ENABLE(WEB_RTC) && USE(GSTREAMER_WEBRTC)
 
 #include "RTCRtpTransceiverDirection.h"
+#include "RTCRtpSendParameters.h"
+
+#if USE(GSTREAMER_WEBRTC)
+#define GST_USE_UNSTABLE_API
+#include <gst/webrtc/webrtc.h>
+#undef GST_USE_UNSTABLE_API
+#endif
 
 namespace WebCore {
 
@@ -29,7 +36,7 @@ inline RTCRtpTransceiverDirection toRTCRtpTransceiverDirection(GstWebRTCRTPTrans
     switch (direction) {
     case GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_NONE:
         // ¯\_(ツ)_/¯
-        return 0;
+        return RTCRtpTransceiverDirection::Inactive;
     case GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_INACTIVE:
         return RTCRtpTransceiverDirection::Inactive;
     case GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDONLY:
@@ -40,7 +47,7 @@ inline RTCRtpTransceiverDirection toRTCRtpTransceiverDirection(GstWebRTCRTPTrans
         return RTCRtpTransceiverDirection::Sendrecv;
     }
     ASSERT_NOT_REACHED();
-    return 0;
+    return RTCRtpTransceiverDirection::Inactive;
 }
 
 inline GstWebRTCRTPTransceiverDirection fromRTCRtpTransceiverDirection(RTCRtpTransceiverDirection direction)
@@ -58,10 +65,21 @@ inline GstWebRTCRTPTransceiverDirection fromRTCRtpTransceiverDirection(RTCRtpTra
     return GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_NONE;
 }
 
-inline RTCRtpSendParameters toRTCRtpSendParameters()
-{
-    // FIXME
-}
+/* inline RTCRtpSendParameters toRTCRtpSendParameters() */
+/* { */
+/*     // FIXME */
+/* } */
 
+GstClockTime getWebRTCBaseTime()
+{
+    static GstClockTime webrtcBaseTime = GST_CLOCK_TIME_NONE;
+    if(!GST_CLOCK_TIME_IS_VALID(webrtcBaseTime)) {
+        GstClock* clock = gst_system_clock_obtain();
+        webrtcBaseTime = gst_clock_get_time(clock);
+        gst_object_unref(clock);
+    }
+    return webrtcBaseTime;
+}
+ 
 }
 #endif

@@ -24,7 +24,6 @@
 #include "GStreamerCommon.h"
 #include "Logging.h"
 #include "RealtimeVideoSourceGStreamer.h"
-#include <wtf/CurrentTime.h>
 #include <wtf/MainThread.h>
 
 namespace WebCore {
