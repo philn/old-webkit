@@ -96,7 +96,8 @@ void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
     m_outputSelector = gst_element_factory_make("identity", nullptr);
     gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), videoSourceElement, m_outputSelector.get(), nullptr);
     gst_element_link(videoSourceElement, m_outputSelector.get());
-
+    // FIXME
+    return;
 #if 1
     // VP8 encoding
     GstElement* videoconvert1 = gst_element_factory_make("videoconvert", nullptr);

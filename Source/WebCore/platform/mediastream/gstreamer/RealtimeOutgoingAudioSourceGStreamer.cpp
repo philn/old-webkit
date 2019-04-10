@@ -25,7 +25,7 @@
 
 namespace WebCore {
 
-    RealtimeOutgoingAudioSourceGStreamer::RealtimeOutgoingAudioSourceGStreamer(Ref<MediaStreamTrackPrivate>&& audioSource, GstElement* pipeline)
+RealtimeOutgoingAudioSourceGStreamer::RealtimeOutgoingAudioSourceGStreamer(Ref<MediaStreamTrackPrivate>&& audioSource, GstElement* pipeline)
     : m_audioSource(WTFMove(audioSource))
     , m_silenceAudioTimer(*this, &RealtimeOutgoingAudioSourceGStreamer::sendSilence)
     , m_pipeline(pipeline)
@@ -74,16 +74,18 @@ void RealtimeOutgoingAudioSourceGStreamer::initializeConverter()
 
     GRefPtr<GstPad> apad = adoptGRef(gst_element_get_static_pad(acapsfilter, "src"));
     GRefPtr<GstPad> asink = adoptGRef(gst_element_get_request_pad(webrtcBin.get(), "sink_%u"));
-    gst_pad_link(apad.get(), asink.get());
+    // g_printerr("webrtcBin: %p, pad: %p\n", webrtcBin.get(), asink.get());
+    // GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-outgoing-audio");
+    // gst_pad_link(apad.get(), asink.get());
 
-    gst_element_sync_state_with_parent(audioSourceElement);
-    gst_element_sync_state_with_parent(audioconvert);
-    gst_element_sync_state_with_parent(audioresample);
-    gst_element_sync_state_with_parent(aenc);
-    gst_element_sync_state_with_parent(rtpapay);
-    gst_element_sync_state_with_parent(audioqueue);
-    gst_element_sync_state_with_parent(acapsfilter);
-    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-outgoing-audio");
+    // gst_element_sync_state_with_parent(audioSourceElement);
+    // gst_element_sync_state_with_parent(audioconvert);
+    // gst_element_sync_state_with_parent(audioresample);
+    // gst_element_sync_state_with_parent(aenc);
+    // gst_element_sync_state_with_parent(rtpapay);
+    // gst_element_sync_state_with_parent(audioqueue);
+    // gst_element_sync_state_with_parent(acapsfilter);
+    // GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-outgoing-audio");
 }
 
 void RealtimeOutgoingAudioSourceGStreamer::stop()
@@ -111,6 +113,11 @@ void RealtimeOutgoingAudioSourceGStreamer::handleMutedIfNeeded()
         m_silenceAudioTimer.startRepeating(1_s);
     if (!isSilenced && m_silenceAudioTimer.isActive())
         m_silenceAudioTimer.stop();
+}
+
+void RealtimeOutgoingAudioSourceGStreamer::audioSamplesAvailable(const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t)
+{
+    g_printerr("yo\n");
 }
 
 } // namespace WebCore
