@@ -534,7 +534,6 @@ GStreamerVideoEncoderFactory::GStreamerVideoEncoderFactory()
 
     std::call_once(debugRegisteredFlag, [] {
         GST_DEBUG_CATEGORY_INIT(webkit_webrtcenc_debug, "webkitlibwebrtcvideoencoder", 0, "WebKit WebRTC video encoder");
-        gst_element_register(nullptr, "webrtcvideoencoder", GST_RANK_PRIMARY, GST_TYPE_WEBRTC_VIDEO_ENCODER);
     });
 }
 

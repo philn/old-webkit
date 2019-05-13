@@ -21,7 +21,9 @@
 
 #if USE(GSTREAMER_WEBRTC)
 
+#include "GStreamerAudioData.h"
 #include "RealtimeAudioSourceGStreamer.h"
+#include <gst/app/gstappsrc.h>
 
 namespace WebCore {
 
@@ -55,37 +57,42 @@ void RealtimeOutgoingAudioSourceGStreamer::initializeConverter()
     auto& audioSource = reinterpret_cast<GStreamerRealtimeAudioSource&>(m_audioSource->source());
     GRefPtr<GstElement> webrtcBin = gst_bin_get_by_name(GST_BIN_CAST(m_pipeline.get()), "webkit-webrtcbin");
 
-    GstElement* audioSourceElement = gst_element_factory_make("proxysrc", nullptr);
+    // GstElement* audioSourceElement = gst_element_factory_make("proxysrc", nullptr);
     // g_object_set(audioSourceElement, "proxysink", audioSource.proxySink(), nullptr);
+    m_outgoingAudioSource = gst_element_factory_make("appsrc", nullptr);
+    //gst_app_src_set_stream_type(GST_APP_SRC(m_outgoingAudioSource.get()), GST_APP_STREAM_TYPE_STREAM);
+    g_object_set(m_outgoingAudioSource.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
 
     GstElement* audioconvert = gst_element_factory_make("audioconvert", nullptr);
     GstElement* audioresample = gst_element_factory_make("audioresample", nullptr);
+    GstElement* audioQueue1 = gst_element_factory_make("queue", nullptr);
     GstElement* aenc = gst_element_factory_make("opusenc", nullptr);
     GstElement* rtpapay = gst_element_factory_make("rtpopuspay", nullptr);
-    GstElement* audioqueue = gst_element_factory_make("queue", nullptr);
+    GstElement* audioQueue2 = gst_element_factory_make("queue", nullptr);
     GstElement* acapsfilter = gst_element_factory_make("capsfilter", nullptr);
     GRefPtr<GstCaps> acaps = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "audio",
                                                            "payload", G_TYPE_INT, 111,
                                                            "encoding-name", G_TYPE_STRING, "OPUS", nullptr));
     g_object_set(acapsfilter, "caps", acaps.get(), nullptr);
 
-    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), audioSourceElement, audioconvert, audioresample, aenc, rtpapay, audioqueue, acapsfilter, nullptr);
-    gst_element_link_many(audioSourceElement, audioconvert, audioresample, aenc, rtpapay, audioqueue, acapsfilter, nullptr);
+    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_outgoingAudioSource.get(), audioconvert, audioresample, audioQueue1, aenc, rtpapay, audioQueue2, acapsfilter, nullptr);
+    gst_element_link_many(m_outgoingAudioSource.get(), audioconvert, audioresample, audioQueue1, aenc, rtpapay, audioQueue2, acapsfilter, nullptr);
 
     GRefPtr<GstPad> apad = adoptGRef(gst_element_get_static_pad(acapsfilter, "src"));
     GRefPtr<GstPad> asink = adoptGRef(gst_element_get_request_pad(webrtcBin.get(), "sink_%u"));
     // g_printerr("webrtcBin: %p, pad: %p\n", webrtcBin.get(), asink.get());
     // GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-outgoing-audio");
-    // gst_pad_link(apad.get(), asink.get());
+    gst_pad_link(apad.get(), asink.get());
 
-    // gst_element_sync_state_with_parent(audioSourceElement);
-    // gst_element_sync_state_with_parent(audioconvert);
-    // gst_element_sync_state_with_parent(audioresample);
-    // gst_element_sync_state_with_parent(aenc);
-    // gst_element_sync_state_with_parent(rtpapay);
-    // gst_element_sync_state_with_parent(audioqueue);
-    // gst_element_sync_state_with_parent(acapsfilter);
-    // GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-outgoing-audio");
+    gst_element_sync_state_with_parent(m_outgoingAudioSource.get());
+    gst_element_sync_state_with_parent(audioconvert);
+    gst_element_sync_state_with_parent(audioresample);
+    gst_element_sync_state_with_parent(audioQueue1);
+    gst_element_sync_state_with_parent(aenc);
+    gst_element_sync_state_with_parent(rtpapay);
+    gst_element_sync_state_with_parent(audioQueue2);
+    gst_element_sync_state_with_parent(acapsfilter);
+    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-outgoing-audio");
 }
 
 void RealtimeOutgoingAudioSourceGStreamer::stop()
@@ -97,12 +104,18 @@ void RealtimeOutgoingAudioSourceGStreamer::stop()
 void RealtimeOutgoingAudioSourceGStreamer::sourceMutedChanged()
 {
     m_muted = m_audioSource->muted();
+    g_printerr("sourceMutedChanged\n");
     handleMutedIfNeeded();
 }
 
 void RealtimeOutgoingAudioSourceGStreamer::sourceEnabledChanged()
 {
     m_enabled = m_audioSource->enabled();
+    g_printerr(">>>> %d\n", m_enabled);
+    if (m_enabled)
+        m_audioSource->addObserver(*this);
+    else
+        m_audioSource->removeObserver(*this);
     handleMutedIfNeeded();
 }
 
@@ -115,9 +128,10 @@ void RealtimeOutgoingAudioSourceGStreamer::handleMutedIfNeeded()
         m_silenceAudioTimer.stop();
 }
 
-void RealtimeOutgoingAudioSourceGStreamer::audioSamplesAvailable(const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t)
+void RealtimeOutgoingAudioSourceGStreamer::audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData& audioData, const AudioStreamDescription&, size_t)
 {
-    g_printerr("yo\n");
+    auto gstAudioData = static_cast<const GStreamerAudioData&>(audioData);
+    gst_app_src_push_sample(GST_APP_SRC(m_outgoingAudioSource.get()), gstAudioData.getSample());
 }
 
 } // namespace WebCore

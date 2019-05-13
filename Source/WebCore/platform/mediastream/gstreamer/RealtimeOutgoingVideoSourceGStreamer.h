@@ -59,7 +59,7 @@ private:
     void trackMutedChanged(MediaStreamTrackPrivate&) final { sourceMutedChanged(); }
     void trackEnabledChanged(MediaStreamTrackPrivate&) final { sourceEnabledChanged(); }
     void trackSettingsChanged(MediaStreamTrackPrivate&) final { initializeFromSource(); }
-    void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample&) final { }
+    void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample&) final;
     void trackEnded(MediaStreamTrackPrivate&) final { }
 
     Ref<MediaStreamTrackPrivate> m_videoSource;
@@ -67,6 +67,7 @@ private:
     bool m_isStopped { false };
     GRefPtr<GstElement> m_pipeline;
     GRefPtr<GstElement> m_outputSelector;
+    GRefPtr<GstElement> m_outgoingVideoSource;
 };
 
 } // namespace WebCore

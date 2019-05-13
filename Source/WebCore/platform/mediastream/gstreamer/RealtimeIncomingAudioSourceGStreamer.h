@@ -28,13 +28,14 @@ namespace WebCore {
 class RealtimeIncomingAudioSourceGStreamer : public RealtimeMediaSource, public DecoderSourceGStreamer {
 public:
     static Ref<RealtimeIncomingAudioSourceGStreamer> create(String&& audioTrackId) { return adoptRef(*new RealtimeIncomingAudioSourceGStreamer(WTFMove(audioTrackId))); }
-    static Ref<RealtimeIncomingAudioSourceGStreamer> create(GstElement* sourceElement) { return adoptRef(*new RealtimeIncomingAudioSourceGStreamer(sourceElement)); }
+    static Ref<RealtimeIncomingAudioSourceGStreamer> create(GstElement* pipeline, GstPad* pad) { return adoptRef(*new RealtimeIncomingAudioSourceGStreamer(pipeline, pad)); }
 
     /* void padExposed(GstPad*) final; */
+    void handleDecodedSample(GstSample*) final;
 
 protected:
     RealtimeIncomingAudioSourceGStreamer(String&&);
-    RealtimeIncomingAudioSourceGStreamer(GstElement*);
+    RealtimeIncomingAudioSourceGStreamer(GstElement*, GstPad*);
     ~RealtimeIncomingAudioSourceGStreamer();
 
 private:

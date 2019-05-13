@@ -23,7 +23,7 @@
 
 #include "config.h"
 
-#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "GStreamerVideoEncoder.h"
 
 GST_DEBUG_CATEGORY (gst_webrtcenc_debug);
@@ -372,4 +372,4 @@ gst_webrtc_video_encoder_init (GstWebrtcVideoEncoder * self)
           gst_static_pad_template_get (&srcTemplate)));
 }
 
-#endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(GSTREAMER)

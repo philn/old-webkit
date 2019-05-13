@@ -52,21 +52,17 @@ static std::unique_ptr<PeerConnectionBackend> createGStreamerPeerConnectionBacke
 CreatePeerConnectionBackend PeerConnectionBackend::create = createGStreamerPeerConnectionBackend;
 
 
-Optional<RTCRtpCapabilities> PeerConnectionBackend::receiverCapabilities(ScriptExecutionContext& context, const String& kind)
+Optional<RTCRtpCapabilities> PeerConnectionBackend::receiverCapabilities(ScriptExecutionContext&, const String& kind)
 {
-    auto* page = downcast<Document>(context).page();
-    if (!page)
-        return { };
+    g_printerr("receiverCapabilities for %s\n", kind.utf8().data());
     notImplemented();
     return { };
     // return page->libWebRTCProvider().receiverCapabilities(kind);
 }
 
-Optional<RTCRtpCapabilities> PeerConnectionBackend::senderCapabilities(ScriptExecutionContext& context, const String& kind)
+Optional<RTCRtpCapabilities> PeerConnectionBackend::senderCapabilities(ScriptExecutionContext&, const String& kind)
 {
-    auto* page = downcast<Document>(context).page();
-    if (!page)
-        return { };
+    g_printerr("senderCapabilities for %s\n", kind.utf8().data());
     notImplemented();
     return { };
     // return page->libWebRTCProvider().senderCapabilities(kind);
@@ -352,12 +348,12 @@ ExceptionOr<Ref<RTCRtpSender>> GStreamerPeerConnectionBackend::addTrack(MediaStr
         if (!m_endpoint->addTrack(*senderBackend, track, mediaStreamIds))
             return Exception { TypeError, "Unable to add track"_s };
 
-        if (auto sender = findExistingSender(m_peerConnection.currentTransceivers(), *senderBackend)) {
-            backendFromRTPSender(*sender).takeSource(*senderBackend);
-            sender->setTrack(makeRef(track));
-            sender->setMediaStreamIds(WTFMove(mediaStreamIds));
-            return sender.releaseNonNull();
-        }
+        // if (auto sender = findExistingSender(m_peerConnection.currentTransceivers(), *senderBackend)) {
+        //     backendFromRTPSender(*sender).takeSource(*senderBackend);
+        //     sender->setTrack(makeRef(track));
+        //     sender->setMediaStreamIds(WTFMove(mediaStreamIds));
+        //     return sender.releaseNonNull();
+        // }
 
         auto transceiverBackend = m_endpoint->transceiverBackendFromSender(*senderBackend);
 

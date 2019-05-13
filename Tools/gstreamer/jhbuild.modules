@@ -11,6 +11,7 @@
       <dep package="gst-plugins-bad"/>
       <dep package="gst-libav"/>
       <dep package="gstreamer-vaapi"/>
+      <dep package="libnice"/>
     </dependencies>
   </metamodule>
 
@@ -29,6 +30,16 @@
     <branch module="orc/orc-${version}.tar.xz" version="0.4.29"
             repo="gstreamer"
             hash="sha256:4f8901f9144b5ec17dffdb33548b5f4c7f8049b0d1023be3462cdd64ec5a3ab2"/>
+  </meson>
+
+  <meson id="libnice" mesonargs="-Dgtk_doc=disabled -Dintrospection=disabled -Dtests=disabled -Dexamples=disabled">
+    <dependencies>
+      <dep package="gstreamer"/>
+    </dependencies>
+    <branch module="libnice/libnice/archive/${version}.tar.gz" version="5969b34e3acd9150506ed8d9d109c73665858f3e"
+            checkoutdir="libnice-${version}" repo="github-tarball">
+      <patch file="libnice_0001-nicesrc-spin-the-agent-mainloop-in-a-separate-thread.patch" strip="1"/>
+    </branch>
   </meson>
 
   <autotools id="openh264" supports-non-srcdir-builds="no" autogen-sh="pseudo-configure">

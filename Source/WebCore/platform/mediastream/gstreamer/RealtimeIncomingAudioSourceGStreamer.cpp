@@ -27,14 +27,14 @@ namespace WebCore {
 
 RealtimeIncomingAudioSourceGStreamer::RealtimeIncomingAudioSourceGStreamer(String&& audioTrackId)
     : RealtimeMediaSource(RealtimeMediaSource::Type::Audio, WTFMove(audioTrackId))
-    , DecoderSourceGStreamer(nullptr)
+    , DecoderSourceGStreamer(nullptr, nullptr)
 {
     notImplemented();
 }
 
-RealtimeIncomingAudioSourceGStreamer::RealtimeIncomingAudioSourceGStreamer(GstElement* sourceElement)
+RealtimeIncomingAudioSourceGStreamer::RealtimeIncomingAudioSourceGStreamer(GstElement* pipeline, GstPad* pad)
     : RealtimeMediaSource(RealtimeMediaSource::Type::Audio, String { })
-    , DecoderSourceGStreamer(sourceElement)
+    , DecoderSourceGStreamer(pipeline, pad)
 {
     // notifyMutedChange(!m_audioTrack);
     // setGstSourceElement(sourceBin());
@@ -73,6 +73,10 @@ const RealtimeMediaSourceSettings& RealtimeIncomingAudioSourceGStreamer::setting
 //     gst_pad_link(pad, sinkPad.get());
 // }
 
+void RealtimeIncomingAudioSourceGStreamer::handleDecodedSample(GstSample* sample)
+{
+    g_printerr("handle decoded sample here %p\n", sample);
+}
 
 }
 

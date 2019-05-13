@@ -28,15 +28,15 @@ namespace WebCore {
 
 RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(String&& videoTrackId)
     : RealtimeMediaSource(RealtimeMediaSource::Type::Video, WTFMove(videoTrackId))
-    , DecoderSourceGStreamer(nullptr)
+    , DecoderSourceGStreamer(nullptr, nullptr)
 {
     notImplemented();
 }
 
 
-RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(GstElement* sourceElement)
+RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(GstElement* pipeline, GstPad* pad)
     : RealtimeMediaSource(RealtimeMediaSource::Type::Video, String { })
-    , DecoderSourceGStreamer(sourceElement)
+    , DecoderSourceGStreamer(pipeline, pad)
 {
     m_currentSettings.setWidth(640);
     m_currentSettings.setHeight(480);

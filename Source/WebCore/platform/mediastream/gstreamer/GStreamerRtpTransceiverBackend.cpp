@@ -31,6 +31,7 @@ namespace WebCore {
 std::unique_ptr<GStreamerRtpReceiverBackend> GStreamerRtpTransceiverBackend::createReceiverBackend()
 {
     GstWebRTCRTPReceiver* receiver;
+    g_printerr("this: %p\n", this);
     g_printerr(">>> transceiver %p\n", m_rtcTransceiver.get());
     g_object_get(m_rtcTransceiver.get(), "receiver", &receiver, nullptr);
     return std::make_unique<GStreamerRtpReceiverBackend>(receiver);

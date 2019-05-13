@@ -28,14 +28,15 @@ namespace WebCore {
 class RealtimeIncomingVideoSourceGStreamer : public RealtimeMediaSource, public DecoderSourceGStreamer {
 public:
     static Ref<RealtimeIncomingVideoSourceGStreamer> create(String&& videoTrackId) { return adoptRef(*new RealtimeIncomingVideoSourceGStreamer(WTFMove(videoTrackId))); }
-    static Ref<RealtimeIncomingVideoSourceGStreamer> create(GstElement* sourceElement) { return adoptRef(*new RealtimeIncomingVideoSourceGStreamer(sourceElement)); }
+    static Ref<RealtimeIncomingVideoSourceGStreamer> create(GstElement* pipeline, GstPad* pad) { return adoptRef(*new RealtimeIncomingVideoSourceGStreamer(pipeline, pad)); }
     ~RealtimeIncomingVideoSourceGStreamer() = default; //{ stopProducingData(); }
 
     /* void padExposed(GstPad*) final; */
+    void handleDecodedSample(GstSample*) final { }
 
 protected:
     RealtimeIncomingVideoSourceGStreamer(String&&);
-    RealtimeIncomingVideoSourceGStreamer(GstElement*);
+    RealtimeIncomingVideoSourceGStreamer(GstElement*, GstPad*);
 
 private:
     // RealtimeMediaSource API

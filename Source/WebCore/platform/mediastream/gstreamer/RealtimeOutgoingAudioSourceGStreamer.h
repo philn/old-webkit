@@ -53,7 +53,6 @@ protected:
 private:
     void sourceMutedChanged();
     void sourceEnabledChanged();
-    virtual void audioSamplesAvailable(const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t) final;
 
     virtual bool isReachingBufferedAudioDataHighLimit() { return false; };
     virtual bool isReachingBufferedAudioDataLowLimit() { return false; };
@@ -62,9 +61,9 @@ private:
     // MediaStreamTrackPrivate::Observer API
     void trackMutedChanged(MediaStreamTrackPrivate&) final { sourceMutedChanged(); }
     void trackEnabledChanged(MediaStreamTrackPrivate&) final { sourceEnabledChanged(); }
-    void audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t sampleCount) final { }
+    void audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t sampleCount);
     void trackEnded(MediaStreamTrackPrivate&) final { }
-    void trackSettingsChanged(MediaStreamTrackPrivate&) final { }
+    void trackSettingsChanged(MediaStreamTrackPrivate&) final { g_printerr("trackSettingsChanged\n"); }
 
     void initializeConverter();
 
@@ -73,6 +72,7 @@ private:
     Timer m_silenceAudioTimer;
     GRefPtr<GstElement> m_pipeline;
     GRefPtr<GstElement> m_outputSelector;
+    GRefPtr<GstElement> m_outgoingAudioSource;
 };
 
 } // namespace WebCore

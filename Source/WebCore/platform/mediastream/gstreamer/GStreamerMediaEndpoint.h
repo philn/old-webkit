@@ -86,8 +86,6 @@ public:
 
     void createSessionDescriptionSucceeded(GstWebRTCSessionDescription*);
 
-    void handleMessage(GstMessage*);
-
     void emitSetLocalDescriptionSuceeded();
     void emitSetLocalDescriptionFailed();
     void emitSetRemoteDescriptionSuceeded();
@@ -95,6 +93,8 @@ public:
 
     void setRemoteSessionDescriptionSucceeded();
     void createSessionDescriptionFailed(const std::string& errorMessage);
+
+    GstElement* pipeline() const { return m_pipeline.get(); }
 
 protected:
     static void signalingStateChangedCallback(GStreamerMediaEndpoint*);
