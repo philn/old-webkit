@@ -20,7 +20,7 @@
 
 #if USE(GSTREAMER_WEBRTC)
 
-#include "RealtimeVideoSourceGStreamer.h"
+#include "RealtimeMediaSource.h"
 #include "DecoderSourceGStreamer.h"
 
 namespace WebCore {

@@ -24,7 +24,7 @@
 #include "GStreamerCommon.h"
 #include "GStreamerVideoEncoder.h"
 #include "Logging.h"
-#include "RealtimeVideoSourceGStreamer.h"
+//#include "RealtimeVideoSourceGStreamer.h"
 #include <gst/app/gstappsrc.h>
 #include <wtf/MainThread.h>
 

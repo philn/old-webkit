@@ -22,7 +22,8 @@
 #if USE(GSTREAMER_WEBRTC)
 
 #include "GStreamerAudioData.h"
-#include "RealtimeAudioSourceGStreamer.h"
+// #include "RealtimeAudioSourceGStreamer.h"
+#include "RealtimeMediaSource.h"
 #include <gst/app/gstappsrc.h>
 
 namespace WebCore {
@@ -54,7 +55,7 @@ void RealtimeOutgoingAudioSourceGStreamer::initializeConverter()
 
     // TODO: White-list of audio/video formats
 
-    auto& audioSource = reinterpret_cast<GStreamerRealtimeAudioSource&>(m_audioSource->source());
+    // auto& audioSource = reinterpret_cast<GStreamerRealtimeAudioSource&>(m_audioSource->source());
     GRefPtr<GstElement> webrtcBin = gst_bin_get_by_name(GST_BIN_CAST(m_pipeline.get()), "webkit-webrtcbin");
 
     // GstElement* audioSourceElement = gst_element_factory_make("proxysrc", nullptr);
