@@ -21,6 +21,8 @@
 
 #if USE(GSTREAMER_WEBRTC)
 
+#include "GStreamerAudioData.h"
+#include "GStreamerAudioStreamDescription.h"
 #include "NotImplemented.h"
 
 namespace WebCore {
@@ -75,7 +77,17 @@ const RealtimeMediaSourceSettings& RealtimeIncomingAudioSourceGStreamer::setting
 
 void RealtimeIncomingAudioSourceGStreamer::handleDecodedSample(GstSample* sample)
 {
-    g_printerr("handle decoded sample here %p\n", sample);
+    GstAudioInfo info;
+    GstCaps* caps = gst_sample_get_caps(sample);
+    gst_audio_info_from_caps(&info, caps);
+
+    auto data(std::unique_ptr<GStreamerAudioData>(new GStreamerAudioData(WTFMove(sample), info)));
+    size_t numberOfFrames = 1;
+    auto mediaTime = MediaTime((m_numberOfFrames * G_USEC_PER_SEC) / info.rate, G_USEC_PER_SEC);
+    audioSamplesAvailable(mediaTime, *data.get(), GStreamerAudioStreamDescription(info), numberOfFrames);
+
+    m_numberOfFrames += numberOfFrames;
+
 }
 
 }

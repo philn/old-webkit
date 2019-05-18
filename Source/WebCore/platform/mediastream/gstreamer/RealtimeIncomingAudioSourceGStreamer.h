@@ -49,6 +49,7 @@ private:
     bool isIncomingAudioSource() const final { return true; }
 
     RealtimeMediaSourceSettings m_currentSettings;
+    uint64_t m_numberOfFrames { 0 };
 };
 
 } // namespace WebCore

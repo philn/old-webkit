@@ -37,7 +37,9 @@ static void onDecodeBinPadAddedCallback(GstElement*, GstPad* pad, gpointer userD
 
 static void onDecodeBinReady(GstElement* decodebin, gpointer)
 {
-    gst_element_sync_state_with_parent(decodebin);
+    //gst_element_sync_state_with_parent(decodebin);
+    gst_element_set_state(decodebin, GST_STATE_PLAYING);
+
     GRefPtr<GstObject> parent = adoptGRef(gst_element_get_parent(decodebin));
     GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN_CAST(parent.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-incoming-decoded-stream");
 }
@@ -84,7 +86,6 @@ GstFlowReturn DecoderSourceGStreamer::pullDecodedSample()
 {
     auto sample = gst_app_sink_pull_sample(GST_APP_SINK(m_sink.get()));
     // auto buffer = gst_sample_get_buffer(sample);
-    g_printerr("samplel %p\n", sample);
     handleDecodedSample(sample);
     return GST_FLOW_OK;
 }

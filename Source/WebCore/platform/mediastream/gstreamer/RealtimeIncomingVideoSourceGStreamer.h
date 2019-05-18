@@ -32,7 +32,7 @@ public:
     ~RealtimeIncomingVideoSourceGStreamer() = default; //{ stopProducingData(); }
 
     /* void padExposed(GstPad*) final; */
-    void handleDecodedSample(GstSample*) final { }
+    void handleDecodedSample(GstSample*) final;
 
 protected:
     RealtimeIncomingVideoSourceGStreamer(String&&);

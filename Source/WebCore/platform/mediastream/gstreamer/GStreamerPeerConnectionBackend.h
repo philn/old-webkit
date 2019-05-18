@@ -21,6 +21,7 @@
 #if USE(GSTREAMER_WEBRTC)
 
 #include "PeerConnectionBackend.h"
+#include <gst/gst.h>
 #include <wtf/HashMap.h>
 
 namespace WebCore {
@@ -111,13 +112,15 @@ private:
     struct VideoReceiver {
         Ref<RTCRtpReceiver> receiver;
         Ref<RealtimeIncomingVideoSourceGStreamer> source;
+        RefPtr<RTCRtpTransceiver> transceiver;
     };
     struct AudioReceiver {
         Ref<RTCRtpReceiver> receiver;
         Ref<RealtimeIncomingAudioSourceGStreamer> source;
+        RefPtr<RTCRtpTransceiver> transceiver;
     };
-    VideoReceiver videoReceiver(String&& trackId);
-    AudioReceiver audioReceiver(String&& trackId);
+    VideoReceiver videoReceiver(GstElement*, GstPad*);
+    AudioReceiver audioReceiver(GstElement*, GstPad*);
 
 private:
     bool isLocalDescriptionSet() const final { return m_isLocalDescriptionSet; }

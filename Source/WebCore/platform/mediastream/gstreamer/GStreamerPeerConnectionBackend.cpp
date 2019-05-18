@@ -216,19 +216,19 @@ Ref<RTCRtpReceiver> GStreamerPeerConnectionBackend::createReceiver(const String&
     return receiver;
 }
 
-GStreamerPeerConnectionBackend::VideoReceiver GStreamerPeerConnectionBackend::videoReceiver(String&& trackId)
+GStreamerPeerConnectionBackend::VideoReceiver GStreamerPeerConnectionBackend::videoReceiver(GstElement* pipeline, GstPad* pad)
 {
     // FIXME: Add to Vector a utility routine for that take-or-create pattern.
     // FIXME: We should be selecting the receiver based on track id.
-    for (size_t cptr = 0; cptr < m_pendingReceivers.size(); ++cptr) {
-        if (m_pendingReceivers[cptr]->track().source().type() == RealtimeMediaSource::Type::Video) {
-            Ref<RTCRtpReceiver> receiver = m_pendingReceivers[cptr].copyRef();
-            m_pendingReceivers.remove(cptr);
-            Ref<RealtimeIncomingVideoSourceGStreamer> source = static_cast<RealtimeIncomingVideoSourceGStreamer&>(receiver->track().source());
-            return { WTFMove(receiver), WTFMove(source) };
-        }
-    }
-    auto source = RealtimeIncomingVideoSourceGStreamer::create(WTFMove(trackId));
+    // for (size_t cptr = 0; cptr < m_pendingReceivers.size(); ++cptr) {
+    //     if (m_pendingReceivers[cptr]->track().source().type() == RealtimeMediaSource::Type::Video) {
+    //         Ref<RTCRtpReceiver> receiver = m_pendingReceivers[cptr].copyRef();
+    //         m_pendingReceivers.remove(cptr);
+    //         Ref<RealtimeIncomingVideoSourceGStreamer> source = static_cast<RealtimeIncomingVideoSourceGStreamer&>(receiver->track().source());
+    //         return { WTFMove(receiver), WTFMove(source) };
+    //     }
+    // }
+    auto source = RealtimeIncomingVideoSourceGStreamer::create(pipeline, pad);
     auto receiver = createReceiverForSource(source.copyRef(), nullptr);
 
     auto senderBackend = std::make_unique<GStreamerRtpSenderBackend>(*this, nullptr);
@@ -236,22 +236,22 @@ GStreamerPeerConnectionBackend::VideoReceiver GStreamerPeerConnectionBackend::vi
     transceiver->disableSendingDirection();
     m_peerConnection.addTransceiver(WTFMove(transceiver));
 
-    return { WTFMove(receiver), WTFMove(source) };
+    return { WTFMove(receiver), WTFMove(source), WTFMove(transceiver) };
 }
 
-GStreamerPeerConnectionBackend::AudioReceiver GStreamerPeerConnectionBackend::audioReceiver(String&& trackId)
+GStreamerPeerConnectionBackend::AudioReceiver GStreamerPeerConnectionBackend::audioReceiver(GstElement* pipeline, GstPad* pad)
 {
     // FIXME: Add to Vector a utility routine for that take-or-create pattern.
     // FIXME: We should be selecting the receiver based on track id.
-    for (size_t cptr = 0; cptr < m_pendingReceivers.size(); ++cptr) {
-        if (m_pendingReceivers[cptr]->track().source().type() == RealtimeMediaSource::Type::Audio) {
-            Ref<RTCRtpReceiver> receiver = m_pendingReceivers[cptr].copyRef();
-            m_pendingReceivers.remove(cptr);
-            Ref<RealtimeIncomingAudioSourceGStreamer> source = static_cast<RealtimeIncomingAudioSourceGStreamer&>(receiver->track().source());
-            return { WTFMove(receiver), WTFMove(source) };
-        }
-    }
-    auto source = RealtimeIncomingAudioSourceGStreamer::create(WTFMove(trackId));
+    // for (size_t cptr = 0; cptr < m_pendingReceivers.size(); ++cptr) {
+    //     if (m_pendingReceivers[cptr]->track().source().type() == RealtimeMediaSource::Type::Audio) {
+    //         Ref<RTCRtpReceiver> receiver = m_pendingReceivers[cptr].copyRef();
+    //         m_pendingReceivers.remove(cptr);
+    //         Ref<RealtimeIncomingAudioSourceGStreamer> source = static_cast<RealtimeIncomingAudioSourceGStreamer&>(receiver->track().source());
+    //         return { WTFMove(receiver), WTFMove(source) };
+    //     }
+    // }
+    auto source = RealtimeIncomingAudioSourceGStreamer::create(pipeline, pad);
     auto receiver = createReceiverForSource(source.copyRef(), nullptr);
 
     auto senderBackend = std::make_unique<GStreamerRtpSenderBackend>(*this, nullptr);
@@ -259,7 +259,7 @@ GStreamerPeerConnectionBackend::AudioReceiver GStreamerPeerConnectionBackend::au
     transceiver->disableSendingDirection();
     m_peerConnection.addTransceiver(WTFMove(transceiver));
 
-    return { WTFMove(receiver), WTFMove(source) };
+    return { WTFMove(receiver), WTFMove(source), WTFMove(transceiver) };
 }
 
 std::unique_ptr<RTCDataChannelHandler> GStreamerPeerConnectionBackend::createDataChannelHandler(const String& label, const RTCDataChannelInit& options)

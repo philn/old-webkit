@@ -22,6 +22,7 @@
 #if USE(GSTREAMER_WEBRTC)
 
 #include "Logging.h"
+#include "MediaSampleGStreamer.h"
 #include "NotImplemented.h"
 
 namespace WebCore {
@@ -55,23 +56,35 @@ RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(GstEl
 //     gst_pad_link(pad, sinkPad.get());
 // }
 
+void RealtimeIncomingVideoSourceGStreamer::handleDecodedSample(GstSample* sample)
+{
+    callOnMainThread([protectedThis = makeRef(*this), sample] {
+        protectedThis->videoSampleAvailable(MediaSampleGStreamer::create(sample, WebCore::FloatSize(), String()));
+    });
+}
+
+
 void RealtimeIncomingVideoSourceGStreamer::startProducingData()
 {
     notImplemented();
+    // m_isProducingData = true;
 }
 
 void RealtimeIncomingVideoSourceGStreamer::stopProducingData()
 {
     notImplemented();
+    // m_isProducingData = false;
 }
 
 const RealtimeMediaSourceCapabilities& RealtimeIncomingVideoSourceGStreamer::capabilities()
 {
+    g_printerr("RealtimeIncomingVideoSourceGStreamer::capabilities()");
     return RealtimeMediaSourceCapabilities::emptyCapabilities();
 }
 
 const RealtimeMediaSourceSettings& RealtimeIncomingVideoSourceGStreamer::settings()
 {
+    g_printerr("RealtimeIncomingVideoSourceGStreamer::settings()\n");
     return m_currentSettings;
 }
 

@@ -120,6 +120,8 @@ private:
 
     void start();
 
+    MediaStream& mediaStreamFromRTCStream(GstPad*);
+
     void setLocalSessionDescriptionSucceeded();
     void addRemoteStream(GstPad*);
     void removeRemoteStream(GstPad*);

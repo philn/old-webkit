@@ -110,6 +110,7 @@ void GStreamerMediaEndpoint::webrtcBinPadRemovedCallback(GstElement*, GstPad* pa
 
 void GStreamerMediaEndpoint::webrtcBinReadyCallback(GstElement*, GStreamerMediaEndpoint* endpoint)
 {
+    g_printerr("NO MORE PADS\n");
     endpoint->start();
 }
 
@@ -606,6 +607,16 @@ void GStreamerMediaEndpoint::sourceFromGstPad(GstPad* pad)
         start();
 }
 
+MediaStream& GStreamerMediaEndpoint::mediaStreamFromRTCStream(GstPad* pad)
+{
+    GUniquePtr<gchar> name(gst_object_get_name(GST_OBJECT_CAST(pad)));
+    String label(name.get());
+    auto mediaStream = m_remoteStreamsById.ensure(label, [label, this]() mutable {
+        return MediaStream::create(*m_peerConnectionBackend.connection().scriptExecutionContext(), MediaStreamPrivate::create({ }, WTFMove(label)));
+    });
+    return *mediaStream.iterator->value;
+}
+
 void GStreamerMediaEndpoint::addRemoteStream(GstPad* pad)
 {
     // GstWebRTCRTPTransceiver* transceiver = nullptr;
@@ -613,23 +624,42 @@ void GStreamerMediaEndpoint::addRemoteStream(GstPad* pad)
     // GST_DEBUG_OBJECT(m_pipeline.get(), "Pad transceiver: %" GST_PTR_FORMAT, transceiver);
     GST_DEBUG_OBJECT(m_pipeline.get(), "Adding remote stream to %" GST_PTR_FORMAT, pad);
     // if (RuntimeEnabledFeatures::sharedFeatures().webRTCLegacyAPIEnabled())
-    sourceFromGstPad(pad);
+    // sourceFromGstPad(pad);
 
-    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-incoming-stream");
+    // GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-incoming-stream");
 
-    // TODO(philn): what about the non-legacy API... Track-based.
+    static bool hasRemoteVideo = false;
+    static bool hasRemoteAudio = false;
+
     GRefPtr<GstCaps> caps = adoptGRef(gst_pad_query_caps(pad, nullptr));
     GstStructure* capsStructure = gst_caps_get_structure(caps.get(), 0);
     const gchar* mediaType = gst_structure_get_string(capsStructure, "media");
-    // if (!g_strcmp0(mediaType, "audio")) {
-    //     auto audioReceiver = m_peerConnectionBackend.audioReceiver(trackId(*rtcTrack));
-    // } else if (!g_strcmp0(mediaType, "video")) {
-    //     auto videoReceiver = m_peerConnectionBackend.videoReceiver(trackId(*rtcTrack));
-    // }
+    if (!g_strcmp0(mediaType, "audio")) {
+        auto audioReceiver = m_peerConnectionBackend.audioReceiver(m_pipeline.get(), pad);
+        auto& track = audioReceiver.receiver->track();
+        Vector<RefPtr<MediaStream>> streams;
+        auto& mediaStream = mediaStreamFromRTCStream(pad);
+        streams.append(&mediaStream);
+        mediaStream.addTrackFromPlatform(track);
+        // FIXME(philn): track events are not fired because the setRemoteDescription promise is triggered too early.
+        m_peerConnectionBackend.addPendingTrackEvent({WTFMove(audioReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(audioReceiver.transceiver)});
+        hasRemoteAudio = true;
+    } else if (!g_strcmp0(mediaType, "video")) {
+        auto videoReceiver = m_peerConnectionBackend.videoReceiver(m_pipeline.get(), pad);
+        auto& track = videoReceiver.receiver->track();
+        Vector<RefPtr<MediaStream>> streams;
+        auto& mediaStream = mediaStreamFromRTCStream(pad);
+        streams.append(&mediaStream);
+        mediaStream.addTrackFromPlatform(track);
+        // FIXME(philn): track events are not fired because the setRemoteDescription promise is triggered too early.
+        m_peerConnectionBackend.addPendingTrackEvent({WTFMove(videoReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(videoReceiver.transceiver)});
+        hasRemoteVideo = true;
+    }
 
-    // m_peerConnectionBackend.connection().fireEvent(RTCTrackEvent::create(eventNames().trackEvent, false, false, WTFMove(receiver), track, WTFMove(streams), nullptr));
+    // gst_element_set_state(m_pipeline.get(), GST_STATE_PAUSED);
+    // if (hasRemoteAudio && hasRemoteVideo)
+    start();
 }
-
 
 void GStreamerMediaEndpoint::removeRemoteStream(GstPad*)
 {
@@ -816,9 +846,12 @@ void GStreamerMediaEndpoint::setLocalSessionDescriptionSucceeded()
 
 void GStreamerMediaEndpoint::setRemoteSessionDescriptionSucceeded()
 {
+    g_printerr("setRemoteDescriptionSucceeded 0\n");
     callOnMainThread([protectedThis = makeRef(*this)] {
+                         g_printerr("setRemoteDescriptionSucceeded 1\n");
         if (protectedThis->isStopped())
             return;
+        g_printerr("setRemoteDescriptionSucceeded 2\n");
         protectedThis->m_peerConnectionBackend.setRemoteDescriptionSucceeded();
     });
 }

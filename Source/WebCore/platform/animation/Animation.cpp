@@ -107,6 +107,7 @@ Animation::~Animation() = default;
 
 bool Animation::animationsMatch(const Animation& other, bool matchProperties) const
 {
+    return false;
     bool result = m_name == other.m_name
         && m_playState == other.m_playState
         && m_playStateSet == other.m_playStateSet
