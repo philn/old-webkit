@@ -84,9 +84,9 @@ void DecoderSourceGStreamer::linkDecodePad(GstPad* srcPad)
 
 GstFlowReturn DecoderSourceGStreamer::pullDecodedSample()
 {
-    auto sample = gst_app_sink_pull_sample(GST_APP_SINK(m_sink.get()));
-    // auto buffer = gst_sample_get_buffer(sample);
-    handleDecodedSample(sample);
+    GRefPtr<GstSample> sample = adoptGRef(gst_app_sink_pull_sample(GST_APP_SINK(m_sink.get())));
+    if (sample)
+        handleDecodedSample(sample.get());
     return GST_FLOW_OK;
 }
 

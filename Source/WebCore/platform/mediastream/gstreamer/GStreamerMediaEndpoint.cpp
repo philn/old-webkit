@@ -145,7 +145,6 @@ GStreamerMediaEndpoint::GStreamerMediaEndpoint(GStreamerPeerConnectionBackend& p
     g_signal_connect(m_webrtcBin.get(), "no-more-pads", G_CALLBACK(webrtcBinReadyCallback), this);
     gst_bin_add(GST_BIN_CAST(m_pipeline.get()), m_webrtcBin.get());
 
-    GST_DEBUG_OBJECT(m_pipeline.get(), "Yo");
     gst_element_set_state(m_pipeline.get(), GST_STATE_PLAYING);
 }
 
@@ -321,6 +320,7 @@ static void setRemoteDescriptionPromiseChanged(GstPromise* promise, gpointer use
 
     gst_promise_unref(promise);
 
+    g_printerr("PROMISE RESULT %d\n", result);
     if (result != GST_PROMISE_RESULT_REPLIED) {
         endPoint->emitSetRemoteDescriptionFailed();
         return;
@@ -628,32 +628,29 @@ void GStreamerMediaEndpoint::addRemoteStream(GstPad* pad)
 
     // GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-incoming-stream");
 
-    static bool hasRemoteVideo = false;
-    static bool hasRemoteAudio = false;
-
     GRefPtr<GstCaps> caps = adoptGRef(gst_pad_query_caps(pad, nullptr));
     GstStructure* capsStructure = gst_caps_get_structure(caps.get(), 0);
     const gchar* mediaType = gst_structure_get_string(capsStructure, "media");
     if (!g_strcmp0(mediaType, "audio")) {
-        auto audioReceiver = m_peerConnectionBackend.audioReceiver(m_pipeline.get(), pad);
-        auto& track = audioReceiver.receiver->track();
-        Vector<RefPtr<MediaStream>> streams;
-        auto& mediaStream = mediaStreamFromRTCStream(pad);
-        streams.append(&mediaStream);
-        mediaStream.addTrackFromPlatform(track);
-        // FIXME(philn): track events are not fired because the setRemoteDescription promise is triggered too early.
-        m_peerConnectionBackend.addPendingTrackEvent({WTFMove(audioReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(audioReceiver.transceiver)});
-        hasRemoteAudio = true;
+        callOnMainThread([protectedThis = makeRef(*this), pad] {
+            auto audioReceiver = protectedThis->m_peerConnectionBackend.audioReceiver(protectedThis->m_pipeline.get(), pad);
+            auto& track = audioReceiver.receiver->track();
+            Vector<RefPtr<MediaStream>> streams;
+            auto& mediaStream = protectedThis->mediaStreamFromRTCStream(pad);
+            streams.append(&mediaStream);
+            mediaStream.addTrackFromPlatform(track);
+            protectedThis->m_peerConnectionBackend.emitTrackEvent({WTFMove(audioReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(audioReceiver.transceiver)});
+        });
     } else if (!g_strcmp0(mediaType, "video")) {
-        auto videoReceiver = m_peerConnectionBackend.videoReceiver(m_pipeline.get(), pad);
-        auto& track = videoReceiver.receiver->track();
-        Vector<RefPtr<MediaStream>> streams;
-        auto& mediaStream = mediaStreamFromRTCStream(pad);
-        streams.append(&mediaStream);
-        mediaStream.addTrackFromPlatform(track);
-        // FIXME(philn): track events are not fired because the setRemoteDescription promise is triggered too early.
-        m_peerConnectionBackend.addPendingTrackEvent({WTFMove(videoReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(videoReceiver.transceiver)});
-        hasRemoteVideo = true;
+        callOnMainThread([protectedThis = makeRef(*this), pad] {
+            auto videoReceiver = protectedThis->m_peerConnectionBackend.videoReceiver(protectedThis->m_pipeline.get(), pad);
+            auto& track = videoReceiver.receiver->track();
+            Vector<RefPtr<MediaStream>> streams;
+            auto& mediaStream = protectedThis->mediaStreamFromRTCStream(pad);
+            streams.append(&mediaStream);
+            mediaStream.addTrackFromPlatform(track);
+            protectedThis->m_peerConnectionBackend.emitTrackEvent({WTFMove(videoReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(videoReceiver.transceiver)});
+        });
     }
 
     // gst_element_set_state(m_pipeline.get(), GST_STATE_PAUSED);

@@ -61,6 +61,7 @@ private:
     void doSetLocalDescription(RTCSessionDescription&) final;
     void doSetRemoteDescription(RTCSessionDescription&) final;
     void doAddIceCandidate(RTCIceCandidate&) final;
+    void endOfIceCandidates(DOMPromiseDeferred<void>&&) final;
     void doStop() final;
     std::unique_ptr<RTCDataChannelHandler> createDataChannelHandler(const String&, const RTCDataChannelInit&) final;
     bool setConfiguration(MediaEndpointConfiguration&&) final;

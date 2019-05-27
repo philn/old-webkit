@@ -181,6 +181,12 @@ void GStreamerPeerConnectionBackend::doAddIceCandidate(RTCIceCandidate& candidat
     addIceCandidateSucceeded();
 }
 
+void GStreamerPeerConnectionBackend::endOfIceCandidates(DOMPromiseDeferred<void>&& promise)
+{
+    g_printerr(">>>>>> endOfIceCandidates\n");
+    promise.resolve();
+}
+
 // void GStreamerPeerConnectionBackend::addAudioSource(Ref<RealtimeOutgoingAudioSourceGStreamer>&& source)
 // {
 //     m_audioSources.append(WTFMove(source));

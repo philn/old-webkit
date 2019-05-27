@@ -305,6 +305,11 @@ static String extractIPAddres(const String& sdp)
     return { };
 }
 
+void PeerConnectionBackend::emitTrackEvent(PendingTrackEvent&& event)
+{
+    m_peerConnection.fireEvent(RTCTrackEvent::create(eventNames().trackEvent, Event::CanBubble::No, Event::IsCancelable::No, WTFMove(event.receiver), WTFMove(event.track), WTFMove(event.streams), WTFMove(event.transceiver)));
+}
+
 void PeerConnectionBackend::addIceCandidate(RTCIceCandidate* iceCandidate, DOMPromiseDeferred<void>&& promise)
 {
     ASSERT(!m_peerConnection.isClosed());
