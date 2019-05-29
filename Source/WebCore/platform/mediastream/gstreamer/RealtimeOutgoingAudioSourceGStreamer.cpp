@@ -67,13 +67,25 @@ void RealtimeOutgoingAudioSourceGStreamer::initializeConverter()
     GstElement* audioconvert = gst_element_factory_make("audioconvert", nullptr);
     GstElement* audioresample = gst_element_factory_make("audioresample", nullptr);
     GstElement* audioQueue1 = gst_element_factory_make("queue", nullptr);
+
+#ifdef _OPUS
     GstElement* aenc = gst_element_factory_make("opusenc", nullptr);
     GstElement* rtpapay = gst_element_factory_make("rtpopuspay", nullptr);
-    GstElement* audioQueue2 = gst_element_factory_make("queue", nullptr);
-    GstElement* acapsfilter = gst_element_factory_make("capsfilter", nullptr);
     GRefPtr<GstCaps> acaps = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "audio",
                                                            "payload", G_TYPE_INT, 111,
                                                            "encoding-name", G_TYPE_STRING, "OPUS", nullptr));
+    g_object_set(rtpapay, "pt", 111, nullptr);
+#else
+    GstElement* aenc = gst_element_factory_make("alawenc", nullptr);
+    GstElement* rtpapay = gst_element_factory_make("rtppcmapay", nullptr);
+    GRefPtr<GstCaps> acaps = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "audio",
+                                                           "payload", G_TYPE_INT, 111,
+                                                           "encoding-name", G_TYPE_STRING, "PCMA", nullptr));
+    g_object_set(rtpapay, "pt", 111, nullptr);
+#endif
+
+    GstElement* audioQueue2 = gst_element_factory_make("queue", nullptr);
+    GstElement* acapsfilter = gst_element_factory_make("capsfilter", nullptr);
     g_object_set(acapsfilter, "caps", acaps.get(), nullptr);
 
     gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_outgoingAudioSource.get(), audioconvert, audioresample, audioQueue1, aenc, rtpapay, audioQueue2, acapsfilter, nullptr);

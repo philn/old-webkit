@@ -38,9 +38,7 @@ RealtimeIncomingAudioSourceGStreamer::RealtimeIncomingAudioSourceGStreamer(GstEl
     : RealtimeMediaSource(RealtimeMediaSource::Type::Audio, String { })
     , DecoderSourceGStreamer(pipeline, pad)
 {
-    // notifyMutedChange(!m_audioTrack);
-    // setGstSourceElement(sourceBin());
-    preroll();
+    // notifyMutedChange(false);
     start();
 }
 
@@ -69,25 +67,20 @@ const RealtimeMediaSourceSettings& RealtimeIncomingAudioSourceGStreamer::setting
     return m_currentSettings;
 }
 
-// void RealtimeIncomingAudioSourceGStreamer::padExposed(GstPad* pad)
-// {
-//     GRefPtr<GstPad> sinkPad = gst_element_get_static_pad(capsFilter(), "sink");
-//     gst_pad_link(pad, sinkPad.get());
-// }
-
 void RealtimeIncomingAudioSourceGStreamer::handleDecodedSample(GstSample* sample)
 {
-    GstAudioInfo info;
-    GstCaps* caps = gst_sample_get_caps(sample);
-    gst_audio_info_from_caps(&info, caps);
+    callOnMainThread([protectedThis = makeRef(*this), sample] {
+        GstAudioInfo info;
+        GstCaps* caps = gst_sample_get_caps(sample);
+        gst_audio_info_from_caps(&info, caps);
 
-    auto data(std::unique_ptr<GStreamerAudioData>(new GStreamerAudioData(WTFMove(sample), info)));
-    size_t numberOfFrames = 1;
-    auto mediaTime = MediaTime((m_numberOfFrames * G_USEC_PER_SEC) / info.rate, G_USEC_PER_SEC);
-    audioSamplesAvailable(mediaTime, *data.get(), GStreamerAudioStreamDescription(info), numberOfFrames);
+        auto data(std::unique_ptr<GStreamerAudioData>(new GStreamerAudioData(sample, info)));
+        size_t numberOfFrames = 1;
+        auto mediaTime = MediaTime((protectedThis->m_numberOfFrames * G_USEC_PER_SEC) / info.rate, G_USEC_PER_SEC);
+        protectedThis->audioSamplesAvailable(mediaTime, *data.get(), GStreamerAudioStreamDescription(info), numberOfFrames);
 
-    m_numberOfFrames += numberOfFrames;
-
+        protectedThis->m_numberOfFrames += numberOfFrames;
+    });
 }
 
 }

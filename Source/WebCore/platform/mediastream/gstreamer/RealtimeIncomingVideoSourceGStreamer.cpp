@@ -43,18 +43,10 @@ RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(GstEl
     m_currentSettings.setHeight(480);
     // notifyMutedChange(!m_videoTrack);
 
-    // setGstSourceElement(sourceBin());
-    preroll();
     // setWidth(640);
     // setHeight(480);
     start();
 }
-
-// void RealtimeIncomingVideoSourceGStreamer::padExposed(GstPad* pad)
-// {
-//     GRefPtr<GstPad> sinkPad = gst_element_get_static_pad(capsFilter(), "sink");
-//     gst_pad_link(pad, sinkPad.get());
-// }
 
 void RealtimeIncomingVideoSourceGStreamer::handleDecodedSample(GstSample* sample)
 {
@@ -78,13 +70,11 @@ void RealtimeIncomingVideoSourceGStreamer::stopProducingData()
 
 const RealtimeMediaSourceCapabilities& RealtimeIncomingVideoSourceGStreamer::capabilities()
 {
-    g_printerr("RealtimeIncomingVideoSourceGStreamer::capabilities()");
     return RealtimeMediaSourceCapabilities::emptyCapabilities();
 }
 
 const RealtimeMediaSourceSettings& RealtimeIncomingVideoSourceGStreamer::settings()
 {
-    g_printerr("RealtimeIncomingVideoSourceGStreamer::settings()\n");
     return m_currentSettings;
 }
 

@@ -82,6 +82,8 @@ public:
     std::unique_ptr<GStreamerRtpTransceiverBackend> transceiverBackendFromSender(GStreamerRtpSenderBackend&);
 
     void setSenderSourceFromTrack(GStreamerRtpSenderBackend&, MediaStreamTrack&);
+
+    RefPtr<RealtimeMediaSource> sourceFromNewReceiver(GstWebRTCRTPReceiver*);
     void collectTransceivers();
 
     void createSessionDescriptionSucceeded(GstWebRTCSessionDescription*);
@@ -95,6 +97,8 @@ public:
     void createSessionDescriptionFailed(const std::string& errorMessage);
 
     GstElement* pipeline() const { return m_pipeline.get(); }
+
+    void processSourcePad(GstPad*);
 
 protected:
     static void signalingStateChangedCallback(GStreamerMediaEndpoint*);
@@ -130,8 +134,6 @@ private:
     void startLoggingStats();
     void stopLoggingStats();
 
-    void sourceFromGstPad(GstPad*);
-
     void AddRef() const { ref(); }
     int Release() const {
         auto result = refCount() - 1;
@@ -151,6 +153,9 @@ private:
 
     HashMap<GstPad*, Ref<RealtimeMediaSource>> m_audioSources;
     HashMap<GstPad*, Ref<RealtimeMediaSource>> m_videoSources;
+
+    //Vector<RefPtr<MediaStream>> m_pendingIncomingStreams;
+    unsigned m_pendingIncomingStreams { 0 };
 
     bool m_isInitiator { false };
     Timer m_statsLogTimer;

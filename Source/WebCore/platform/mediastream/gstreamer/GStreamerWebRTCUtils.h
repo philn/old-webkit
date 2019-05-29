@@ -20,11 +20,14 @@
 
 #if ENABLE(WEB_RTC) && USE(GSTREAMER_WEBRTC)
 
-#include "RTCRtpTransceiverDirection.h"
+#include "MediaEndpointConfiguration.h"
+#include "RTCBundlePolicy.h"
+#include "RTCIceConnectionState.h"
+#include "RTCIceTransportPolicy.h"
 #include "RTCRtpSendParameters.h"
+#include "RTCRtpTransceiverDirection.h"
 #include "RTCSdpType.h"
 #include "RTCSignalingState.h"
-#include "RTCIceConnectionState.h"
 
 #define GST_USE_UNSTABLE_API
 #include <gst/webrtc/webrtc.h>
@@ -154,6 +157,34 @@ static inline RTCIceConnectionState toRTCIceConnectionState(GstWebRTCICEConnecti
 
     ASSERT_NOT_REACHED();
     return RTCIceConnectionState::New;
+}
+
+static inline GstWebRTCBundlePolicy bundlePolicyFromConfiguration(MediaEndpointConfiguration& configuration)
+{
+    switch (configuration.bundlePolicy) {
+    case RTCBundlePolicy::Balanced:
+        return GST_WEBRTC_BUNDLE_POLICY_BALANCED;
+    case RTCBundlePolicy::MaxCompat:
+        return GST_WEBRTC_BUNDLE_POLICY_MAX_COMPAT;
+    case RTCBundlePolicy::MaxBundle:
+        return GST_WEBRTC_BUNDLE_POLICY_MAX_BUNDLE;
+    }
+
+    ASSERT_NOT_REACHED();
+    return GST_WEBRTC_BUNDLE_POLICY_NONE;
+}
+
+static inline GstWebRTCICETransportPolicy iceTransportPolicyFromConfiguration(MediaEndpointConfiguration& configuration)
+{
+    switch (configuration.iceTransportPolicy) {
+    case RTCIceTransportPolicy::All:
+        return GST_WEBRTC_ICE_TRANSPORT_POLICY_ALL;
+    case RTCIceTransportPolicy::Relay:
+        return GST_WEBRTC_ICE_TRANSPORT_POLICY_RELAY;
+    }
+
+    ASSERT_NOT_REACHED();
+    return GST_WEBRTC_ICE_TRANSPORT_POLICY_ALL;
 }
 
 }

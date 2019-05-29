@@ -99,7 +99,7 @@ void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
     gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_outgoingVideoSource.get(), m_outputSelector.get(), nullptr);
     gst_element_link(m_outgoingVideoSource.get(), m_outputSelector.get());
 
-    //#define _WEBRTC_VP8
+// #define _WEBRTC_VP8
 #ifdef _WEBRTC_VP8
     GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("video/x-vp8"));
     GstElement* rtpvpay = gst_element_factory_make("rtpvp8pay", nullptr);
@@ -112,7 +112,7 @@ void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
     GRefPtr<GstCaps> vcaps2 = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "video",
                                                             "payload", G_TYPE_INT, 98,
                                                             "encoding-name", G_TYPE_STRING, "H264", nullptr));
-    g_object_set(rtpvpay, "pt", 98, nullptr);
+    g_object_set(rtpvpay, "pt", 98, "config-interval", 1, nullptr);
 #endif
 
     GstElement* videoconvert = gst_element_factory_make("videoconvert", nullptr);

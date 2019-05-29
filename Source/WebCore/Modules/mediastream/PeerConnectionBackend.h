@@ -201,6 +201,7 @@ protected:
     void addPendingTrackEvent(PendingTrackEvent&&);
 
     void emitTrackEvent(PendingTrackEvent&&);
+    void firePendingTrackEvents();
     
 private:
     virtual void doCreateOffer(RTCOfferOptions&&) = 0;

@@ -251,18 +251,7 @@ void PeerConnectionBackend::setRemoteDescriptionSucceeded()
 
     ASSERT(!m_peerConnection.isClosed());
 
-    auto events = WTFMove(m_pendingTrackEvents);
-    for (auto& event : events) {
-        auto& track = event.track.get();
-
-        m_peerConnection.fireEvent(RTCTrackEvent::create(eventNames().trackEvent, Event::CanBubble::No, Event::IsCancelable::No, WTFMove(event.receiver), WTFMove(event.track), WTFMove(event.streams), WTFMove(event.transceiver)));
-
-        if (m_peerConnection.isClosed())
-            return;
-
-        // FIXME: As per spec, we should set muted to 'false' when starting to receive the content from network.
-        track.source().setMuted(false);
-    }
+    firePendingTrackEvents();
 
     if (m_peerConnection.isClosed())
         return;
@@ -308,6 +297,22 @@ static String extractIPAddres(const String& sdp)
 void PeerConnectionBackend::emitTrackEvent(PendingTrackEvent&& event)
 {
     m_peerConnection.fireEvent(RTCTrackEvent::create(eventNames().trackEvent, Event::CanBubble::No, Event::IsCancelable::No, WTFMove(event.receiver), WTFMove(event.track), WTFMove(event.streams), WTFMove(event.transceiver)));
+}
+
+void PeerConnectionBackend::firePendingTrackEvents()
+{
+    auto events = WTFMove(m_pendingTrackEvents);
+    for (auto& event : events) {
+        auto& track = event.track.get();
+
+        m_peerConnection.fireEvent(RTCTrackEvent::create(eventNames().trackEvent, Event::CanBubble::No, Event::IsCancelable::No, WTFMove(event.receiver), WTFMove(event.track), WTFMove(event.streams), WTFMove(event.transceiver)));
+
+        if (m_peerConnection.isClosed())
+            return;
+
+        // FIXME: As per spec, we should set muted to 'false' when starting to receive the content from network.
+        track.source().setMuted(false);
+    }
 }
 
 void PeerConnectionBackend::addIceCandidate(RTCIceCandidate* iceCandidate, DOMPromiseDeferred<void>&& promise)

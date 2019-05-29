@@ -25,75 +25,59 @@
 
 namespace WebCore {
 
-static void onDecodeBinPadAddedCallback(GstElement*, GstPad* pad, gpointer userData)
-{
-    auto source = reinterpret_cast<DecoderSourceGStreamer*>(userData);
-    // GRefPtr<GstPad> srcPad = gst_ghost_pad_new(nullptr, pad);
-    // gst_pad_set_active(srcPad.get(), TRUE);
-    // gst_element_add_pad(source->sourceBin(), srcPad.get());
-    //source->padExposed(srcPad.get());
-    source->linkDecodePad(pad);
-}
-
-static void onDecodeBinReady(GstElement* decodebin, gpointer)
-{
-    //gst_element_sync_state_with_parent(decodebin);
-    gst_element_set_state(decodebin, GST_STATE_PLAYING);
-
-    GRefPtr<GstObject> parent = adoptGRef(gst_element_get_parent(decodebin));
-    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN_CAST(parent.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-incoming-decoded-stream");
-}
-
-static GstFlowReturn newSampleCallback(GstElement*, gpointer userData)
-{
-    auto source = reinterpret_cast<DecoderSourceGStreamer*>(userData);
-    return source->pullDecodedSample();
-}
-
 DecoderSourceGStreamer::DecoderSourceGStreamer(GstElement* pipeline, GstPad* incomingSrcPad)
 {
     if (!pipeline)
         return;
 
     m_pipeline = pipeline;
-
+    m_queue1 = gst_element_factory_make("queue", nullptr);
     m_decoder = gst_element_factory_make("decodebin", nullptr);
+    m_queue2 = gst_element_factory_make("queue", nullptr);
     m_sink = gst_element_factory_make("appsink", nullptr);
 
+    g_object_set(m_sink.get(), "sync", false, "enable-last-sample", false, nullptr);
     gst_app_sink_set_emit_signals(GST_APP_SINK(m_sink.get()), true);
-    g_signal_connect(m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
-    g_object_set(m_sink.get(), "sync", false, nullptr);
+    g_signal_connect(m_sink.get(), "new-sample", G_CALLBACK(+[](GstElement* sink, gpointer userData) -> GstFlowReturn {
+        GRefPtr<GstSample> sample = adoptGRef(gst_app_sink_pull_sample(GST_APP_SINK(sink)));
+        if (sample) {
+            auto source = reinterpret_cast<DecoderSourceGStreamer*>(userData);
+            source->handleDecodedSample(sample.get());
+        }
+        return GST_FLOW_OK;
+    }), this);
 
-    g_signal_connect(m_decoder.get(), "pad-added", G_CALLBACK(onDecodeBinPadAddedCallback), static_cast<gpointer>(this));
-    g_signal_connect(m_decoder.get(), "no-more-pads", G_CALLBACK(onDecodeBinReady), nullptr);
-    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_decoder.get(), m_sink.get(), nullptr);
+    g_signal_connect(m_decoder.get(), "pad-added", G_CALLBACK(+[](GstElement*, GstPad* pad, gpointer userData) {
+        auto source = reinterpret_cast<DecoderSourceGStreamer*>(userData);
+        source->linkDecodePad(pad);
+    }), static_cast<gpointer>(this));
 
-    GRefPtr<GstPad> sinkPad = adoptGRef(gst_element_get_static_pad(m_decoder.get(), "sink"));
+    g_signal_connect(m_decoder.get(), "no-more-pads", G_CALLBACK(+[](GstElement* decodebin, gpointer) {
+        GRefPtr<GstObject> parent = adoptGRef(gst_element_get_parent(decodebin));
+        GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN_CAST(parent.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-incoming-decoded-stream");
+    }), nullptr);
+
+    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_queue1.get(), m_decoder.get(), m_queue2.get(), m_sink.get(), nullptr);
+
+    gst_element_link(m_queue1.get(), m_decoder.get());
+
+    GRefPtr<GstPad> sinkPad = adoptGRef(gst_element_get_static_pad(m_queue1.get(), "sink"));
     gst_pad_link(incomingSrcPad, sinkPad.get());
-    //gst_element_link(sourceElement, m_decoder.get());
-    //gst_element_sync_state_with_parent(m_decoder.get());
-    // gst_element_set_state(m_decoder.get(), GST_STATE_READY);
+
+    gst_element_set_state(m_queue1.get(), GST_STATE_PLAYING);
+    gst_element_set_state(m_decoder.get(), GST_STATE_PLAYING);
 }
 
 void DecoderSourceGStreamer::linkDecodePad(GstPad* srcPad)
 {
-    GRefPtr<GstPad> sinkPad = gst_element_get_static_pad(m_sink.get(), "sink");
-    gst_pad_link(srcPad, sinkPad.get());
+    GRefPtr<GstPad> sinkPad = adoptGRef(gst_element_get_static_pad(m_queue2.get(), "sink"));
+    RELEASE_ASSERT(!gst_pad_is_linked(sinkPad.get()));
+
+    gst_element_link(m_queue2.get(), m_sink.get());
+    gst_element_sync_state_with_parent(m_queue2.get());
     gst_element_sync_state_with_parent(m_sink.get());
-}
 
-GstFlowReturn DecoderSourceGStreamer::pullDecodedSample()
-{
-    GRefPtr<GstSample> sample = adoptGRef(gst_app_sink_pull_sample(GST_APP_SINK(m_sink.get())));
-    if (sample)
-        handleDecodedSample(sample.get());
-    return GST_FLOW_OK;
-}
-
-void DecoderSourceGStreamer::preroll()
-{
-    if (m_decoder)
-        gst_element_set_state(m_decoder.get(), GST_STATE_READY);
+    gst_pad_link(srcPad, sinkPad.get());
 }
 
 } // namespace WebCore
