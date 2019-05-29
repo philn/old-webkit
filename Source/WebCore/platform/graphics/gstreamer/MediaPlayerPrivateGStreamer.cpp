@@ -1167,6 +1167,16 @@ std::unique_ptr<PlatformTimeRanges> MediaPlayerPrivateGStreamer::buffered() cons
     return timeRanges;
 }
 
+static gboolean delayedBinDump(gpointer userData)
+{
+    GstElement* pipeline = GST_ELEMENT(userData);
+
+    WTF::String dotFileName = makeString(GST_OBJECT_NAME(pipeline), "_PLAYING");
+    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN_CAST(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, dotFileName.utf8().data());
+    gst_object_unref(pipeline);
+    return G_SOURCE_REMOVE;
+}
+
 void MediaPlayerPrivateGStreamer::handleMessage(GstMessage* message)
 {
     GUniqueOutPtr<GError> err;
@@ -1252,6 +1262,8 @@ void MediaPlayerPrivateGStreamer::handleMessage(GstMessage* message)
         CString dotFileName = makeString(GST_OBJECT_NAME(m_pipeline.get()), '.',
             gst_element_state_get_name(currentState), '_', gst_element_state_get_name(newState)).utf8();
         GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, dotFileName.data());
+        if (currentState == GST_STATE_PAUSED && newState == GST_STATE_PLAYING)
+            g_timeout_add_seconds(2, delayedBinDump, gst_object_ref(m_pipeline.get()));
 
         break;
     }
