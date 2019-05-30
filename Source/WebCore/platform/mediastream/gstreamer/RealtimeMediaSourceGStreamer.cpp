@@ -39,7 +39,7 @@ static GstPadProbeReturn dropReconfigureEvent(GstPad*, GstPadProbeInfo* info, gp
 GStreamerRealtimeMediaSource::GStreamerRealtimeMediaSource(RealtimeMediaSource::Type type, String&& name)
     : RealtimeMediaSource(type, name)
 {
-    m_pipeline = adoptGRef(gst_pipeline_new(nullptr));
+    m_pipeline = adoptGRef(gst_pipeline_new(makeString("RealtimeMediaSource", std::hex(reinterpret_cast<uintptr_t>(this), Lowercase)).utf8().data()));
     gst_pipeline_use_clock(GST_PIPELINE(m_pipeline.get()), gst_system_clock_obtain());
     gst_element_set_base_time(m_pipeline.get(), getWebRTCBaseTime());
     gst_element_set_start_time(m_pipeline.get(), GST_CLOCK_TIME_NONE);
