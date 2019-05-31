@@ -98,8 +98,6 @@ public:
 
     GstElement* pipeline() const { return m_pipeline.get(); }
 
-    void processSourcePad(GstPad*);
-
 protected:
     static void signalingStateChangedCallback(GStreamerMediaEndpoint*);
     static void iceConnectionStateChangedCallback(GStreamerMediaEndpoint*);
@@ -124,7 +122,7 @@ private:
 
     void start();
 
-    MediaStream& mediaStreamFromRTCStream(GstPad*);
+    MediaStream& mediaStreamFromRTCStream();
 
     void setLocalSessionDescriptionSucceeded();
     void addRemoteStream(GstPad*);

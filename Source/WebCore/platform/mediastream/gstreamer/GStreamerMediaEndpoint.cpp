@@ -560,56 +560,14 @@ void GStreamerMediaEndpoint::OnSignalingStateChange()
     });
 }
 
-MediaStream& GStreamerMediaEndpoint::mediaStreamFromRTCStream(GstPad* pad)
+MediaStream& GStreamerMediaEndpoint::mediaStreamFromRTCStream()
 {
-    // GUniquePtr<gchar> name(gst_object_get_name(GST_OBJECT_CAST(pad)));
     GUniquePtr<gchar> name(gst_object_get_name(GST_OBJECT_CAST(m_pipeline.get())));
     String label(name.get());
     auto mediaStream = m_remoteStreamsById.ensure(label, [label, this]() mutable {
         return MediaStream::create(*m_peerConnectionBackend.connection().scriptExecutionContext(), MediaStreamPrivate::create({ }, WTFMove(label)));
     });
     return *mediaStream.iterator->value;
-}
-
-static gboolean processSourcePadCallback(GstElement*, GstPad* pad, gpointer userData)
-{
-    auto endPoint = reinterpret_cast<GStreamerMediaEndpoint*>(userData);
-    endPoint->processSourcePad(pad);
-    return TRUE;
-}
-
-void GStreamerMediaEndpoint::processSourcePad(GstPad* pad)
-{
-    GRefPtr<GstCaps> caps = adoptGRef(gst_pad_query_caps(pad, nullptr));
-    GstStructure* capsStructure = gst_caps_get_structure(caps.get(), 0);
-    const gchar* mediaType = gst_structure_get_string(capsStructure, "media");
-    GST_DEBUG_OBJECT(m_pipeline.get(), "Incoming stream media type: %s", mediaType);
-    if (!g_strcmp0(mediaType, "audio")) {
-        callOnMainThread([protectedThis = makeRef(*this), pad] {
-            auto audioReceiver = protectedThis->m_peerConnectionBackend.audioReceiver(protectedThis->m_pipeline.get(), pad);
-            auto& track = audioReceiver.receiver->track();
-            Vector<RefPtr<MediaStream>> streams;
-            auto& mediaStream = protectedThis->mediaStreamFromRTCStream(pad);
-            streams.append(&mediaStream);
-            mediaStream.addTrackFromPlatform(track);
-            //m_pendingIncomingStreams.append(&mediaStream);
-            //protectedThis->m_peerConnectionBackend.emitTrackEvent({WTFMove(audioReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(audioReceiver.transceiver)});
-            protectedThis->m_peerConnectionBackend.addPendingTrackEvent({WTFMove(audioReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(audioReceiver.transceiver)});
-        });
-    } else if (!g_strcmp0(mediaType, "video")) {
-        callOnMainThread([protectedThis = makeRef(*this), pad] {
-            auto videoReceiver = protectedThis->m_peerConnectionBackend.videoReceiver(protectedThis->m_pipeline.get(), pad);
-            auto& track = videoReceiver.receiver->track();
-            Vector<RefPtr<MediaStream>> streams;
-            auto& mediaStream = protectedThis->mediaStreamFromRTCStream(pad);
-            mediaStream.addTrackFromPlatform(track);
-            streams.append(&mediaStream);
-            //m_pendingIncomingStreams.append(&mediaStream);
-            //protectedThis->m_peerConnectionBackend.emitTrackEvent({WTFMove(videoReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(videoReceiver.transceiver)});
-            protectedThis->m_peerConnectionBackend.addPendingTrackEvent({WTFMove(videoReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(videoReceiver.transceiver)});
-        });
-    }
-
 }
 
 void GStreamerMediaEndpoint::addRemoteStream(GstPad* pad)
@@ -629,47 +587,33 @@ void GStreamerMediaEndpoint::addRemoteStream(GstPad* pad)
     const gchar* mediaType = gst_structure_get_string(capsStructure, "media");
     GST_DEBUG_OBJECT(m_pipeline.get(), "Incoming stream media type: %s", mediaType);
 
-#if 1
     if (!g_strcmp0(mediaType, "audio")) {
-        callOnMainThread([protectedThis = makeRef(*this), pad] {
-            auto audioReceiver = protectedThis->m_peerConnectionBackend.audioReceiver(protectedThis->m_pipeline.get(), pad);
-            auto& track = audioReceiver.receiver->track();
-            Vector<RefPtr<MediaStream>> streams;
-            auto& mediaStream = protectedThis->mediaStreamFromRTCStream(pad);
-            streams.append(&mediaStream);
-            mediaStream.addTrackFromPlatform(track);
-            //m_pendingIncomingStreams.append(&mediaStream);
-            protectedThis->m_peerConnectionBackend.emitTrackEvent({WTFMove(audioReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(audioReceiver.transceiver)});
-        });
+        auto audioReceiver = m_peerConnectionBackend.audioReceiver(m_pipeline.get(), pad);
+        Vector<RefPtr<MediaStream>> streams;
+        auto& mediaStream = mediaStreamFromRTCStream();
+        streams.append(&mediaStream);
+        auto& track = audioReceiver.receiver->track();
+        mediaStream.addTrackFromPlatform(track);
+        //m_pendingIncomingStreams.append(&mediaStream);
+        m_peerConnectionBackend.addPendingTrackEvent({WTFMove(audioReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(audioReceiver.transceiver)});
     } else if (!g_strcmp0(mediaType, "video")) {
-        callOnMainThread([protectedThis = makeRef(*this), pad] {
-            auto videoReceiver = protectedThis->m_peerConnectionBackend.videoReceiver(protectedThis->m_pipeline.get(), pad);
-            auto& track = videoReceiver.receiver->track();
-            Vector<RefPtr<MediaStream>> streams;
-            auto& mediaStream = protectedThis->mediaStreamFromRTCStream(pad);
-            mediaStream.addTrackFromPlatform(track);
-            streams.append(&mediaStream);
-            //m_pendingIncomingStreams.append(&mediaStream);
-            protectedThis->m_peerConnectionBackend.emitTrackEvent({WTFMove(videoReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(videoReceiver.transceiver)});
-        });
+        auto videoReceiver = m_peerConnectionBackend.videoReceiver(m_pipeline.get(), pad);
+        auto& track = videoReceiver.receiver->track();
+        Vector<RefPtr<MediaStream>> streams;
+        auto& mediaStream = mediaStreamFromRTCStream();
+        mediaStream.addTrackFromPlatform(track);
+        streams.append(&mediaStream);
+        //m_pendingIncomingStreams.append(&mediaStream);
+        m_peerConnectionBackend.addPendingTrackEvent({WTFMove(videoReceiver.receiver), makeRef(track), WTFMove(streams), WTFMove(videoReceiver.transceiver)});
     }
-#endif
 
     start();
     if (m_pendingIncomingStreams > 1) {
-        m_pendingIncomingStreams = 0;
-    }
-
-#if 0
-    if (m_pendingIncomingStreams > 1) {
-        gst_element_foreach_src_pad(m_webrtcBin.get(), processSourcePadCallback, this);
-        start();
         m_pendingIncomingStreams = 0;
         callOnMainThread([protectedThis = makeRef(*this)] {
             protectedThis->m_peerConnectionBackend.firePendingTrackEvents();
         });
     }
-#endif
 }
 
 void GStreamerMediaEndpoint::removeRemoteStream(GstPad*)
