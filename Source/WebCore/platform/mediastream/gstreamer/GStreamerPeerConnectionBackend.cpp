@@ -354,12 +354,12 @@ ExceptionOr<Ref<RTCRtpSender>> GStreamerPeerConnectionBackend::addTrack(MediaStr
         if (!m_endpoint->addTrack(*senderBackend, track, mediaStreamIds))
             return Exception { TypeError, "Unable to add track"_s };
 
-        // if (auto sender = findExistingSender(m_peerConnection.currentTransceivers(), *senderBackend)) {
-        //     backendFromRTPSender(*sender).takeSource(*senderBackend);
-        //     sender->setTrack(makeRef(track));
-        //     sender->setMediaStreamIds(WTFMove(mediaStreamIds));
-        //     return sender.releaseNonNull();
-        // }
+        if (auto sender = findExistingSender(m_peerConnection.currentTransceivers(), *senderBackend)) {
+            backendFromRTPSender(*sender).takeSource(*senderBackend);
+            sender->setTrack(makeRef(track));
+            sender->setMediaStreamIds(WTFMove(mediaStreamIds));
+            return sender.releaseNonNull();
+        }
 
         auto transceiverBackend = m_endpoint->transceiverBackendFromSender(*senderBackend);
 

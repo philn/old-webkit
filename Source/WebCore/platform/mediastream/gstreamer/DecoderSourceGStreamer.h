@@ -30,7 +30,7 @@ class DecoderSourceGStreamer {
     void linkDecodePad(GstPad*);
     GstFlowReturn pullDecodedSample();
 
-    virtual void handleDecodedSample(GstSample*) = 0;
+    virtual void handleDecodedSample(GRefPtr<GstSample>&&) = 0;
 
  protected:
     DecoderSourceGStreamer(GstElement*, GstPad*);

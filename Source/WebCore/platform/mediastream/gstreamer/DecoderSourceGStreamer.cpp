@@ -42,7 +42,7 @@ DecoderSourceGStreamer::DecoderSourceGStreamer(GstElement* pipeline, GstPad* inc
         GRefPtr<GstSample> sample = adoptGRef(gst_app_sink_pull_sample(GST_APP_SINK(sink)));
         if (sample) {
             auto source = reinterpret_cast<DecoderSourceGStreamer*>(userData);
-            source->handleDecodedSample(sample.get());
+            source->handleDecodedSample(WTFMove(sample));
         }
         return GST_FLOW_OK;
     }), this);

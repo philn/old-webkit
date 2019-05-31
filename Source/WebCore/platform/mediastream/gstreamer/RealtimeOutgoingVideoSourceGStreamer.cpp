@@ -24,9 +24,13 @@
 #include "GStreamerCommon.h"
 #include "GStreamerVideoEncoder.h"
 #include "Logging.h"
-//#include "RealtimeVideoSourceGStreamer.h"
+#include "MediaSampleGStreamer.h"
 #include <gst/app/gstappsrc.h>
 #include <wtf/MainThread.h>
+
+#define GST_USE_UNSTABLE_API
+#include <gst/webrtc/webrtc.h>
+#undef GST_USE_UNSTABLE_API
 
 namespace WebCore {
 
@@ -91,7 +95,7 @@ void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
     GRefPtr<GstElement> webrtcBin = gst_bin_get_by_name(GST_BIN_CAST(m_pipeline.get()), "webkit-webrtcbin");
 
     m_outgoingVideoSource = gst_element_factory_make("appsrc", nullptr);
-    // gst_app_src_set_stream_type(GST_APP_SRC(m_outgoingVideoSource.get()), GST_APP_STREAM_TYPE_STREAM);
+    gst_app_src_set_stream_type(GST_APP_SRC(m_outgoingVideoSource.get()), GST_APP_STREAM_TYPE_STREAM);
     g_object_set(m_outgoingVideoSource.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
 
     // FIXME: properly configure output-selector, somehow!
@@ -99,23 +103,32 @@ void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
     gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_outgoingVideoSource.get(), m_outputSelector.get(), nullptr);
     gst_element_link(m_outgoingVideoSource.get(), m_outputSelector.get());
 
-// #define _WEBRTC_VP8
-#ifdef _WEBRTC_VP8
-    GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("video/x-vp8"));
-    GstElement* rtpvpay = gst_element_factory_make("rtpvp8pay", nullptr);
-    GRefPtr<GstCaps> vcaps2 = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "video",
-                                                            "payload", G_TYPE_INT, 96,
-                                                            "encoding-name", G_TYPE_STRING, "VP8", nullptr));
-#else
-    GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("video/x-h264"));
-    GstElement* rtpvpay = gst_element_factory_make("rtph264pay", nullptr);
+    //#define _WEBRTC_VP8
+    GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("video/x-vp9"));
+    GstElement* rtpvpay = gst_element_factory_make("rtpvp9pay", nullptr);
     GRefPtr<GstCaps> vcaps2 = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "video",
                                                             "payload", G_TYPE_INT, 98,
-                                                            "encoding-name", G_TYPE_STRING, "H264", nullptr));
-    g_object_set(rtpvpay, "pt", 98, "config-interval", 1, nullptr);
-#endif
+                                                            "encoding-name", G_TYPE_STRING, "VP9", nullptr));
+    g_object_set(rtpvpay, "pt", 98, // "perfect-rtptime", FALSE, "timestamp-offset", 0,
+                 nullptr);
+
+// #ifdef _WEBRTC_VP8
+//     GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("video/x-vp8"));
+//     GstElement* rtpvpay = gst_element_factory_make("rtpvp8pay", nullptr);
+//     GRefPtr<GstCaps> vcaps2 = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "video",
+//                                                             "payload", G_TYPE_INT, 96,
+//                                                             "encoding-name", G_TYPE_STRING, "VP8", nullptr));
+// #else
+//     GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("video/x-h264"));
+//     GstElement* rtpvpay = gst_element_factory_make("rtph264pay", nullptr);
+//     GRefPtr<GstCaps> vcaps2 = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "video",
+//                                                             "payload", G_TYPE_INT, 98,
+//                                                             "encoding-name", G_TYPE_STRING, "H264", nullptr));
+//     g_object_set(rtpvpay, "pt", 98, "config-interval", 1, nullptr);
+// #endif
 
     GstElement* videoconvert = gst_element_factory_make("videoconvert", nullptr);
+    GstElement* queuePre = gst_element_factory_make("queue", nullptr);
     GstElement* encoder = gst_element_factory_make("webrtcvideoencoder", nullptr);
     g_object_set(encoder, "format", caps.get(), nullptr);
 
@@ -123,14 +136,26 @@ void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
     GstElement* vcapsfilter = gst_element_factory_make("capsfilter", nullptr);
     g_object_set(vcapsfilter, "caps", vcaps2.get(), nullptr);
 
-    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), videoconvert, encoder, rtpvpay, queue, vcapsfilter, nullptr);
+    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), videoconvert, queuePre, encoder, rtpvpay, queue, vcapsfilter, nullptr);
 
-    gst_element_link_many(m_outputSelector.get(), videoconvert, encoder, rtpvpay, queue, vcapsfilter, nullptr);
-    gst_element_link(vcapsfilter, webrtcBin.get());
+    gst_element_link_many(m_outputSelector.get(), videoconvert, queuePre, encoder, rtpvpay, queue, vcapsfilter, nullptr);
+
+    GRefPtr<GstPad> srcPad = adoptGRef(gst_element_get_static_pad(vcapsfilter, "src"));
+    GRefPtr<GstPad> sinkPad = adoptGRef(gst_element_get_request_pad(webrtcBin.get(), "sink_%u"));
+    gst_pad_link(srcPad.get(), sinkPad.get());
+
+    GstWebRTCRTPTransceiver* transceiver = nullptr;
+    g_object_get(sinkPad.get(), "transceiver", &transceiver, nullptr);
+    // gst_webrtc_rtp_transceiver_set_direction(transceiver, GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV);
+    g_printerr(">>>> transceiver %p\n", transceiver);
+    g_object_get(transceiver, "sender", &m_sender.outPtr(), nullptr);
+    g_printerr(">>>> sender %p\n", m_sender.get());
+
 
     gst_element_sync_state_with_parent(m_outgoingVideoSource.get());
     gst_element_sync_state_with_parent(m_outputSelector.get());
     gst_element_sync_state_with_parent(videoconvert);
+    gst_element_sync_state_with_parent(queuePre);
     gst_element_sync_state_with_parent(encoder);
     gst_element_sync_state_with_parent(rtpvpay);
     gst_element_sync_state_with_parent(queue);
@@ -141,9 +166,9 @@ void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
 void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample& mediaSample)
 {
     ASSERT(mediaSample.platformSample().type == PlatformSample::GStreamerSampleType);
-    GRefPtr<GstSample> gstSample = mediaSample.platformSample().sample.gstSample;
+    auto gstSample = static_cast<MediaSampleGStreamer*>(&mediaSample)->platformSample().sample.gstSample;
 
-    gst_app_src_push_sample(GST_APP_SRC(m_outgoingVideoSource.get()), gstSample.get());
+    gst_app_src_push_sample(GST_APP_SRC(m_outgoingVideoSource.get()), gstSample);
 }
 
 

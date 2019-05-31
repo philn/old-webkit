@@ -31,8 +31,7 @@ public:
     static Ref<RealtimeIncomingVideoSourceGStreamer> create(GstElement* pipeline, GstPad* pad) { return adoptRef(*new RealtimeIncomingVideoSourceGStreamer(pipeline, pad)); }
     ~RealtimeIncomingVideoSourceGStreamer() = default; //{ stopProducingData(); }
 
-    /* void padExposed(GstPad*) final; */
-    void handleDecodedSample(GstSample*) final;
+    void handleDecodedSample(GRefPtr<GstSample>&&) final;
 
 protected:
     RealtimeIncomingVideoSourceGStreamer(String&&);

@@ -48,10 +48,11 @@ RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(GstEl
     start();
 }
 
-void RealtimeIncomingVideoSourceGStreamer::handleDecodedSample(GstSample* sample)
+void RealtimeIncomingVideoSourceGStreamer::handleDecodedSample(GRefPtr<GstSample>&& sample)
 {
-    callOnMainThread([protectedThis = makeRef(*this), sample] {
-        protectedThis->videoSampleAvailable(MediaSampleGStreamer::create(sample, WebCore::FloatSize(), String()));
+    auto mediaSample = MediaSampleGStreamer::create(WTFMove(sample), WebCore::FloatSize(), String());
+    callOnMainThread([protectedThis = makeRef(*this), mediaSample = WTFMove(mediaSample)] {
+        protectedThis->videoSampleAvailable(mediaSample.get());
     });
 }
 

@@ -40,6 +40,8 @@ public:
     bool setSource(Ref<MediaStreamTrackPrivate>&&);
     MediaStreamTrackPrivate& source() const { return m_audioSource.get(); }
 
+    GRefPtr<GstWebRTCRTPSender> sender() const { return m_sender; }
+
 protected:
     explicit RealtimeOutgoingAudioSourceGStreamer(Ref<MediaStreamTrackPrivate>&&, GstElement*);
 
@@ -73,6 +75,7 @@ private:
     GRefPtr<GstElement> m_pipeline;
     GRefPtr<GstElement> m_outputSelector;
     GRefPtr<GstElement> m_outgoingAudioSource;
+    GRefPtr<GstWebRTCRTPSender> m_sender;
 };
 
 } // namespace WebCore

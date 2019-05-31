@@ -26,6 +26,10 @@
 #include "RealtimeMediaSource.h"
 #include <gst/app/gstappsrc.h>
 
+#define GST_USE_UNSTABLE_API
+#include <gst/webrtc/webrtc.h>
+#undef GST_USE_UNSTABLE_API
+
 namespace WebCore {
 
 RealtimeOutgoingAudioSourceGStreamer::RealtimeOutgoingAudioSourceGStreamer(Ref<MediaStreamTrackPrivate>&& audioSource, GstElement* pipeline)
@@ -61,20 +65,22 @@ void RealtimeOutgoingAudioSourceGStreamer::initializeConverter()
     // GstElement* audioSourceElement = gst_element_factory_make("proxysrc", nullptr);
     // g_object_set(audioSourceElement, "proxysink", audioSource.proxySink(), nullptr);
     m_outgoingAudioSource = gst_element_factory_make("appsrc", nullptr);
-    //gst_app_src_set_stream_type(GST_APP_SRC(m_outgoingAudioSource.get()), GST_APP_STREAM_TYPE_STREAM);
+    gst_app_src_set_stream_type(GST_APP_SRC(m_outgoingAudioSource.get()), GST_APP_STREAM_TYPE_STREAM);
     g_object_set(m_outgoingAudioSource.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
 
     GstElement* audioconvert = gst_element_factory_make("audioconvert", nullptr);
     GstElement* audioresample = gst_element_factory_make("audioresample", nullptr);
     GstElement* audioQueue1 = gst_element_factory_make("queue", nullptr);
 
+#define _OPUS
 #ifdef _OPUS
     GstElement* aenc = gst_element_factory_make("opusenc", nullptr);
     GstElement* rtpapay = gst_element_factory_make("rtpopuspay", nullptr);
     GRefPtr<GstCaps> acaps = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "audio",
                                                            "payload", G_TYPE_INT, 111,
                                                            "encoding-name", G_TYPE_STRING, "OPUS", nullptr));
-    g_object_set(rtpapay, "pt", 111, nullptr);
+    g_object_set(rtpapay, "pt", 111, // "perfect-rtptime", FALSE, "timestamp-offset", 0,
+                 nullptr);
 #else
     GstElement* aenc = gst_element_factory_make("alawenc", nullptr);
     GstElement* rtpapay = gst_element_factory_make("rtppcmapay", nullptr);
@@ -96,6 +102,12 @@ void RealtimeOutgoingAudioSourceGStreamer::initializeConverter()
     // g_printerr("webrtcBin: %p, pad: %p\n", webrtcBin.get(), asink.get());
     // GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-outgoing-audio");
     gst_pad_link(apad.get(), asink.get());
+
+    GstWebRTCRTPTransceiver* transceiver = nullptr;
+    g_object_get(asink.get(), "transceiver", &transceiver, nullptr);
+    g_printerr(">>>> transceiver %p\n", transceiver);
+    g_object_get(transceiver, "sender", &m_sender.outPtr(), nullptr);
+    g_printerr(">>>> sender %p\n", m_sender.get());
 
     gst_element_sync_state_with_parent(m_outgoingAudioSource.get());
     gst_element_sync_state_with_parent(audioconvert);

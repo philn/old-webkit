@@ -62,7 +62,7 @@ Optional<RTCRtpTransceiverDirection> GStreamerRtpTransceiverBackend::currentDire
 void GStreamerRtpTransceiverBackend::setDirection(RTCRtpTransceiverDirection direction)
 {
     // FIXME: Why no direction GObject property in GstWebRTCRTPTransceiver?
-    m_rtcTransceiver->direction = fromRTCRtpTransceiverDirection(direction);
+    gst_webrtc_rtp_transceiver_set_direction(m_rtcTransceiver.get(), fromRTCRtpTransceiverDirection(direction));
 }
 
 String GStreamerRtpTransceiverBackend::mid()

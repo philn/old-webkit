@@ -384,16 +384,19 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
 
     GStreamerRtpSenderBackend::Source source;
     // rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> rtcTrack;
+    GRefPtr<GstWebRTCRTPSender> rtcSender;
     switch (track.privateTrack().type()) {
     case RealtimeMediaSource::Type::Audio: {
         auto audioSource = RealtimeOutgoingAudioSourceGStreamer::create(track.privateTrack(), m_pipeline.get());
         // rtcTrack = m_peerConnectionFactory.CreateAudioTrack(track.id().utf8().data(), audioSource.ptr());
+        rtcSender = audioSource->sender();
         source = WTFMove(audioSource);
         break;
     }
     case RealtimeMediaSource::Type::Video: {
         auto videoSource = RealtimeOutgoingVideoSourceGStreamer::create(track.privateTrack(), m_pipeline.get());
         // rtcTrack = m_peerConnectionFactory.CreateVideoTrack(track.id().utf8().data(), videoSource.ptr());
+        rtcSender = videoSource->sender();
         source = WTFMove(videoSource);
         break;
     }
@@ -422,6 +425,7 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
     // if (!newRTPSender.ok())
     //     return false;
     // sender.setRTCSender(newRTPSender.MoveValue());
+    sender.setRTCSender(WTFMove(rtcSender));
 
     gst_element_set_state(m_pipeline.get(), GST_STATE_PLAYING);
     return true;

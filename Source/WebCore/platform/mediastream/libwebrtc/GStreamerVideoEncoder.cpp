@@ -39,7 +39,7 @@ static GstStaticPadTemplate sinkTemplate = GST_STATIC_PAD_TEMPLATE ("sink",
 static GstStaticPadTemplate srcTemplate = GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS ("video/x-h264;video/x-vp8"));
+    GST_STATIC_CAPS ("video/x-h264;video/x-vp8;video/x-vp9"));
 
 typedef void (*SetBitrateFunc) (GObject * encoder, const gchar * propname,
     gint bitrate);
@@ -64,6 +64,7 @@ typedef enum
   ENCODER_OPENH264,
   ENCODER_OMXH264,
   ENCODER_VP8,
+  ENCODER_VP9,
   ENCODER_LAST,
 } EncoderId;
 
@@ -294,6 +295,17 @@ setup_omxh264enc (GstWebrtcVideoEncoder * self)
   g_object_set (PRIV (self)->parser, "config-interval", 1, NULL);
 }
 
+static void
+setup_vp8enc (GstWebrtcVideoEncoder * self)
+{
+    gst_preset_load_preset (GST_PRESET (PRIV (self)->encoder), "Profile Realtime");
+}
+
+static void
+setup_vp9enc (GstWebrtcVideoEncoder * self)
+{
+    g_object_set (PRIV (self)->encoder, "lag-in-frames", 0, "deadline", 1, NULL);
+}
 
 static void
 set_bitrate_kbit_per_sec (GObject * encoder, const gchar * prop_name,
@@ -355,6 +367,13 @@ gst_webrtc_video_encoder_class_init (GstWebrtcVideoEncoderClass * klass)
       "video/x-h264",
       "video/x-h264,alignment=au,stream-format=byte-stream,profile=baseline",
       setup_openh264enc, "bitrate", set_bitrate_kbit_per_sec, "gop-size");
+  register_known_encoder (ENCODER_VP8, "vp8enc", NULL, "video/x-vp8", NULL,
+                          setup_vp8enc, "target-bitrate", set_bitrate_bit_per_sec,
+                          "keyframe-max-dist");
+  register_known_encoder (ENCODER_VP9, "vp9enc", NULL, "video/x-vp9", NULL,
+                          setup_vp9enc, "target-bitrate", set_bitrate_bit_per_sec,
+                          "keyframe-max-dist");
+
 }
 
 static void

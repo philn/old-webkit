@@ -40,6 +40,8 @@ public:
 
     void setApplyRotation(bool shouldApplyRotation) { m_shouldApplyRotation = shouldApplyRotation; }
 
+    GRefPtr<GstWebRTCRTPSender> sender() const { return m_sender; }
+
 protected:
     explicit RealtimeOutgoingVideoSourceGStreamer(Ref<MediaStreamTrackPrivate>&&, GstElement*);
 
@@ -68,6 +70,7 @@ private:
     GRefPtr<GstElement> m_pipeline;
     GRefPtr<GstElement> m_outputSelector;
     GRefPtr<GstElement> m_outgoingVideoSource;
+    GRefPtr<GstWebRTCRTPSender> m_sender;
 };
 
 } // namespace WebCore
