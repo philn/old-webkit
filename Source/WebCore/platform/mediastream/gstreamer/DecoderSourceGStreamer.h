@@ -26,16 +26,20 @@
 namespace WebCore {
 
 class DecoderSourceGStreamer {
-public:
+ public:
+    void linkDecodePad(GstPad*);
+    GstFlowReturn pullDecodedSample();
 
     virtual void handleDecodedSample(GstSample*) = 0;
 
-protected:
+ protected:
     DecoderSourceGStreamer(GstElement*, GstPad*);
 
-private:
+ private:
     GRefPtr<GstElement> m_pipeline;
     GRefPtr<GstElement> m_queue1;
+    GRefPtr<GstElement> m_decoder;
+    GRefPtr<GstElement> m_queue2;
     GRefPtr<GstElement> m_sink;
 };
 

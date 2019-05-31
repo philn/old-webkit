@@ -309,16 +309,6 @@ uint64_t toGstUnsigned64Time(const MediaTime& mediaTime)
     return time.timeValue();
 }
 
-static gboolean delayedBinDump(gpointer userData)
-{
-    GstElement* pipeline = GST_ELEMENT(userData);
-
-    WTF::String dotFileName = makeString(GST_OBJECT_NAME(pipeline), "_PLAYING");
-    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN_CAST(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, dotFileName.utf8().data());
-    gst_object_unref(pipeline);
-    return G_SOURCE_REMOVE;
-}
-
 static void simpleBusMessageCallback(GstBus*, GstMessage* message, GstBin* pipeline)
 {
     switch (GST_MESSAGE_TYPE(message)) {
@@ -344,9 +334,7 @@ static void simpleBusMessageCallback(GstBus*, GstMessage* message, GstBin* pipel
                 gst_element_state_get_name(oldState), '_',
                 gst_element_state_get_name(newState));
 
-            GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN_CAST(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, dotFileName.utf8().data());
-            if (oldState == GST_STATE_PAUSED && newState == GST_STATE_PLAYING)
-                g_timeout_add_seconds(2, delayedBinDump, gst_object_ref(pipeline));
+            GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, dotFileName.utf8().data());
         }
         break;
     default:

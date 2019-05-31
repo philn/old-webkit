@@ -71,12 +71,13 @@ void RealtimeIncomingAudioSourceGStreamer::handleDecodedSample(GstSample* sample
 {
     callOnMainThread([protectedThis = makeRef(*this), sample] {
         GstAudioInfo info;
-        gst_audio_info_init(&info);
+        GstCaps* caps = gst_sample_get_caps(sample);
+        gst_audio_info_from_caps(&info, caps);
 
         auto data(std::unique_ptr<GStreamerAudioData>(new GStreamerAudioData(sample, info)));
         size_t numberOfFrames = 1;
-        auto mediaTime = MediaTime((protectedThis->m_numberOfFrames * G_USEC_PER_SEC) / 48000, G_USEC_PER_SEC);
-        protectedThis->audioSamplesAvailable(mediaTime, *data.get(), GStreamerAudioStreamDescription(), numberOfFrames);
+        auto mediaTime = MediaTime((protectedThis->m_numberOfFrames * G_USEC_PER_SEC) / info.rate, G_USEC_PER_SEC);
+        protectedThis->audioSamplesAvailable(mediaTime, *data.get(), GStreamerAudioStreamDescription(info), numberOfFrames);
 
         protectedThis->m_numberOfFrames += numberOfFrames;
     });

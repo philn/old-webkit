@@ -44,12 +44,12 @@ static void webkitMediaStreamSrcRemoveTrackByType(WebKitMediaStreamSrc* self, Re
 static GstStaticPadTemplate videoSrcTemplate = GST_STATIC_PAD_TEMPLATE("video_src",
     GST_PAD_SRC,
     GST_PAD_SOMETIMES,
-    GST_STATIC_CAPS("video/x-raw;video/x-h264;video/x-vp8; application/x-rtp, media=(string)video"));
+    GST_STATIC_CAPS("video/x-raw;video/x-h264;video/x-vp8"));
 
 static GstStaticPadTemplate audioSrcTemplate = GST_STATIC_PAD_TEMPLATE("audio_src",
     GST_PAD_SRC,
     GST_PAD_SOMETIMES,
-    GST_STATIC_CAPS("audio/x-raw(ANY); application/x-rtp, media=(string)audio"));
+    GST_STATIC_CAPS("audio/x-raw(ANY);"));
 
 static GstTagList* mediaStreamTrackPrivateGetTags(MediaStreamTrackPrivate* track)
 {
