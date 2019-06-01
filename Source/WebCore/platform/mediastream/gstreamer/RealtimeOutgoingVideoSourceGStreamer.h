@@ -68,7 +68,6 @@ private:
     WTF::Optional<RealtimeMediaSourceSettings> m_initialSettings;
     bool m_isStopped { false };
     GRefPtr<GstElement> m_pipeline;
-    GRefPtr<GstElement> m_outputSelector;
     GRefPtr<GstElement> m_outgoingVideoSource;
     GRefPtr<GstWebRTCRTPSender> m_sender;
 };

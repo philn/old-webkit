@@ -98,10 +98,7 @@ void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
     gst_app_src_set_stream_type(GST_APP_SRC(m_outgoingVideoSource.get()), GST_APP_STREAM_TYPE_STREAM);
     g_object_set(m_outgoingVideoSource.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
 
-    // FIXME: properly configure output-selector, somehow!
-    m_outputSelector = gst_element_factory_make("identity", nullptr);
-    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_outgoingVideoSource.get(), m_outputSelector.get(), nullptr);
-    gst_element_link(m_outgoingVideoSource.get(), m_outputSelector.get());
+    gst_bin_add(GST_BIN_CAST(m_pipeline.get()), m_outgoingVideoSource.get());
 
     //#define _WEBRTC_VP8
     GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("video/x-vp9"));
@@ -138,7 +135,7 @@ void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
 
     gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), videoconvert, queuePre, encoder, rtpvpay, queue, vcapsfilter, nullptr);
 
-    gst_element_link_many(m_outputSelector.get(), videoconvert, queuePre, encoder, rtpvpay, queue, vcapsfilter, nullptr);
+    gst_element_link_many(m_outgoingVideoSource.get(), videoconvert, queuePre, encoder, rtpvpay, queue, vcapsfilter, nullptr);
 
     GRefPtr<GstPad> srcPad = adoptGRef(gst_element_get_static_pad(vcapsfilter, "src"));
     GRefPtr<GstPad> sinkPad = adoptGRef(gst_element_get_request_pad(webrtcBin.get(), "sink_%u"));
@@ -153,7 +150,6 @@ void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
 
 
     gst_element_sync_state_with_parent(m_outgoingVideoSource.get());
-    gst_element_sync_state_with_parent(m_outputSelector.get());
     gst_element_sync_state_with_parent(videoconvert);
     gst_element_sync_state_with_parent(queuePre);
     gst_element_sync_state_with_parent(encoder);
@@ -167,7 +163,7 @@ void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackP
 {
     ASSERT(mediaSample.platformSample().type == PlatformSample::GStreamerSampleType);
     auto gstSample = static_cast<MediaSampleGStreamer*>(&mediaSample)->platformSample().sample.gstSample;
-
+    // auto copiedSample = adoptGRef(gst_sample_copy(gstSample));
     gst_app_src_push_sample(GST_APP_SRC(m_outgoingVideoSource.get()), gstSample);
 }
 

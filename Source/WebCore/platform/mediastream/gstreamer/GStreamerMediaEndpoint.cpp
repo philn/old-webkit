@@ -107,12 +107,6 @@ void GStreamerMediaEndpoint::webrtcBinPadRemovedCallback(GstElement*, GstPad* pa
     endpoint->OnRemoveStream(pad);
 }
 
-void GStreamerMediaEndpoint::webrtcBinReadyCallback(GstElement*, GStreamerMediaEndpoint* endpoint)
-{
-    g_printerr("NO MORE PADS\n");
-    endpoint->start();
-}
-
 GStreamerMediaEndpoint::GStreamerMediaEndpoint(GStreamerPeerConnectionBackend& peerConnection)
     : m_peerConnectionBackend(peerConnection)
     , m_statsLogTimer(*this, &GStreamerMediaEndpoint::gatherStatsForLogging)
@@ -141,7 +135,6 @@ GStreamerMediaEndpoint::GStreamerMediaEndpoint(GStreamerPeerConnectionBackend& p
     g_signal_connect(m_webrtcBin.get(), "on-ice-candidate", G_CALLBACK(iceCandidateCallback), this);
     g_signal_connect(m_webrtcBin.get(), "pad-added", G_CALLBACK(webrtcBinPadAddedCallback), this);
     g_signal_connect(m_webrtcBin.get(), "pad-removed", G_CALLBACK(webrtcBinPadRemovedCallback), this);
-    g_signal_connect(m_webrtcBin.get(), "no-more-pads", G_CALLBACK(webrtcBinReadyCallback), this);
     gst_bin_add(GST_BIN_CAST(m_pipeline.get()), m_webrtcBin.get());
 
     gst_element_set_state(m_pipeline.get(), GST_STATE_PLAYING);
@@ -538,16 +531,19 @@ void GStreamerMediaEndpoint::doCreateAnswer()
 
 void GStreamerMediaEndpoint::getStats(Ref<DeferredPromise>&&)
 {
+    g_printerr("getStats\n");
     notImplemented();
 }
 
-void GStreamerMediaEndpoint::getStats(GstWebRTCRTPReceiver*, Ref<DeferredPromise>&&)
+void GStreamerMediaEndpoint::getStats(GstWebRTCRTPReceiver* receiver, Ref<DeferredPromise>&&)
 {
+    g_printerr("getStats for receiver %p\n", receiver);
     notImplemented();
 }
 
-void GStreamerMediaEndpoint::getStats(GstWebRTCRTPSender*, Ref<DeferredPromise>&&)
+void GStreamerMediaEndpoint::getStats(GstWebRTCRTPSender* sender, Ref<DeferredPromise>&&)
 {
+    g_printerr("getStats for sender %p\n", sender);
     notImplemented();
 }
 
@@ -624,6 +620,7 @@ void GStreamerMediaEndpoint::addRemoteStream(GstPad* pad)
 void GStreamerMediaEndpoint::removeRemoteStream(GstPad*)
 {
     notImplemented();
+    g_printerr("remove stream\n");
     // auto* mediaStream = m_streams.take(pad);
     // if (mediaStream)
     //     m_peerConnectionBackend.removeRemoteStream(mediaStream);
@@ -710,6 +707,7 @@ bool GStreamerMediaEndpoint::addIceCandidate(GStreamerIceCandidate& candidate)
 void GStreamerMediaEndpoint::stop()
 {
     stopLoggingStats();
+    gst_element_set_state(m_pipeline.get(), GST_STATE_NULL);
 }
 
 void GStreamerMediaEndpoint::OnNegotiationNeeded()

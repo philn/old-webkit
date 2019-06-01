@@ -380,6 +380,7 @@ ExceptionOr<void> RTCPeerConnection::setConfiguration(RTCConfiguration&& configu
 
 void RTCPeerConnection::getStats(MediaStreamTrack* selector, Ref<DeferredPromise>&& promise)
 {
+    fprintf(stderr, "getStats selector: %p\n", selector);
     if (selector) {
         for (auto& transceiver : m_transceiverSet->list()) {
             if (transceiver->sender().track() == selector) {
