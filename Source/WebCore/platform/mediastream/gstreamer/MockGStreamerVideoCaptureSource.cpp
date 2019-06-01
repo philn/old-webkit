@@ -53,11 +53,8 @@ public:
             "height", G_TYPE_INT, imageSize.height(),
             "framerate", GST_TYPE_FRACTION, fpsNumerator, fpsDenominator, nullptr));
         auto data = imageBuffer->toBGRAData();
-        auto size = data.size();
-        auto buffer = adoptGRef(gst_buffer_new_wrapped(g_memdup(data.releaseBuffer().get(), size), size));
-        auto gstSample = adoptGRef(gst_sample_new(buffer.get(), caps.get(), nullptr, nullptr));
-
-        videoSampleAvailable(MediaSampleGStreamer::create(WTFMove(gstSample), FloatSize(), String()));
+        auto mediaSample = MediaSampleGStreamer::create(WTFMove(data), WTFMove(caps));
+        videoSampleAvailable(WTFMove(mediaSample));
     }
 };
 

@@ -36,6 +36,8 @@ public:
         return adoptRef(*new MediaSampleGStreamer(WTFMove(sample), presentationSize, trackId));
     }
 
+    static Ref<MediaSampleGStreamer> create(Vector<unsigned char>&&, GRefPtr<GstCaps>&&);
+
     static Ref<MediaSampleGStreamer> createFakeSample(GstCaps*, MediaTime pts, MediaTime dts, MediaTime duration, const FloatSize& presentationSize, const AtomString& trackId);
 
     void applyPtsOffset(MediaTime);

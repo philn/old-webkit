@@ -85,6 +85,20 @@ MediaSampleGStreamer::MediaSampleGStreamer(const FloatSize& presentationSize, co
 {
 }
 
+Ref<MediaSampleGStreamer> MediaSampleGStreamer::create(Vector<unsigned char>&& data, GRefPtr<GstCaps>&& caps)
+{
+    // Wrap the whole Vector object in case the data is stored in the inlined buffer.
+    auto* bufferData = data.data();
+    auto bufferLength = data.size();
+    auto buffer = adoptGRef(gst_buffer_new_wrapped_full(static_cast<GstMemoryFlags>(0),
+        bufferData, bufferLength, 0, bufferLength, new Vector<unsigned char>(WTFMove(data)), [](gpointer data) {
+            delete static_cast<Vector<unsigned char>*>(data);
+    }));
+
+    auto gstSample = adoptGRef(gst_sample_new(buffer.get(), caps.get(), nullptr, nullptr));
+    return MediaSampleGStreamer::create(WTFMove(gstSample), FloatSize(), String());
+}
+
 Ref<MediaSampleGStreamer> MediaSampleGStreamer::createFakeSample(GstCaps*, MediaTime pts, MediaTime dts, MediaTime duration, const FloatSize& presentationSize, const AtomString& trackId)
 {
     MediaSampleGStreamer* gstreamerMediaSample = new MediaSampleGStreamer(presentationSize, trackId);
