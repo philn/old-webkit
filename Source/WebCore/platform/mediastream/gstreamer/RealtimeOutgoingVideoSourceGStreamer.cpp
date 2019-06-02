@@ -21,95 +21,49 @@
 
 #if USE(GSTREAMER_WEBRTC)
 
-#include "GStreamerCommon.h"
-#include "GStreamerVideoEncoder.h"
-#include "Logging.h"
 #include "MediaSampleGStreamer.h"
 #include <gst/app/gstappsrc.h>
-#include <wtf/MainThread.h>
-
-#define GST_USE_UNSTABLE_API
-#include <gst/webrtc/webrtc.h>
-#undef GST_USE_UNSTABLE_API
 
 namespace WebCore {
 
-    RealtimeOutgoingVideoSourceGStreamer::RealtimeOutgoingVideoSourceGStreamer(Ref<MediaStreamTrackPrivate>&& videoSource, GstElement* pipeline)
-    : m_videoSource(WTFMove(videoSource))
-    , m_pipeline(pipeline)
+RealtimeOutgoingVideoSourceGStreamer::RealtimeOutgoingVideoSourceGStreamer(Ref<MediaStreamTrackPrivate>&& source, GstElement* pipeline)
+    : RealtimeOutgoingMediaSourceGStreamer(WTFMove(source), pipeline)
 {
-    m_videoSource->addObserver(*this);
+    m_source->addObserver(*this);
     initializeFromSource();
 }
 
-bool RealtimeOutgoingVideoSourceGStreamer::setSource(Ref<MediaStreamTrackPrivate>&& newSource)
+void RealtimeOutgoingVideoSourceGStreamer::setPayloadType(int payloadType)
 {
-    if (!m_initialSettings)
-        m_initialSettings = m_videoSource->source().settings();
-
-    m_videoSource->removeObserver(*this);
-    m_videoSource = WTFMove(newSource);
-    m_videoSource->addObserver(*this);
-
-    initializeFromSource();
-    return true;
+    g_object_set(m_payloader.get(), "pt", payloadType, nullptr);
+    m_caps = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "video",
+                                           "encoding-name", G_TYPE_STRING, "VP9",
+                                           "payload", G_TYPE_INT, payloadType,
+                                           nullptr));
+    g_object_set(m_capsFilter.get(), "caps", m_caps.get(), nullptr);
 }
 
-void RealtimeOutgoingVideoSourceGStreamer::stop()
+void RealtimeOutgoingVideoSourceGStreamer::synchronizeStates()
 {
-    m_videoSource->removeObserver(*this);
-    m_isStopped = true;
-    g_printerr("Stop\n");
+    gst_element_sync_state_with_parent(m_outgoingSource.get());
+    gst_element_sync_state_with_parent(m_videoConvert.get());
+    gst_element_sync_state_with_parent(m_preEncoderQueue.get());
+    gst_element_sync_state_with_parent(m_encoder.get());
+    gst_element_sync_state_with_parent(m_payloader.get());
+    gst_element_sync_state_with_parent(m_postEncoderQueue.get());
+    gst_element_sync_state_with_parent(m_capsFilter.get());
+    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN_CAST(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-outgoing-video");
 }
 
-void RealtimeOutgoingVideoSourceGStreamer::sourceMutedChanged()
+void RealtimeOutgoingVideoSourceGStreamer::initialize()
 {
-    ASSERT(m_muted != m_videoSource->muted());
-
-    m_muted = m_videoSource->muted();
-
-    g_printerr("sourceMutedChanged to %d\n", m_muted);
-}
-
-void RealtimeOutgoingVideoSourceGStreamer::sourceEnabledChanged()
-{
-    ASSERT(m_enabled != m_videoSource->enabled());
-
-    m_enabled = m_videoSource->enabled();
-
-    g_printerr("sourceEnabledChanged to %d\n", m_enabled);
-}
-
-void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
-{
-    const auto& settings = m_videoSource->source().settings();
+    g_printerr("INIT\n");
+    const auto& settings = m_source->source().settings();
     m_width = settings.width();
     m_height = settings.height();
 
-    m_muted = m_videoSource->muted();
-    m_enabled = m_videoSource->enabled();
-
-    g_printerr("initializeFromSource muted: %d, enabled: %d\n", m_muted, m_enabled);
-    // auto& videoSource = reinterpret_cast<GStreamerRealtimeVideoSource&>(m_videoSource->source());
-
-    GRefPtr<GstElement> webrtcBin = gst_bin_get_by_name(GST_BIN_CAST(m_pipeline.get()), "webkit-webrtcbin");
-
-    m_outgoingVideoSource = gst_element_factory_make("appsrc", nullptr);
-    gst_app_src_set_stream_type(GST_APP_SRC(m_outgoingVideoSource.get()), GST_APP_STREAM_TYPE_STREAM);
-    g_object_set(m_outgoingVideoSource.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
-
-    gst_bin_add(GST_BIN_CAST(m_pipeline.get()), m_outgoingVideoSource.get());
-
-    //#define _WEBRTC_VP8
-    GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("video/x-vp9"));
-    GstElement* rtpvpay = gst_element_factory_make("rtpvp9pay", nullptr);
-    GRefPtr<GstCaps> vcaps2 = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "video",
-                                                            "payload", G_TYPE_INT, 98,
-                                                            "encoding-name", G_TYPE_STRING, "VP9", nullptr));
-    g_object_set(rtpvpay, "pt", 98, // "perfect-rtptime", FALSE, "timestamp-offset", 0,
-                 nullptr);
-
-// #ifdef _WEBRTC_VP8
+    m_caps = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "video",
+                                           "encoding-name", G_TYPE_STRING, "VP9", nullptr));
 //     GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("video/x-vp8"));
 //     GstElement* rtpvpay = gst_element_factory_make("rtpvp8pay", nullptr);
 //     GRefPtr<GstCaps> vcaps2 = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "video",
@@ -122,51 +76,26 @@ void RealtimeOutgoingVideoSourceGStreamer::initializeFromSource()
 //                                                             "payload", G_TYPE_INT, 98,
 //                                                             "encoding-name", G_TYPE_STRING, "H264", nullptr));
 //     g_object_set(rtpvpay, "pt", 98, "config-interval", 1, nullptr);
-// #endif
 
-    GstElement* videoconvert = gst_element_factory_make("videoconvert", nullptr);
-    GstElement* queuePre = gst_element_factory_make("queue", nullptr);
-    GstElement* encoder = gst_element_factory_make("webrtcvideoencoder", nullptr);
-    g_object_set(encoder, "format", caps.get(), nullptr);
+    m_videoConvert = gst_element_factory_make("videoconvert", nullptr);
+    m_encoder = gst_element_factory_make("webrtcvideoencoder", nullptr);
+    GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("video/x-vp9"));
+    g_object_set(m_encoder.get(), "format", caps.get(), nullptr);
 
-    GstElement* queue = gst_element_factory_make("queue", nullptr);
-    GstElement* vcapsfilter = gst_element_factory_make("capsfilter", nullptr);
-    g_object_set(vcapsfilter, "caps", vcaps2.get(), nullptr);
+    m_payloader = gst_element_factory_make("rtpvp9pay", nullptr);
 
-    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), videoconvert, queuePre, encoder, rtpvpay, queue, vcapsfilter, nullptr);
+    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_videoConvert.get(), m_encoder.get(), m_payloader.get(), nullptr);
 
-    gst_element_link_many(m_outgoingVideoSource.get(), videoconvert, queuePre, encoder, rtpvpay, queue, vcapsfilter, nullptr);
-
-    GRefPtr<GstPad> srcPad = adoptGRef(gst_element_get_static_pad(vcapsfilter, "src"));
-    GRefPtr<GstPad> sinkPad = adoptGRef(gst_element_get_request_pad(webrtcBin.get(), "sink_%u"));
-    gst_pad_link(srcPad.get(), sinkPad.get());
-
-    GstWebRTCRTPTransceiver* transceiver = nullptr;
-    g_object_get(sinkPad.get(), "transceiver", &transceiver, nullptr);
-    // gst_webrtc_rtp_transceiver_set_direction(transceiver, GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV);
-    g_printerr(">>>> transceiver %p\n", transceiver);
-    g_object_get(transceiver, "sender", &m_sender.outPtr(), nullptr);
-    g_printerr(">>>> sender %p\n", m_sender.get());
-
-
-    gst_element_sync_state_with_parent(m_outgoingVideoSource.get());
-    gst_element_sync_state_with_parent(videoconvert);
-    gst_element_sync_state_with_parent(queuePre);
-    gst_element_sync_state_with_parent(encoder);
-    gst_element_sync_state_with_parent(rtpvpay);
-    gst_element_sync_state_with_parent(queue);
-    gst_element_sync_state_with_parent(vcapsfilter);
-    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN_CAST(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-outgoing-video");
+    gst_element_link_many(m_outgoingSource.get(), m_videoConvert.get(), m_preEncoderQueue.get(),
+        m_encoder.get(), m_payloader.get(), m_postEncoderQueue.get(), nullptr);
 }
 
 void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample& mediaSample)
 {
     ASSERT(mediaSample.platformSample().type == PlatformSample::GStreamerSampleType);
     auto gstSample = static_cast<MediaSampleGStreamer*>(&mediaSample)->platformSample().sample.gstSample;
-    // auto copiedSample = adoptGRef(gst_sample_copy(gstSample));
-    gst_app_src_push_sample(GST_APP_SRC(m_outgoingVideoSource.get()), gstSample);
+    gst_app_src_push_sample(GST_APP_SRC(m_outgoingSource.get()), gstSample);
 }
-
 
 } // namespace WebCore
 

@@ -20,56 +20,33 @@
 
 #if USE(GSTREAMER_WEBRTC)
 
-#include "MediaStreamTrackPrivate.h"
-#include <Timer.h>
-#include <wtf/Optional.h>
+#include "RealtimeOutgoingMediaSourceGStreamer.h"
 #include <wtf/ThreadSafeRefCounted.h>
-#include "GRefPtrGStreamer.h"
-#include <gst/gst.h>
 
 namespace WebCore {
 
-class RealtimeOutgoingVideoSourceGStreamer : public ThreadSafeRefCounted<RealtimeOutgoingVideoSourceGStreamer>, private MediaStreamTrackPrivate::Observer {
+class RealtimeOutgoingVideoSourceGStreamer final : public ThreadSafeRefCounted<RealtimeOutgoingVideoSourceGStreamer>, public RealtimeOutgoingMediaSourceGStreamer {
 public:
-    static Ref<RealtimeOutgoingVideoSourceGStreamer> create(Ref<MediaStreamTrackPrivate>&& videoSource, GstElement* pipeline) { return adoptRef(*new RealtimeOutgoingVideoSourceGStreamer(WTFMove(videoSource), pipeline)); }
-    ~RealtimeOutgoingVideoSourceGStreamer() { stop(); }
-
-    void stop();
-    bool setSource(Ref<MediaStreamTrackPrivate>&&);
-    MediaStreamTrackPrivate& source() const { return m_videoSource.get(); }
+    static Ref<RealtimeOutgoingVideoSourceGStreamer> create(Ref<MediaStreamTrackPrivate>&& source, GstElement* pipeline) { return adoptRef(*new RealtimeOutgoingVideoSourceGStreamer(WTFMove(source), pipeline)); }
 
     void setApplyRotation(bool shouldApplyRotation) { m_shouldApplyRotation = shouldApplyRotation; }
 
-    GRefPtr<GstWebRTCRTPSender> sender() const { return m_sender; }
+    virtual void initialize() override;
+    void setPayloadType(int) final;
+    void synchronizeStates() final;
 
 protected:
     explicit RealtimeOutgoingVideoSourceGStreamer(Ref<MediaStreamTrackPrivate>&&, GstElement*);
 
-    bool m_enabled { true };
-    bool m_muted { false };
     uint32_t m_width { 0 };
     uint32_t m_height { 0 };
     bool m_shouldApplyRotation { false };
 
 private:
-    void initializeFromSource();
-
-    void sourceMutedChanged();
-    void sourceEnabledChanged();
-
     // MediaStreamTrackPrivate::Observer API
-    void trackMutedChanged(MediaStreamTrackPrivate&) final { sourceMutedChanged(); }
-    void trackEnabledChanged(MediaStreamTrackPrivate&) final { sourceEnabledChanged(); }
-    void trackSettingsChanged(MediaStreamTrackPrivate&) final { initializeFromSource(); }
     void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample&) final;
-    void trackEnded(MediaStreamTrackPrivate&) final { }
 
-    Ref<MediaStreamTrackPrivate> m_videoSource;
-    WTF::Optional<RealtimeMediaSourceSettings> m_initialSettings;
-    bool m_isStopped { false };
-    GRefPtr<GstElement> m_pipeline;
-    GRefPtr<GstElement> m_outgoingVideoSource;
-    GRefPtr<GstWebRTCRTPSender> m_sender;
+    GRefPtr<GstElement> m_videoConvert;
 };
 
 } // namespace WebCore

@@ -21,61 +21,31 @@
 
 #if USE(GSTREAMER_WEBRTC)
 
-#include "GRefPtrGStreamer.h"
-#include <gst/gst.h>
-#include "MediaStreamTrackPrivate.h"
+#include "RealtimeOutgoingMediaSourceGStreamer.h"
 #include "Timer.h"
 #include <wtf/ThreadSafeRefCounted.h>
 
 namespace WebCore {
 
-class RealtimeOutgoingAudioSourceGStreamer : public ThreadSafeRefCounted<RealtimeOutgoingAudioSourceGStreamer>, private MediaStreamTrackPrivate::Observer {
+class RealtimeOutgoingAudioSourceGStreamer final : public ThreadSafeRefCounted<RealtimeOutgoingAudioSourceGStreamer>, public RealtimeOutgoingMediaSourceGStreamer {
 public:
     static Ref<RealtimeOutgoingAudioSourceGStreamer> create(Ref<MediaStreamTrackPrivate>&& audioSource, GstElement* pipeline) { return adoptRef(*new RealtimeOutgoingAudioSourceGStreamer(WTFMove(audioSource), pipeline)); }
 
-    ~RealtimeOutgoingAudioSourceGStreamer() { stop(); }
-
-    void stop();
-
-    bool setSource(Ref<MediaStreamTrackPrivate>&&);
-    MediaStreamTrackPrivate& source() const { return m_audioSource.get(); }
-
-    GRefPtr<GstWebRTCRTPSender> sender() const { return m_sender; }
+    void setPayloadType(int) final;
 
 protected:
     explicit RealtimeOutgoingAudioSourceGStreamer(Ref<MediaStreamTrackPrivate>&&, GstElement*);
 
-    virtual void handleMutedIfNeeded();
-    virtual void sendSilence() { };
-    virtual void pullAudioData() { };
-
-    bool m_muted { false };
-    bool m_enabled { true };
+    void initialize() final;
+    void synchronizeStates() final;
 
 private:
-    void sourceMutedChanged();
-    void sourceEnabledChanged();
-
-    virtual bool isReachingBufferedAudioDataHighLimit() { return false; };
-    virtual bool isReachingBufferedAudioDataLowLimit() { return false; };
-    virtual bool hasBufferedEnoughData() { return false; };
 
     // MediaStreamTrackPrivate::Observer API
-    void trackMutedChanged(MediaStreamTrackPrivate&) final { sourceMutedChanged(); }
-    void trackEnabledChanged(MediaStreamTrackPrivate&) final { sourceEnabledChanged(); }
     void audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t sampleCount);
-    void trackEnded(MediaStreamTrackPrivate&) final { }
-    void trackSettingsChanged(MediaStreamTrackPrivate&) final { g_printerr("trackSettingsChanged\n"); }
 
-    void initializeConverter();
-
-    Ref<MediaStreamTrackPrivate> m_audioSource;
-
-    Timer m_silenceAudioTimer;
-    GRefPtr<GstElement> m_pipeline;
-    GRefPtr<GstElement> m_outputSelector;
-    GRefPtr<GstElement> m_outgoingAudioSource;
-    GRefPtr<GstWebRTCRTPSender> m_sender;
+    GRefPtr<GstElement> m_audioconvert;
+    GRefPtr<GstElement> m_audioresample;
 };
 
 } // namespace WebCore

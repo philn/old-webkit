@@ -263,6 +263,9 @@ static void setRemoteDescriptionPromiseChanged(GstPromise* promise, gpointer use
 
 void GStreamerMediaEndpoint::emitSetRemoteDescriptionSuceeded()
 {
+    m_remoteMLineInfos = m_pendingRemoteMLineInfos;
+    m_pendingRemoteMLineInfos.clear();
+
     callOnMainThread([protectedThis = makeRef(*this)] {
         if (protectedThis->isStopped())
             return;
@@ -280,11 +283,52 @@ void GStreamerMediaEndpoint::emitSetRemoteDescriptionFailed()
     });
 }
 
+void GStreamerMediaEndpoint::storeRemoteMLineInfo(GstSDPMessage* message)
+{
+    m_pendingRemoteMLineInfos.clear();
+    auto totalMedias = gst_sdp_message_medias_len(message);
+    m_pendingRemoteMLineInfos.reserveCapacity(totalMedias);
+    GST_DEBUG_OBJECT(m_pipeline.get(), "Storing %u remote pending mlines", totalMedias);
+    for (unsigned i = 0; i < totalMedias; i++) {
+        const GstSDPMedia* media = gst_sdp_message_get_media(message, i);
+        auto caps = adoptGRef(gst_caps_new_empty());
+        Vector<int> payloadTypes;
+
+        auto totalFormats = gst_sdp_media_formats_len(media);
+        for (unsigned j = 0; j < totalFormats; j++) {
+            auto format = String(gst_sdp_media_get_format(media, j));
+            bool ok = false;
+            auto payloadType = format.toInt(&ok);
+            if (!ok) {
+                GST_WARNING_OBJECT(m_pipeline.get(), "Invalid payload type: %s", format.utf8().data());
+                continue;
+            }
+            auto formatCaps = adoptGRef(gst_sdp_media_get_caps_from_media(media, payloadType));
+            if (!formatCaps) {
+                GST_WARNING_OBJECT(m_pipeline.get(), "No caps found for payload type %d", payloadType);
+                continue;
+            }
+            gst_caps_append(caps.get(), formatCaps.leakRef());
+            m_ptCounter = MAX(m_ptCounter, payloadType + 1);
+            payloadTypes.append(payloadType);
+        }
+
+        auto totalCaps = gst_caps_get_size(caps.get());
+        for (unsigned j = 0; j < totalCaps; j++) {
+            GstStructure* structure = gst_caps_get_structure(caps.get(), j);
+            gst_structure_set_name(structure, "application/x-rtp");
+        }
+        m_pendingRemoteMLineInfos.append({ WTFMove(caps), false, WTFMove(payloadTypes) });
+    }
+}
+
 void GStreamerMediaEndpoint::doSetRemoteDescription(RTCSessionDescription& description)
 {
     GstSDPMessage* message;
     gst_sdp_message_new(&message);
     gst_sdp_message_parse_buffer((guint8*)description.sdp().utf8().data(), description.sdp().length(), message);
+    storeRemoteMLineInfo(message);
+
     GstWebRTCSDPType type = toSessionDescriptionType(description.type());
     GUniquePtr<gchar> sdp(gst_sdp_message_as_text(message));
     GST_DEBUG_OBJECT(m_pipeline.get(), "Creating session for SDP %s: %s", gst_webrtc_sdp_type_to_string(type), sdp.get());
@@ -292,6 +336,46 @@ void GStreamerMediaEndpoint::doSetRemoteDescription(RTCSessionDescription& descr
     GstPromise* promise = gst_promise_new_with_change_func(setRemoteDescriptionPromiseChanged, this, nullptr);
     g_signal_emit_by_name(m_webrtcBin.get(), "set-remote-description", sessionDescription, promise);
     gst_webrtc_session_description_free(sessionDescription);
+}
+
+void GStreamerMediaEndpoint::configureAndLinkSource(RealtimeOutgoingMediaSourceGStreamer& source)
+{
+    auto caps = source.caps();
+    unsigned index = 0;
+    bool found = false;
+    for (auto& mLineInfo : m_remoteMLineInfos) {
+        if (mLineInfo.isUsed)
+            continue;
+        if (gst_caps_can_intersect(mLineInfo.caps.get(), caps.get())) {
+            found = true;
+            break;
+        }
+        index += 1;
+    }
+    g_printerr("found: %s, index: %u, remote mlines: %lu\n", boolForPrinting(found), index, m_remoteMLineInfos.size());
+    if (found && index <= m_remoteMLineInfos.size()) {
+        if (index >= m_requestPadCounter) {
+            for (unsigned i = m_requestPadCounter; i <= index; i++) {
+                auto pad = adoptGRef(gst_element_get_request_pad(m_webrtcBin.get(), "sink_%u"));
+            }
+            m_requestPadCounter = index + 1;
+        }
+
+        source.setPayloadType(m_remoteMLineInfos[index].payloadTypes[0]);
+        m_remoteMLineInfos[index].isUsed = true;
+        auto sinkPad = adoptGRef(gst_element_get_static_pad(m_webrtcBin.get(), makeString("sink_", index).utf8().data()));
+        source.linkToWebRTCBinPad(sinkPad.get());
+    } else {
+        auto padId = makeString("sink_", m_requestPadCounter).utf8().data();
+        g_printerr(">> %s\n", padId);
+        source.setPayloadType(m_ptCounter);
+        m_ptCounter++;
+
+        GstPadTemplate* padTemplate = gst_element_get_pad_template(m_webrtcBin.get(), "sink_%u");
+        auto sinkPad = adoptGRef(gst_element_request_pad(m_webrtcBin.get(), padTemplate, padId, nullptr));
+        m_requestPadCounter++;
+        source.linkToWebRTCBinPad(sinkPad.get());
+    }
 }
 
 bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaStreamTrack& track, const Vector<String>& mediaStreamIds)
@@ -313,19 +397,18 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
     // }
 
     GStreamerRtpSenderBackend::Source source;
-    // rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> rtcTrack;
     GRefPtr<GstWebRTCRTPSender> rtcSender;
     switch (track.privateTrack().type()) {
     case RealtimeMediaSource::Type::Audio: {
         auto audioSource = RealtimeOutgoingAudioSourceGStreamer::create(track.privateTrack(), m_pipeline.get());
-        // rtcTrack = m_peerConnectionFactory.CreateAudioTrack(track.id().utf8().data(), audioSource.ptr());
+        configureAndLinkSource(audioSource);
         rtcSender = audioSource->sender();
         source = WTFMove(audioSource);
         break;
     }
     case RealtimeMediaSource::Type::Video: {
         auto videoSource = RealtimeOutgoingVideoSourceGStreamer::create(track.privateTrack(), m_pipeline.get());
-        // rtcTrack = m_peerConnectionFactory.CreateVideoTrack(track.id().utf8().data(), videoSource.ptr());
+        configureAndLinkSource(videoSource);
         rtcSender = videoSource->sender();
         source = WTFMove(videoSource);
         break;

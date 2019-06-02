@@ -39,6 +39,7 @@ class GStreamerRtpReceiverBackend;
 class GStreamerRtpTransceiverBackend;
 class MediaStreamTrack;
 class RTCSessionDescription;
+ class RealtimeOutgoingMediaSourceGStreamer;
 
 class GStreamerMediaEndpoint
     : public ThreadSafeRefCounted<GStreamerMediaEndpoint, WTF::DestructionThread::Main>
@@ -66,6 +67,8 @@ public:
     RefPtr<RTCSessionDescription> currentRemoteDescription() const;
     RefPtr<RTCSessionDescription> pendingLocalDescription() const;
     RefPtr<RTCSessionDescription> pendingRemoteDescription() const;
+
+    void configureAndLinkSource(RealtimeOutgoingMediaSourceGStreamer&);
 
     bool addTrack(GStreamerRtpSenderBackend&, MediaStreamTrack&, const Vector<String>&);
     void removeTrack(GStreamerRtpSenderBackend&);
@@ -112,11 +115,24 @@ private:
     void startLoggingStats();
     void stopLoggingStats();
 
+    void storeRemoteMLineInfo(GstSDPMessage*);
+
     GStreamerPeerConnectionBackend& m_peerConnectionBackend;
     GRefPtr<GstElement> m_webrtcBin;
     GRefPtr<GstElement> m_pipeline;
 
     HashMap<String, RefPtr<MediaStream>> m_remoteStreamsById;
+
+    struct PendingMLineInfo {
+        GRefPtr<GstCaps> caps;
+        bool isUsed;
+        Vector<int> payloadTypes;
+    };
+    Vector<PendingMLineInfo> m_pendingRemoteMLineInfos;
+    Vector<PendingMLineInfo> m_remoteMLineInfos;
+
+    unsigned m_requestPadCounter { 0 };
+    int m_ptCounter { 98 };
 
     unsigned m_pendingIncomingStreams { 0 };
 

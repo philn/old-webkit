@@ -152,6 +152,7 @@ if (ENABLE_VIDEO)
             platform/mediastream/gstreamer/RealtimeIncomingAudioSourceGStreamer.cpp
             platform/mediastream/gstreamer/RealtimeIncomingVideoSourceGStreamer.cpp
             platform/mediastream/gstreamer/RealtimeOutgoingAudioSourceGStreamer.cpp
+            platform/mediastream/gstreamer/RealtimeOutgoingMediaSourceGStreamer.cpp
             platform/mediastream/gstreamer/RealtimeOutgoingVideoSourceGStreamer.cpp
         )
     endif ()
