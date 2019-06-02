@@ -21,25 +21,23 @@
 
 #if USE(GSTREAMER_WEBRTC)
 
-#include "Document.h"
-#include "IceCandidate.h"
-#include "JSRTCStatsReport.h"
 #include "GStreamerMediaEndpoint.h"
 #include "GStreamerRtpReceiverBackend.h"
 #include "GStreamerRtpSenderBackend.h"
 #include "GStreamerRtpTransceiverBackend.h"
+#include "IceCandidate.h"
+#include "JSRTCStatsReport.h"
 #include "MediaEndpointConfiguration.h"
 #include "NotImplemented.h"
-#include "Page.h"
-#include "RealtimeIncomingAudioSourceGStreamer.h"
-#include "RealtimeIncomingVideoSourceGStreamer.h"
-#include "RealtimeOutgoingAudioSourceGStreamer.h"
-#include "RealtimeOutgoingVideoSourceGStreamer.h"
 #include "RTCIceCandidate.h"
 #include "RTCPeerConnection.h"
 #include "RTCRtpCapabilities.h"
 #include "RTCRtpReceiver.h"
 #include "RTCSessionDescription.h"
+#include "RealtimeIncomingAudioSourceGStreamer.h"
+#include "RealtimeIncomingVideoSourceGStreamer.h"
+#include "RealtimeOutgoingAudioSourceGStreamer.h"
+#include "RealtimeOutgoingVideoSourceGStreamer.h"
 #include "RuntimeEnabledFeatures.h"
 
 namespace WebCore {

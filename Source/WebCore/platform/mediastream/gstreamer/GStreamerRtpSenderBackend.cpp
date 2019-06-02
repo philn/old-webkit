@@ -128,6 +128,10 @@ void GStreamerRtpSenderBackend::setParameters(const RTCRtpSendParameters& parame
         return;
     }
 
+    for (auto& codec : parameters.codecs) {
+        printf(">> payloadType: %u, mimeType: %s, clockRate: %u, channels: %lu\n", codec.payloadType, codec.mimeType.utf8().data(), codec.clockRate, codec.channels);
+    }
+
     notImplemented();
 #if 0
     // FIXME: Implement

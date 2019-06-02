@@ -89,9 +89,6 @@ private:
     ExceptionOr<Ref<RTCRtpSender>> addTrack(MediaStreamTrack&, Vector<String>&&) final;
     void removeTrack(RTCRtpSender&) final;
 
-    /* void addAudioSource(Ref<RealtimeOutgoingAudioSourceGStreamer>&&); */
-    /* void addVideoSource(Ref<RealtimeOutgoingVideoSourceGStreamer>&&); */
-
     /* void getStatsFailed(const DeferredPromise&, Exception&&); */
 
     ExceptionOr<Ref<RTCRtpTransceiver>> addTransceiver(const String&, const RTCRtpTransceiverInit&) final;
@@ -102,13 +99,6 @@ private:
     RTCRtpTransceiver& newRemoteTransceiver(std::unique_ptr<GStreamerRtpTransceiverBackend>&&, Ref<RealtimeMediaSource>&&);
 
     void collectTransceivers() final;
-
-    /* Vector<RefPtr<MediaStream>> getRemoteStreams() const final { return m_remoteStreams; } */
-    /* void removeRemoteStream(MediaStream*); */
-    /* void addRemoteStream(Ref<MediaStream>&&); */
-
-    /* void notifyAddedTrack(RTCRtpSender&) final; */
-    /* void notifyRemovedTrack(RTCRtpSender&) final; */
 
     struct VideoReceiver {
         Ref<RTCRtpReceiver> receiver;
@@ -139,11 +129,6 @@ private:
     bool m_isLocalDescriptionSet { false };
     bool m_isRemoteDescriptionSet { false };
 
-    // FIXME: Make m_remoteStreams a Vector of Ref.
-    /* Vector<RefPtr<MediaStream>> m_remoteStreams; */
-    /* Vector<Ref<RealtimeOutgoingAudioSourceGStreamer>> m_audioSources; */
-    /* Vector<Ref<RealtimeOutgoingVideoSourceGStreamer>> m_videoSources; */
-    /* HashMap<const DeferredPromise*, Ref<DeferredPromise>> m_statsPromises; */
     Vector<std::unique_ptr<GStreamerIceCandidate>> m_pendingCandidates;
     Vector<Ref<RTCRtpReceiver>> m_pendingReceivers;
 };

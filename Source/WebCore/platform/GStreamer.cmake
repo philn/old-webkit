@@ -121,15 +121,15 @@ if (ENABLE_VIDEO)
         )
         list(APPEND WebCore_SOURCES
             # FIXME: Move these to libwebrtc/gstreamer ?
-            platform/mediastream/libwebrtc/GStreamerVideoDecoderFactory.cpp
-            platform/mediastream/libwebrtc/GStreamerVideoEncoderFactory.cpp
-            platform/mediastream/libwebrtc/LibWebRTCAudioModule.cpp
-            platform/mediastream/libwebrtc/LibWebRTCProviderGStreamer.cpp
             platform/mediastream/gstreamer/GStreamerVideoFrameLibWebRTC.cpp
             platform/mediastream/gstreamer/RealtimeIncomingAudioSourceLibWebRTC.cpp
             platform/mediastream/gstreamer/RealtimeIncomingVideoSourceLibWebRTC.cpp
             platform/mediastream/gstreamer/RealtimeOutgoingAudioSourceLibWebRTC.cpp
             platform/mediastream/gstreamer/RealtimeOutgoingVideoSourceLibWebRTC.cpp
+            platform/mediastream/libwebrtc/GStreamerVideoDecoderFactory.cpp
+            platform/mediastream/libwebrtc/GStreamerVideoEncoderFactory.cpp
+            platform/mediastream/libwebrtc/LibWebRTCAudioModule.cpp
+            platform/mediastream/libwebrtc/LibWebRTCProviderGStreamer.cpp
         )
     endif ()
 
@@ -146,17 +146,13 @@ if (ENABLE_VIDEO)
             platform/mediastream/gstreamer/DecoderSourceGStreamer.cpp
             platform/mediastream/gstreamer/GStreamerMediaEndpoint.cpp
             platform/mediastream/gstreamer/GStreamerPeerConnectionBackend.cpp
-            platform/mediastream/gstreamer/GStreamerRtpTransceiverBackend.cpp
             platform/mediastream/gstreamer/GStreamerRtpReceiverBackend.cpp
             platform/mediastream/gstreamer/GStreamerRtpSenderBackend.cpp
-            #platform/mediastream/gstreamer/RealtimeAudioSourceGStreamer.cpp
+            platform/mediastream/gstreamer/GStreamerRtpTransceiverBackend.cpp
             platform/mediastream/gstreamer/RealtimeIncomingAudioSourceGStreamer.cpp
             platform/mediastream/gstreamer/RealtimeIncomingVideoSourceGStreamer.cpp
-            #platform/mediastream/gstreamer/RealtimeMediaSourceCenterGStreamer.cpp
-            #platform/mediastream/gstreamer/RealtimeMediaSourceGStreamer.cpp
             platform/mediastream/gstreamer/RealtimeOutgoingAudioSourceGStreamer.cpp
             platform/mediastream/gstreamer/RealtimeOutgoingVideoSourceGStreamer.cpp
-            #platform/mediastream/gstreamer/RealtimeVideoSourceGStreamer.cpp
         )
     endif ()
 endif ()
