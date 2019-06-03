@@ -24,10 +24,11 @@
 #include "MediaStreamTrackPrivate.h"
 #include <gst/gst.h>
 #include <wtf/Optional.h>
+#include <wtf/ThreadSafeRefCounted.h>
 
 namespace WebCore {
 
-class RealtimeOutgoingMediaSourceGStreamer : public MediaStreamTrackPrivate::Observer {
+    class RealtimeOutgoingMediaSourceGStreamer : public ThreadSafeRefCounted<RealtimeOutgoingMediaSourceGStreamer>, public MediaStreamTrackPrivate::Observer {
 public:
     ~RealtimeOutgoingMediaSourceGStreamer() { stop(); }
 

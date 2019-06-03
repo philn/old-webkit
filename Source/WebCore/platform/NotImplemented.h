@@ -45,7 +45,7 @@ WEBCORE_EXPORT WTFLogChannel* notImplementedLoggingChannel();
 #define notImplemented() do { \
         static bool havePrinted = false; \
         if (!havePrinted && !suppressNotImplementedWarning()) { \
-            WTFLogAlways(__FILE__, __LINE__, WTF_PRETTY_FUNCTION, WebCore::notImplementedLoggingChannel(), "UNIMPLEMENTED: "); \
+            WTFLogVerbose(__FILE__, __LINE__, WTF_PRETTY_FUNCTION, WebCore::notImplementedLoggingChannel(), "UNIMPLEMENTED: "); \
             havePrinted = true; \
         } \
     } while (0)

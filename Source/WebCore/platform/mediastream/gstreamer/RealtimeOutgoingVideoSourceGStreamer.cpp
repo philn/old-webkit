@@ -57,7 +57,6 @@ void RealtimeOutgoingVideoSourceGStreamer::synchronizeStates()
 
 void RealtimeOutgoingVideoSourceGStreamer::initialize()
 {
-    g_printerr("INIT\n");
     const auto& settings = m_source->source().settings();
     m_width = settings.width();
     m_height = settings.height();

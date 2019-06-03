@@ -21,11 +21,10 @@
 #if USE(GSTREAMER_WEBRTC)
 
 #include "RealtimeOutgoingMediaSourceGStreamer.h"
-#include <wtf/ThreadSafeRefCounted.h>
 
 namespace WebCore {
 
-class RealtimeOutgoingVideoSourceGStreamer final : public ThreadSafeRefCounted<RealtimeOutgoingVideoSourceGStreamer>, public RealtimeOutgoingMediaSourceGStreamer {
+class RealtimeOutgoingVideoSourceGStreamer final : public RealtimeOutgoingMediaSourceGStreamer {
 public:
     static Ref<RealtimeOutgoingVideoSourceGStreamer> create(Ref<MediaStreamTrackPrivate>&& source, GstElement* pipeline) { return adoptRef(*new RealtimeOutgoingVideoSourceGStreamer(WTFMove(source), pipeline)); }
 

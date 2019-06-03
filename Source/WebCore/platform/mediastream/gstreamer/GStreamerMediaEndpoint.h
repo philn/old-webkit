@@ -116,6 +116,7 @@ private:
     void stopLoggingStats();
 
     void storeRemoteMLineInfo(GstSDPMessage*);
+    void flushPendingSources(bool requestPads);
 
     GStreamerPeerConnectionBackend& m_peerConnectionBackend;
     GRefPtr<GstElement> m_webrtcBin;
@@ -132,7 +133,12 @@ private:
     Vector<PendingMLineInfo> m_remoteMLineInfos;
 
     unsigned m_requestPadCounter { 0 };
-    int m_ptCounter { 98 };
+    int m_ptCounter { 96 };
+
+    bool m_delayedNegotiation { false };
+
+    Vector<Ref<RealtimeOutgoingMediaSourceGStreamer>> m_pendingSources;
+    Vector<Ref<RealtimeOutgoingMediaSourceGStreamer>> m_sources;
 
     unsigned m_pendingIncomingStreams { 0 };
 

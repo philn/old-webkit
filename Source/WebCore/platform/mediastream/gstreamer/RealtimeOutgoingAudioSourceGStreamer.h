@@ -23,11 +23,10 @@
 
 #include "RealtimeOutgoingMediaSourceGStreamer.h"
 #include "Timer.h"
-#include <wtf/ThreadSafeRefCounted.h>
 
 namespace WebCore {
 
-class RealtimeOutgoingAudioSourceGStreamer final : public ThreadSafeRefCounted<RealtimeOutgoingAudioSourceGStreamer>, public RealtimeOutgoingMediaSourceGStreamer {
+class RealtimeOutgoingAudioSourceGStreamer final : public RealtimeOutgoingMediaSourceGStreamer {
 public:
     static Ref<RealtimeOutgoingAudioSourceGStreamer> create(Ref<MediaStreamTrackPrivate>&& audioSource, GstElement* pipeline) { return adoptRef(*new RealtimeOutgoingAudioSourceGStreamer(WTFMove(audioSource), pipeline)); }
 

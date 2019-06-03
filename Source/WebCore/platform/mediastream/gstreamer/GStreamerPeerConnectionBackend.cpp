@@ -153,11 +153,6 @@ void GStreamerPeerConnectionBackend::doCreateAnswer(RTCAnswerOptions&&)
 
 void GStreamerPeerConnectionBackend::doStop()
 {
-    // for (auto& source : m_audioSources)
-    //     source->stop();
-    // for (auto& source : m_videoSources)
-    //     source->stop();
-
     m_endpoint->stop();
 
     // m_remoteStreams.clear();
@@ -184,16 +179,6 @@ void GStreamerPeerConnectionBackend::endOfIceCandidates(DOMPromiseDeferred<void>
     g_printerr(">>>>>> endOfIceCandidates\n");
     promise.resolve();
 }
-
-// void GStreamerPeerConnectionBackend::addAudioSource(Ref<RealtimeOutgoingAudioSourceGStreamer>&& source)
-// {
-//     m_audioSources.append(WTFMove(source));
-// }
-
-// void GStreamerPeerConnectionBackend::addVideoSource(Ref<RealtimeOutgoingVideoSourceGStreamer>&& source)
-// {
-//     m_videoSources.append(WTFMove(source));
-// }
 
 Ref<RTCRtpReceiver> GStreamerPeerConnectionBackend::createReceiverForSource(Ref<RealtimeMediaSource>&& source, std::unique_ptr<RTCRtpReceiverBackend>&& backend)
 {
@@ -222,16 +207,6 @@ Ref<RTCRtpReceiver> GStreamerPeerConnectionBackend::createReceiver(const String&
 
 GStreamerPeerConnectionBackend::VideoReceiver GStreamerPeerConnectionBackend::videoReceiver(GstElement* pipeline, GstPad* pad)
 {
-    // FIXME: Add to Vector a utility routine for that take-or-create pattern.
-    // FIXME: We should be selecting the receiver based on track id.
-    // for (size_t cptr = 0; cptr < m_pendingReceivers.size(); ++cptr) {
-    //     if (m_pendingReceivers[cptr]->track().source().type() == RealtimeMediaSource::Type::Video) {
-    //         Ref<RTCRtpReceiver> receiver = m_pendingReceivers[cptr].copyRef();
-    //         m_pendingReceivers.remove(cptr);
-    //         Ref<RealtimeIncomingVideoSourceGStreamer> source = static_cast<RealtimeIncomingVideoSourceGStreamer&>(receiver->track().source());
-    //         return { WTFMove(receiver), WTFMove(source) };
-    //     }
-    // }
     auto source = RealtimeIncomingVideoSourceGStreamer::create(pipeline, pad);
     auto receiver = createReceiverForSource(source.copyRef(), nullptr);
 
@@ -245,16 +220,6 @@ GStreamerPeerConnectionBackend::VideoReceiver GStreamerPeerConnectionBackend::vi
 
 GStreamerPeerConnectionBackend::AudioReceiver GStreamerPeerConnectionBackend::audioReceiver(GstElement* pipeline, GstPad* pad)
 {
-    // FIXME: Add to Vector a utility routine for that take-or-create pattern.
-    // FIXME: We should be selecting the receiver based on track id.
-    // for (size_t cptr = 0; cptr < m_pendingReceivers.size(); ++cptr) {
-    //     if (m_pendingReceivers[cptr]->track().source().type() == RealtimeMediaSource::Type::Audio) {
-    //         Ref<RTCRtpReceiver> receiver = m_pendingReceivers[cptr].copyRef();
-    //         m_pendingReceivers.remove(cptr);
-    //         Ref<RealtimeIncomingAudioSourceGStreamer> source = static_cast<RealtimeIncomingAudioSourceGStreamer&>(receiver->track().source());
-    //         return { WTFMove(receiver), WTFMove(source) };
-    //     }
-    // }
     auto source = RealtimeIncomingAudioSourceGStreamer::create(pipeline, pad);
     auto receiver = createReceiverForSource(source.copyRef(), nullptr);
 
