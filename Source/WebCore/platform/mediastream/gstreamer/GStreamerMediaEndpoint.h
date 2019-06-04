@@ -39,7 +39,7 @@ class GStreamerRtpReceiverBackend;
 class GStreamerRtpTransceiverBackend;
 class MediaStreamTrack;
 class RTCSessionDescription;
- class RealtimeOutgoingMediaSourceGStreamer;
+class RealtimeOutgoingMediaSourceGStreamer;
 
 class GStreamerMediaEndpoint
     : public ThreadSafeRefCounted<GStreamerMediaEndpoint, WTF::DestructionThread::Main>
@@ -94,6 +94,8 @@ public:
     void emitSetLocalDescriptionFailed();
     void emitSetRemoteDescriptionSuceeded();
     void emitSetRemoteDescriptionFailed();
+
+    void connectOutgoingSources();
 
     GstElement* pipeline() const { return m_pipeline.get(); }
 

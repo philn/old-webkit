@@ -263,13 +263,10 @@ static void setRemoteDescriptionPromiseChanged(GstPromise* promise, gpointer use
 
 void GStreamerMediaEndpoint::emitSetRemoteDescriptionSuceeded()
 {
-    m_remoteMLineInfos = WTFMove(m_pendingRemoteMLineInfos);
-    m_pendingRemoteMLineInfos.clear();
-    flushPendingSources(false);
-
     callOnMainThread([protectedThis = makeRef(*this)] {
         if (protectedThis->isStopped())
             return;
+        protectedThis->connectOutgoingSources();
         protectedThis->m_peerConnectionBackend.setRemoteDescriptionSucceeded();
     });
     startLoggingStats();
@@ -282,6 +279,22 @@ void GStreamerMediaEndpoint::emitSetRemoteDescriptionFailed()
             return;
         protectedThis->m_peerConnectionBackend.setRemoteDescriptionFailed(Exception { OperationError, "Unable to apply session remote description" });
     });
+}
+
+void GStreamerMediaEndpoint::doSetRemoteDescription(RTCSessionDescription& description)
+{
+    GstSDPMessage* message;
+    gst_sdp_message_new(&message);
+    gst_sdp_message_parse_buffer((guint8*)description.sdp().utf8().data(), description.sdp().length(), message);
+    storeRemoteMLineInfo(message);
+
+    GstWebRTCSDPType type = toSessionDescriptionType(description.type());
+    GUniquePtr<gchar> sdp(gst_sdp_message_as_text(message));
+    GST_DEBUG_OBJECT(m_pipeline.get(), "Creating session for SDP %s: %s", gst_webrtc_sdp_type_to_string(type), sdp.get());
+    GstWebRTCSessionDescription* sessionDescription = gst_webrtc_session_description_new(type, message);
+    GstPromise* promise = gst_promise_new_with_change_func(setRemoteDescriptionPromiseChanged, this, nullptr);
+    g_signal_emit_by_name(m_webrtcBin.get(), "set-remote-description", sessionDescription, promise);
+    gst_webrtc_session_description_free(sessionDescription);
 }
 
 void GStreamerMediaEndpoint::storeRemoteMLineInfo(GstSDPMessage* message)
@@ -319,8 +332,16 @@ void GStreamerMediaEndpoint::storeRemoteMLineInfo(GstSDPMessage* message)
             GstStructure* structure = gst_caps_get_structure(caps.get(), j);
             gst_structure_set_name(structure, "application/x-rtp");
         }
+        GST_DEBUG_OBJECT(m_pipeline.get(), "Caching payload caps: %" GST_PTR_FORMAT, caps.get());
         m_pendingRemoteMLineInfos.append({ WTFMove(caps), false, WTFMove(payloadTypes) });
     }
+}
+
+void GStreamerMediaEndpoint::connectOutgoingSources()
+{
+    GST_DEBUG_OBJECT(m_pipeline.get(), "Connecting outgoing media sources");
+    m_pendingRemoteMLineInfos.swap(m_remoteMLineInfos);
+    flushPendingSources(false);
 }
 
 void GStreamerMediaEndpoint::flushPendingSources(bool requestPads)
@@ -332,38 +353,20 @@ void GStreamerMediaEndpoint::flushPendingSources(bool requestPads)
     }
 }
 
-void GStreamerMediaEndpoint::doSetRemoteDescription(RTCSessionDescription& description)
-{
-    GstSDPMessage* message;
-    gst_sdp_message_new(&message);
-    gst_sdp_message_parse_buffer((guint8*)description.sdp().utf8().data(), description.sdp().length(), message);
-    storeRemoteMLineInfo(message);
-
-    GstWebRTCSDPType type = toSessionDescriptionType(description.type());
-    GUniquePtr<gchar> sdp(gst_sdp_message_as_text(message));
-    GST_DEBUG_OBJECT(m_pipeline.get(), "Creating session for SDP %s: %s", gst_webrtc_sdp_type_to_string(type), sdp.get());
-    GstWebRTCSessionDescription* sessionDescription = gst_webrtc_session_description_new(type, message);
-    GstPromise* promise = gst_promise_new_with_change_func(setRemoteDescriptionPromiseChanged, this, nullptr);
-    g_signal_emit_by_name(m_webrtcBin.get(), "set-remote-description", sessionDescription, promise);
-    gst_webrtc_session_description_free(sessionDescription);
-}
-
 void GStreamerMediaEndpoint::configureAndLinkSource(RealtimeOutgoingMediaSourceGStreamer& source)
 {
     auto caps = source.caps();
     unsigned index = 0;
     bool found = false;
-    // FIXME(phil): This doesn't work yet, index=0 reported for both audio and video outgoing payloads.
     for (auto& mLineInfo : m_remoteMLineInfos) {
-        if (mLineInfo.isUsed)
-            continue;
-        if (gst_caps_can_intersect(mLineInfo.caps.get(), caps.get())) {
+        if (!mLineInfo.isUsed && gst_caps_can_intersect(mLineInfo.caps.get(), caps.get())) {
             found = true;
             break;
         }
-        index += 1;
+        index++;
     }
-    GST_DEBUG_OBJECT(m_pipeline.get(), "Unused and compatible caps found for %" GST_PTR_FORMAT " payload: %s (index: %u)", caps.get(), boolForPrinting(found), index);
+
+    GST_DEBUG_OBJECT(m_pipeline.get(), "Unused and compatible caps %s for %" GST_PTR_FORMAT " payload (index: %u)", found ? "found" : "not found", caps.get(), index);
 
     if (found && index <= m_remoteMLineInfos.size()) {
         if (index >= m_requestPadCounter) {
@@ -378,6 +381,7 @@ void GStreamerMediaEndpoint::configureAndLinkSource(RealtimeOutgoingMediaSourceG
         auto padId = makeString("sink_", index).utf8().data();
         GST_DEBUG_OBJECT(m_pipeline.get(), "Linking outgoing source to already requested pad %s", padId);
         auto sinkPad = adoptGRef(gst_element_get_static_pad(m_webrtcBin.get(), padId));
+        RELEASE_ASSERT(!gst_pad_is_linked(sinkPad.get()));
         source.linkToWebRTCBinPad(sinkPad.get());
     } else {
         source.setPayloadType(m_ptCounter);
@@ -388,6 +392,7 @@ void GStreamerMediaEndpoint::configureAndLinkSource(RealtimeOutgoingMediaSourceG
         GstPadTemplate* padTemplate = gst_element_get_pad_template(m_webrtcBin.get(), "sink_%u");
         auto sinkPad = adoptGRef(gst_element_request_pad(m_webrtcBin.get(), padTemplate, padId, nullptr));
         m_requestPadCounter++;
+        RELEASE_ASSERT(!gst_pad_is_linked(sinkPad.get()));
         source.linkToWebRTCBinPad(sinkPad.get());
     }
 }
@@ -428,7 +433,6 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
             // TODO(phil): Move this to RealtimeOutgoingMediaSourceGStreamer ?
             GstWebRTCRTPTransceiver* transceiver;
             g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV, videoSource->caps().get(), &transceiver);
-            g_printerr("video transceiver %p\n", transceiver);
 
             m_pendingSources.append(videoSource.copyRef());
         } else {
