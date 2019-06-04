@@ -85,6 +85,7 @@ GstElement* GStreamerCapturer::createSource()
     m_src = gst_device_create_element(m_device.get(), sourceName.get());
     ASSERT(m_src);
 
+    // g_object_set(m_src.get(), "io-mode", 2, nullptr);
     return m_src.get();
 }
 
