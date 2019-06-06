@@ -117,6 +117,8 @@ void GStreamerCapturer::setupPipeline()
     m_sink = makeElement("appsink");
 
     gst_app_sink_set_emit_signals(GST_APP_SINK(m_sink.get()), TRUE);
+    // g_object_set(m_sink.get(), "drop", true, "max-buffers", 1, "enable-last-sample", 0, nullptr);
+
     g_object_set(m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 
     gst_bin_add_many(GST_BIN(m_pipeline.get()), source.get(), converter.get(), m_capsfilter.get(), m_tee.get(), nullptr);
