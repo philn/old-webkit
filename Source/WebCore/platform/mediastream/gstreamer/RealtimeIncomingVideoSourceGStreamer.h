@@ -29,7 +29,7 @@ class RealtimeIncomingVideoSourceGStreamer : public RealtimeMediaSource, public 
 public:
     static Ref<RealtimeIncomingVideoSourceGStreamer> create(String&& videoTrackId) { return adoptRef(*new RealtimeIncomingVideoSourceGStreamer(WTFMove(videoTrackId))); }
     static Ref<RealtimeIncomingVideoSourceGStreamer> create(GstElement* pipeline, GstPad* pad) { return adoptRef(*new RealtimeIncomingVideoSourceGStreamer(pipeline, pad)); }
-    ~RealtimeIncomingVideoSourceGStreamer() = default; //{ stopProducingData(); }
+    ~RealtimeIncomingVideoSourceGStreamer() = default;
 
     void handleDecodedSample(GRefPtr<GstSample>&&) final;
 
@@ -41,13 +41,14 @@ private:
     // RealtimeMediaSource API
     void startProducingData() final;
     void stopProducingData()  final;
+    void settingsDidChange(OptionSet<RealtimeMediaSourceSettings::Flag>) final;
 
     const RealtimeMediaSourceCapabilities& capabilities() final;
     const RealtimeMediaSourceSettings& settings() final;
 
-    RealtimeMediaSourceSettings m_currentSettings;
+    Optional<RealtimeMediaSourceSettings> m_currentSettings;
 
-    /* bool applySize(const IntSize&) final { return true; } */
+    bool isIncomingVideoSource() const final { return true; }
 };
 
 } // namespace WebCore

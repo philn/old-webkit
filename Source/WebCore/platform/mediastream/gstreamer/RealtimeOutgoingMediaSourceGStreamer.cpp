@@ -69,10 +69,14 @@ void RealtimeOutgoingMediaSourceGStreamer::sourceEnabledChanged()
     ASSERT(m_enabled != m_source->enabled());
     m_enabled = m_source->enabled();
     g_printerr("sourceEnabledChanged to %d\n", m_enabled);
+    if (m_valve)
+        g_object_set(m_valve.get(), "drop", !m_enabled, nullptr);
 }
 
 void RealtimeOutgoingMediaSourceGStreamer::linkToWebRTCBinPad(GstPad* sinkPad)
 {
+    m_pad = sinkPad;
+    
     gst_element_link(m_postEncoderQueue.get(), m_capsFilter.get());
 
     GRefPtr<GstPad> srcPad = adoptGRef(gst_element_get_static_pad(m_capsFilter.get(), "src"));
@@ -95,12 +99,13 @@ void RealtimeOutgoingMediaSourceGStreamer::initializeFromSource()
     gst_app_src_set_stream_type(GST_APP_SRC(m_outgoingSource.get()), GST_APP_STREAM_TYPE_STREAM);
     g_object_set(m_outgoingSource.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
 
+    m_valve = gst_element_factory_make("valve", nullptr);
     m_preEncoderQueue = gst_element_factory_make("queue", nullptr);
     m_postEncoderQueue = gst_element_factory_make("queue", nullptr);
     m_capsFilter = gst_element_factory_make("capsfilter", nullptr);
 
-    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_outgoingSource.get(), m_preEncoderQueue.get(),
-        m_postEncoderQueue.get(), m_capsFilter.get(), nullptr);
+    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_outgoingSource.get(), m_valve.get(),
+        m_preEncoderQueue.get(), m_postEncoderQueue.get(), m_capsFilter.get(), nullptr);
 
     initialize();
 }

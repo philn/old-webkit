@@ -31,11 +31,10 @@ RealtimeIncomingAudioSourceGStreamer::RealtimeIncomingAudioSourceGStreamer(Strin
     : RealtimeMediaSource(RealtimeMediaSource::Type::Audio, WTFMove(audioTrackId))
     , DecoderSourceGStreamer(nullptr, nullptr)
 {
-    notImplemented();
 }
 
 RealtimeIncomingAudioSourceGStreamer::RealtimeIncomingAudioSourceGStreamer(GstElement* pipeline, GstPad* pad)
-    : RealtimeMediaSource(RealtimeMediaSource::Type::Audio, String { })
+    : RealtimeMediaSource(RealtimeMediaSource::Type::Audio, "remote audio"_s)
     , DecoderSourceGStreamer(pipeline, pad)
 {
     // notifyMutedChange(false);
@@ -49,12 +48,12 @@ RealtimeIncomingAudioSourceGStreamer::~RealtimeIncomingAudioSourceGStreamer()
 
 void RealtimeIncomingAudioSourceGStreamer::startProducingData()
 {
-    notImplemented();
+    releaseValve();
 }
 
 void RealtimeIncomingAudioSourceGStreamer::stopProducingData()
 {
-    notImplemented();
+    lockValve();
 }
 
 const RealtimeMediaSourceCapabilities& RealtimeIncomingAudioSourceGStreamer::capabilities()

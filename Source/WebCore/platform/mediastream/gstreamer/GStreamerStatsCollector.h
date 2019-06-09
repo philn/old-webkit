@@ -16,35 +16,36 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "config.h"
-#include "GStreamerRtpReceiverBackend.h"
+#pragma once
 
 #if ENABLE(WEB_RTC) && USE(GSTREAMER_WEBRTC)
 
-#include "GStreamerWebRTCUtils.h"
-#include "NotImplemented.h"
+#include "GRefPtrGStreamer.h"
+#include "JSDOMPromiseDeferred.h"
+#include <gst/gst.h>
+#include <wtf/CompletionHandler.h>
+#include <wtf/ThreadSafeRefCounted.h>
 
 namespace WebCore {
 
-RTCRtpParameters GStreamerRtpReceiverBackend::getParameters()
-{
-    notImplemented();
-    return RTCRtpParameters { };
-}
+class RTCStatsReport;
 
-Vector<RTCRtpContributingSource> GStreamerRtpReceiverBackend::getContributingSources() const
-{
-    Vector<RTCRtpContributingSource> sources;
-    notImplemented();
-    return sources;
-}
+class GStreamerStatsCollector : public ThreadSafeRefCounted<GStreamerStatsCollector, WTF::DestructionThread::Main> {
+public:
+    using CollectorCallback = CompletionHandler<RefPtr<RTCStatsReport>()>;
+    static Ref<GStreamerStatsCollector> create() { return adoptRef(*new GStreamerStatsCollector()); }
 
-Vector<RTCRtpSynchronizationSource> GStreamerRtpReceiverBackend::getSynchronizationSources() const
-{
-    Vector<RTCRtpSynchronizationSource> sources;
-    notImplemented();
-    return sources;
-}
+    explicit GStreamerStatsCollector() = default;
+    ~GStreamerStatsCollector();
+
+    void setElement(GstElement* element) { m_webrtcBin = element; }
+    void getStats(GstPad*, Ref<DeferredPromise>&& promise);
+    void processStats(const GstStructure*);
+
+ private:
+    GRefPtr<GstElement> m_webrtcBin;
+    CollectorCallback m_callback;
+};
 
 } // namespace WebCore
 

@@ -21,12 +21,11 @@
 #if USE(GSTREAMER_WEBRTC)
 
 #include "GRefPtrGStreamer.h"
-#include "GStreamerRtpSenderBackend.h"
-
 #include "GStreamerPeerConnectionBackend.h"
+#include "GStreamerRtpSenderBackend.h"
+#include "GStreamerStatsCollector.h"
 #include "RTCRtpReceiver.h"
 
-#include <Timer.h>
 #include <gst/gst.h>
 #define GST_USE_UNSTABLE_API
 #include <gst/webrtc/webrtc.h>
@@ -41,8 +40,7 @@ class MediaStreamTrack;
 class RTCSessionDescription;
 class RealtimeOutgoingMediaSourceGStreamer;
 
-class GStreamerMediaEndpoint
-    : public ThreadSafeRefCounted<GStreamerMediaEndpoint, WTF::DestructionThread::Main>
+class GStreamerMediaEndpoint : public ThreadSafeRefCounted<GStreamerMediaEndpoint, WTF::DestructionThread::Main>
 {
 public:
     static Ref<GStreamerMediaEndpoint> create(GStreamerPeerConnectionBackend& peerConnection) { return adoptRef(*new GStreamerMediaEndpoint(peerConnection)); }
@@ -54,13 +52,16 @@ public:
     void doSetRemoteDescription(RTCSessionDescription&);
     void doCreateOffer(const RTCOfferOptions&);
     void doCreateAnswer();
-    void getStats(Ref<DeferredPromise>&&);
-    void getStats(GstWebRTCRTPReceiver*, Ref<DeferredPromise>&&);
-    void getStats(GstWebRTCRTPSender*, Ref<DeferredPromise>&&);
+
+    Ref<GStreamerStatsCollector> createStatsCollector(GstPad*, Ref<DeferredPromise>&&);
+
+    void getStats(GstPad*, Ref<DeferredPromise>&&);
+
     bool addIceCandidate(GStreamerIceCandidate&);
     void stop();
     bool isStopped() const { /* FIXME: implement */ return false; }
 
+    RefPtr<RTCSessionDescription> fetchDescription(const char* name) const;
     RefPtr<RTCSessionDescription> localDescription() const;
     RefPtr<RTCSessionDescription> remoteDescription() const;
     RefPtr<RTCSessionDescription> currentLocalDescription() const;
@@ -113,10 +114,6 @@ private:
     void addRemoteStream(GstPad*);
     void removeRemoteStream(GstPad*);
 
-    void gatherStatsForLogging();
-    void startLoggingStats();
-    void stopLoggingStats();
-
     void storeRemoteMLineInfo(GstSDPMessage*);
     void flushPendingSources(bool requestPads);
 
@@ -145,7 +142,7 @@ private:
     unsigned m_pendingIncomingStreams { 0 };
 
     bool m_isInitiator { false };
-    Timer m_statsLogTimer;
+    Ref<GStreamerStatsCollector> m_statsCollector;
 };
 
 } // namespace WebCore

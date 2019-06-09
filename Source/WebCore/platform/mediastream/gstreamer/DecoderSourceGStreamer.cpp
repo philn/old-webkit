@@ -19,6 +19,7 @@
 #include "config.h"
 
 #if USE(GSTREAMER_WEBRTC)
+
 #include "DecoderSourceGStreamer.h"
 
 #include <gst/app/gstappsink.h>
@@ -30,7 +31,9 @@ DecoderSourceGStreamer::DecoderSourceGStreamer(GstElement* pipeline, GstPad* inc
     if (!pipeline)
         return;
 
+    m_pad = incomingSrcPad;
     m_pipeline = pipeline;
+    m_valve = gst_element_factory_make("valve", nullptr);
     m_queue1 = gst_element_factory_make("queue", nullptr);
     m_decoder = gst_element_factory_make("decodebin", nullptr);
     m_queue2 = gst_element_factory_make("queue", nullptr);
@@ -57,13 +60,14 @@ DecoderSourceGStreamer::DecoderSourceGStreamer(GstElement* pipeline, GstPad* inc
         GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN_CAST(parent.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-incoming-decoded-stream");
     }), nullptr);
 
-    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_queue1.get(), m_decoder.get(), m_queue2.get(), m_sink.get(), nullptr);
+    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_valve.get(), m_queue1.get(), m_decoder.get(), m_queue2.get(), m_sink.get(), nullptr);
 
-    gst_element_link(m_queue1.get(), m_decoder.get());
+    gst_element_link_many(m_valve.get(), m_queue1.get(), m_decoder.get(), nullptr);
 
-    GRefPtr<GstPad> sinkPad = adoptGRef(gst_element_get_static_pad(m_queue1.get(), "sink"));
+    GRefPtr<GstPad> sinkPad = adoptGRef(gst_element_get_static_pad(m_valve.get(), "sink"));
     gst_pad_link(incomingSrcPad, sinkPad.get());
 
+    gst_element_set_state(m_valve.get(), GST_STATE_PLAYING);
     gst_element_set_state(m_queue1.get(), GST_STATE_PLAYING);
     gst_element_set_state(m_decoder.get(), GST_STATE_PLAYING);
 }
@@ -78,6 +82,18 @@ void DecoderSourceGStreamer::linkDecodePad(GstPad* srcPad)
     gst_element_sync_state_with_parent(m_sink.get());
 
     gst_pad_link(srcPad, sinkPad.get());
+}
+
+void DecoderSourceGStreamer::lockValve() const
+{
+    if (m_valve)
+        g_object_set(m_valve.get(), "drop", true, nullptr);
+}
+
+void DecoderSourceGStreamer::releaseValve() const
+{
+    if (m_valve)
+        g_object_set(m_valve.get(), "drop", false, nullptr);
 }
 
 } // namespace WebCore

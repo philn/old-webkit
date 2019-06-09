@@ -237,6 +237,10 @@ static gboolean decidePermissionRequest(WebKitWebView *webView, WebKitPermission
         title = "Notification request";
         text = g_strdup("Allow notifications request?");
     } else if (WEBKIT_IS_USER_MEDIA_PERMISSION_REQUEST(request)) {
+        if (g_getenv("MINI_BROWSER_ALWAYS_ALLOW_USER_MEDIA")) {
+            webkit_permission_request_allow(request);
+            return TRUE;
+        }
         title = "UserMedia request";
         gboolean is_for_audio_device = webkit_user_media_permission_is_for_audio_device(WEBKIT_USER_MEDIA_PERMISSION_REQUEST(request));
         gboolean is_for_video_device = webkit_user_media_permission_is_for_video_device(WEBKIT_USER_MEDIA_PERMISSION_REQUEST(request));

@@ -22,14 +22,18 @@
 #if USE(GSTREAMER_WEBRTC)
 
 #include "GStreamerCommon.h"
+#include "GStreamerRtpReceiverBackend.h"
 #include "GStreamerRtpTransceiverBackend.h"
+#include "GStreamerStatsCollector.h"
 #include "GStreamerWebRTCUtils.h"
+#include "JSRTCStatsReport.h"
 #include "MediaEndpointConfiguration.h"
 #include "NotImplemented.h"
 #include "RTCIceCandidate.h"
 #include "RTCOfferOptions.h"
 #include "RTCPeerConnection.h"
 #include "RTCSessionDescription.h"
+#include "RTCStatsReport.h"
 #include "RTCTrackEvent.h"
 #include "RealtimeIncomingAudioSourceGStreamer.h"
 #include "RealtimeIncomingVideoSourceGStreamer.h"
@@ -64,7 +68,7 @@ static GUniquePtr<gchar> enumValue(GType type, guint value)
 
 GStreamerMediaEndpoint::GStreamerMediaEndpoint(GStreamerPeerConnectionBackend& peerConnection)
     : m_peerConnectionBackend(peerConnection)
-    , m_statsLogTimer(*this, &GStreamerMediaEndpoint::gatherStatsForLogging)
+    , m_statsCollector(GStreamerStatsCollector::create())
 {
     static int nPipeline = 0;
     initializeGStreamer();
@@ -119,6 +123,8 @@ GStreamerMediaEndpoint::GStreamerMediaEndpoint(GStreamerPeerConnectionBackend& p
 
     gst_bin_add(GST_BIN_CAST(m_pipeline.get()), m_webrtcBin.get());
     gst_element_set_state(m_pipeline.get(), GST_STATE_PLAYING);
+    m_statsCollector->setElement(m_webrtcBin.get());
+
     GST_DEBUG_OBJECT(m_pipeline.get(), "End-point ready");
 }
 
@@ -154,52 +160,51 @@ bool GStreamerMediaEndpoint::setConfiguration(MediaEndpointConfiguration& config
     return true;
 }
 
-#define FETCH_DESCRIPTION(name) do { \
-    if (!m_webrtcBin) \
-        return nullptr; \
-    \
-    GstWebRTCSessionDescription* description; \
-    g_object_get(m_webrtcBin.get(), "##name" "-description", &description, nullptr); \
-    if (!description) \
-        return nullptr; \
-    \
-    String sdpString = gst_sdp_message_as_text(description->sdp); \
-    GST_DEBUG_OBJECT(m_pipeline.get(), "##name" "description SDP: %s", sdpString.utf8().data()); \
-    return RTCSessionDescription::create(fromSessionDescriptionType(description), WTFMove(sdpString)); \
-} while (0)
+RefPtr<RTCSessionDescription> GStreamerMediaEndpoint::fetchDescription(const char* name) const
+{
+    if (!m_webrtcBin)
+        return nullptr;
+
+    GstWebRTCSessionDescription* description = nullptr;
+    g_object_get(m_webrtcBin.get(), makeString(name, "-description").utf8().data(), &description, nullptr);
+    if (!description)
+        return nullptr;
+
+    String sdpString = gst_sdp_message_as_text(description->sdp);
+    GST_TRACE_OBJECT(m_pipeline.get(), "%s-description SDP: %s", name, sdpString.utf8().data());
+    return RTCSessionDescription::create(fromSessionDescriptionType(description), WTFMove(sdpString));
+}
 
 // FIXME: We might want to create a new object only if the session actually changed for all description getters.
 RefPtr<RTCSessionDescription> GStreamerMediaEndpoint::currentLocalDescription() const
 {
-    FETCH_DESCRIPTION("current-local");
+    return fetchDescription("current-local");
 }
 
 RefPtr<RTCSessionDescription> GStreamerMediaEndpoint::currentRemoteDescription() const
 {
-    FETCH_DESCRIPTION("current-remote");
+    return fetchDescription("current-remote");
 }
 
 RefPtr<RTCSessionDescription> GStreamerMediaEndpoint::pendingLocalDescription() const
 {
-    FETCH_DESCRIPTION("pending-local");
+    return fetchDescription("pending-local");
 }
 
 RefPtr<RTCSessionDescription> GStreamerMediaEndpoint::pendingRemoteDescription() const
 {
-    FETCH_DESCRIPTION("pending-remote");
+    return fetchDescription("pending-remote");
 }
 
 RefPtr<RTCSessionDescription> GStreamerMediaEndpoint::localDescription() const
 {
-    FETCH_DESCRIPTION("local");
+    return fetchDescription("local");
 }
 
 RefPtr<RTCSessionDescription> GStreamerMediaEndpoint::remoteDescription() const
 {
-    FETCH_DESCRIPTION("remote");
+    return fetchDescription("remote");
 }
-
-#undef FETCH_DESCRIPTION
 
 static void setLocalDescriptionPromiseChanged(GstPromise* promise, gpointer userData)
 {
@@ -269,7 +274,6 @@ void GStreamerMediaEndpoint::emitSetRemoteDescriptionSuceeded()
         protectedThis->connectOutgoingSources();
         protectedThis->m_peerConnectionBackend.setRemoteDescriptionSucceeded();
     });
-    startLoggingStats();
 }
 
 void GStreamerMediaEndpoint::emitSetRemoteDescriptionFailed()
@@ -357,18 +361,19 @@ void GStreamerMediaEndpoint::configureAndLinkSource(RealtimeOutgoingMediaSourceG
 {
     auto caps = source.caps();
     unsigned index = 0;
-    bool found = false;
+    WTF::Optional<unsigned> found;
     for (auto& mLineInfo : m_remoteMLineInfos) {
         if (!mLineInfo.isUsed && gst_caps_can_intersect(mLineInfo.caps.get(), caps.get())) {
-            found = true;
+            found = index;
             break;
         }
         index++;
     }
 
-    GST_DEBUG_OBJECT(m_pipeline.get(), "Unused and compatible caps %s for %" GST_PTR_FORMAT " payload (index: %u)", found ? "found" : "not found", caps.get(), index);
+    GST_DEBUG_OBJECT(m_pipeline.get(), "Unused and compatible caps %s for %" GST_PTR_FORMAT " payload (index: %u)", found.hasValue() ? "found" : "not found", caps.get(), index);
 
-    if (found && index <= m_remoteMLineInfos.size()) {
+    if (found.hasValue() && *found <= m_remoteMLineInfos.size()) {
+        index = *found;
         if (index >= m_requestPadCounter) {
             for (unsigned i = m_requestPadCounter; i <= index; i++) {
                 auto pad = adoptGRef(gst_element_get_request_pad(m_webrtcBin.get(), "sink_%u"));
@@ -543,22 +548,9 @@ void GStreamerMediaEndpoint::doCreateAnswer()
     g_signal_emit_by_name(m_webrtcBin.get(), "create-answer", options, promise);
 }
 
-void GStreamerMediaEndpoint::getStats(Ref<DeferredPromise>&&)
+void GStreamerMediaEndpoint::getStats(GstPad* pad, Ref<DeferredPromise>&& promise)
 {
-    g_printerr("getStats\n");
-    notImplemented();
-}
-
-void GStreamerMediaEndpoint::getStats(GstWebRTCRTPReceiver* receiver, Ref<DeferredPromise>&&)
-{
-    g_printerr("getStats for receiver %p\n", receiver);
-    notImplemented();
-}
-
-void GStreamerMediaEndpoint::getStats(GstWebRTCRTPSender* sender, Ref<DeferredPromise>&&)
-{
-    g_printerr("getStats for sender %p\n", sender);
-    notImplemented();
+    m_statsCollector->getStats(pad, WTFMove(promise));
 }
 
 void GStreamerMediaEndpoint::onSignalingStateChange()
@@ -624,18 +616,31 @@ void GStreamerMediaEndpoint::removeRemoteStream(GstPad*)
     g_printerr("remove stream\n");
 }
 
-Optional<GStreamerMediaEndpoint::Backends> GStreamerMediaEndpoint::addTransceiver(const String& trackKind, const RTCRtpTransceiverInit&)
+Optional<GStreamerMediaEndpoint::Backends> GStreamerMediaEndpoint::addTransceiver(const String& trackKind, const RTCRtpTransceiverInit& init)
 {
-    g_printerr("addTransceiver from string\n");
-    notImplemented();
+    if (!m_webrtcBin.get())
+        return WTF::nullopt;
+
+    GST_DEBUG_OBJECT(m_pipeline.get(), "%u streams in init data", init.streams.size());
+    auto caps = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, trackKind.utf8().data(), nullptr));
+    const char* encodingName = trackKind == "video" ? "VP9" : "OPUS";
+    gst_caps_set_simple(caps.get(), "encoding-name", G_TYPE_STRING, encodingName, nullptr);
+    auto direction = fromRTCRtpTransceiverDirection(init.direction);
+    GST_DEBUG_OBJECT(m_pipeline.get(), "Adding %s transceiver for payload %" GST_PTR_FORMAT, enumValue(GST_TYPE_WEBRTC_RTP_TRANSCEIVER_DIRECTION, direction).get(), caps.get());
+    GRefPtr<GstWebRTCRTPTransceiver> rtcTransceiver;
+    g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", direction, caps.get(), &rtcTransceiver.outPtr());
+    if (!rtcTransceiver)
+        return WTF::nullopt;
+
+    auto transceiver = std::make_unique<GStreamerRtpTransceiverBackend>(WTFMove(rtcTransceiver));
+    return GStreamerMediaEndpoint::Backends { transceiver->createSenderBackend(m_peerConnectionBackend, nullptr), transceiver->createReceiverBackend(), WTFMove(transceiver) };
 }
 
 Optional<GStreamerMediaEndpoint::Backends> GStreamerMediaEndpoint::addTransceiver(MediaStreamTrack& track, const RTCRtpTransceiverInit& init)
 {
-    // auto sourceAndTrack = createSourceAndRTCTrack(track);
-    // return createTransceiverBackends(WTFMove(sourceAndTrack.second), init, WTFMove(sourceAndTrack.first));
     g_printerr("addTransceiver\n");
     notImplemented();
+    return WTF::nullopt;
 }
 
 void GStreamerMediaEndpoint::setSenderSourceFromTrack(GStreamerRtpSenderBackend& sender, MediaStreamTrack& track)
@@ -684,7 +689,6 @@ bool GStreamerMediaEndpoint::addIceCandidate(GStreamerIceCandidate& candidate)
 
 void GStreamerMediaEndpoint::stop()
 {
-    stopLoggingStats();
     gst_element_set_state(m_pipeline.get(), GST_STATE_NULL);
 }
 
@@ -835,21 +839,6 @@ void GStreamerMediaEndpoint::collectTransceivers()
         m_peerConnectionBackend.newRemoteTransceiver(std::make_unique<GStreamerRtpTransceiverBackend>(WTFMove(current)), source.releaseNonNull());
     }
     g_array_unref(transceivers);
-}
-
-void GStreamerMediaEndpoint::gatherStatsForLogging()
-{
-    notImplemented();
-}
-
-void GStreamerMediaEndpoint::startLoggingStats()
-{
-    notImplemented();
-}
-
-void GStreamerMediaEndpoint::stopLoggingStats()
-{
-    notImplemented();
 }
 
 } // namespace WebCore

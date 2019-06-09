@@ -81,7 +81,7 @@ bool GStreamerPeerConnectionBackend::setConfiguration(MediaEndpointConfiguration
 
 void GStreamerPeerConnectionBackend::getStats(Ref<DeferredPromise>&& promise)
 {
-    m_endpoint->getStats(WTFMove(promise));
+    m_endpoint->getStats(nullptr, WTFMove(promise));
 }
 
 static inline GStreamerRtpSenderBackend& backendFromRTPSender(RTCRtpSender& sender)
@@ -90,26 +90,44 @@ static inline GStreamerRtpSenderBackend& backendFromRTPSender(RTCRtpSender& send
     return static_cast<GStreamerRtpSenderBackend&>(*sender.backend());
 }
 
+static inline GStreamerRtpReceiverBackend& backendFromRTPReceiver(RTCRtpReceiver& receiver)
+{
+    ASSERT(!receiver.isStopped());
+    return static_cast<GStreamerRtpReceiverBackend&>(*receiver.backend());
+}
+
 void GStreamerPeerConnectionBackend::getStats(RTCRtpSender& sender, Ref<DeferredPromise>&& promise)
 {
-    GstWebRTCRTPSender* rtcSender = sender.backend() ? backendFromRTPSender(sender).rtcSender() : nullptr;
-
-    if (!rtcSender) {
-        m_endpoint->getStats(WTFMove(promise));
+    if (!sender.backend()) {
+        m_endpoint->getStats(nullptr, WTFMove(promise));
         return;
     }
-    m_endpoint->getStats(rtcSender, WTFMove(promise));
+
+    auto& backend = backendFromRTPSender(sender);
+    GstPad* pad = nullptr;
+    if (RealtimeOutgoingAudioSourceGStreamer* source = backend.audioSource())
+        pad = source->pad();
+    else if (RealtimeOutgoingVideoSourceGStreamer* source = backend.videoSource())
+        pad = source->pad();
+    m_endpoint->getStats(pad, WTFMove(promise));
 }
 
 void GStreamerPeerConnectionBackend::getStats(RTCRtpReceiver& receiver, Ref<DeferredPromise>&& promise)
 {
-    GstWebRTCRTPReceiver* rtcReceiver = receiver.backend() ? static_cast<GStreamerRtpReceiverBackend*>(receiver.backend())->rtcReceiver() : nullptr;
-
-    if (!rtcReceiver) {
-        m_endpoint->getStats(WTFMove(promise));
+    if (!receiver.backend()) {
+        m_endpoint->getStats(nullptr, WTFMove(promise));
         return;
     }
-    m_endpoint->getStats(rtcReceiver, WTFMove(promise));
+
+#if 0
+    auto& backend = backendFromRTPReceiver(receiver);
+    GstPad* pad = nullptr;
+    if (RealtimeIncomingAudioSourceGStreamer* source = backend.audioSource())
+        pad = source->pad();
+    else if (RealtimeOutgoingVideoSourceGStreamer* source = backend.videoSource())
+        pad = source->pad();
+    m_endpoint->getStats(pad, WTFMove(promise));
+#endif
 }
 
 void GStreamerPeerConnectionBackend::doSetLocalDescription(RTCSessionDescription& description)
@@ -233,6 +251,7 @@ GStreamerPeerConnectionBackend::AudioReceiver GStreamerPeerConnectionBackend::au
 
 std::unique_ptr<RTCDataChannelHandler> GStreamerPeerConnectionBackend::createDataChannelHandler(const String& label, const RTCDataChannelInit& options)
 {
+    g_printerr("createDataChannelHandler\n");
     notImplemented();
     return nullptr;
 }
@@ -275,29 +294,6 @@ RefPtr<RTCSessionDescription> GStreamerPeerConnectionBackend::remoteDescription(
 {
     return m_endpoint->remoteDescription();
 }
-
-// void GStreamerPeerConnectionBackend::notifyAddedTrack(RTCRtpSender& sender)
-// {
-//     ASSERT(sender.track());
-//     m_endpoint->addTrack(sender, *sender.track(), sender.mediaStreamIds());
-// }
-
-// void GStreamerPeerConnectionBackend::notifyRemovedTrack(RTCRtpSender& sender)
-// {
-//     m_endpoint->removeTrack(sender);
-// }
-
-// void GStreamerPeerConnectionBackend::removeRemoteStream(MediaStream* mediaStream)
-// {
-//     m_remoteStreams.removeFirstMatching([mediaStream](const auto& item) {
-//         return item.get() == mediaStream;
-//     });
-// }
-
-// void GStreamerPeerConnectionBackend::addRemoteStream(Ref<MediaStream>&& mediaStream)
-// {
-//     m_remoteStreams.append(WTFMove(mediaStream));
-// }
 
 static inline RefPtr<RTCRtpSender> findExistingSender(const Vector<RefPtr<RTCRtpTransceiver>>& transceivers, GStreamerRtpSenderBackend& senderBackend)
 {

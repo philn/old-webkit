@@ -37,9 +37,8 @@ public:
 protected:
     explicit RealtimeOutgoingVideoSourceGStreamer(Ref<MediaStreamTrackPrivate>&&, GstElement*);
 
-    uint32_t m_width { 0 };
-    uint32_t m_height { 0 };
     bool m_shouldApplyRotation { false };
+    const char* m_encodingName { nullptr };
 
 private:
     // MediaStreamTrackPrivate::Observer API

@@ -31,7 +31,7 @@ class GStreamerRtpReceiverBackend;
 class GStreamerRtpTransceiverBackend final : public RTCRtpTransceiverBackend {
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    explicit GStreamerRtpTransceiverBackend(GRefPtr<GstWebRTCRTPTransceiver> rtcTransceiver)
+    explicit GStreamerRtpTransceiverBackend(GRefPtr<GstWebRTCRTPTransceiver>&& rtcTransceiver)
         : m_rtcTransceiver(rtcTransceiver)
     {
     }

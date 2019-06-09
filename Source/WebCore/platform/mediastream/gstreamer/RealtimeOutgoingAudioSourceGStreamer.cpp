@@ -64,12 +64,13 @@ void RealtimeOutgoingAudioSourceGStreamer::initialize()
 // #endif
 
     gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_audioconvert.get(), m_audioresample.get(), m_encoder.get(), m_payloader.get(), nullptr);
-    gst_element_link_many(m_outgoingSource.get(), m_audioconvert.get(), m_audioresample.get(), m_preEncoderQueue.get(), m_encoder.get(), m_payloader.get(), m_postEncoderQueue.get(), nullptr);
+    gst_element_link_many(m_outgoingSource.get(), m_valve.get(), m_audioconvert.get(), m_audioresample.get(), m_preEncoderQueue.get(), m_encoder.get(), m_payloader.get(), m_postEncoderQueue.get(), nullptr);
 }
 
 void RealtimeOutgoingAudioSourceGStreamer::synchronizeStates()
 {
     gst_element_sync_state_with_parent(m_outgoingSource.get());
+    gst_element_sync_state_with_parent(m_valve.get());
     gst_element_sync_state_with_parent(m_audioconvert.get());
     gst_element_sync_state_with_parent(m_audioresample.get());
     gst_element_sync_state_with_parent(m_preEncoderQueue.get());

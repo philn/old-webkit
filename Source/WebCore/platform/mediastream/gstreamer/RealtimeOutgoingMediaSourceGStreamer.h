@@ -28,7 +28,7 @@
 
 namespace WebCore {
 
-    class RealtimeOutgoingMediaSourceGStreamer : public ThreadSafeRefCounted<RealtimeOutgoingMediaSourceGStreamer>, public MediaStreamTrackPrivate::Observer {
+class RealtimeOutgoingMediaSourceGStreamer : public ThreadSafeRefCounted<RealtimeOutgoingMediaSourceGStreamer>, public MediaStreamTrackPrivate::Observer {
 public:
     ~RealtimeOutgoingMediaSourceGStreamer() { stop(); }
 
@@ -41,6 +41,8 @@ public:
 
     GRefPtr<GstWebRTCRTPSender> sender() const { return m_sender; }
 
+    GstPad* pad() const { return m_pad; }
+    
     virtual void initialize() = 0;
     virtual void setPayloadType(int) { };
     virtual void synchronizeStates() { };
@@ -57,6 +59,7 @@ protected:
     WTF::Optional<RealtimeMediaSourceSettings> m_initialSettings;
     GRefPtr<GstElement> m_pipeline;
     GRefPtr<GstElement> m_outgoingSource;
+    GRefPtr<GstElement> m_valve;
     GRefPtr<GstElement> m_preEncoderQueue;
     GRefPtr<GstElement> m_encoder;
     GRefPtr<GstElement> m_payloader;
@@ -75,6 +78,7 @@ private:
     void trackSettingsChanged(MediaStreamTrackPrivate&) override { initializeFromSource(); }
     void trackEnded(MediaStreamTrackPrivate&) override { }
 
+    GstPad* m_pad;
 };
 
 } // namespace WebCore

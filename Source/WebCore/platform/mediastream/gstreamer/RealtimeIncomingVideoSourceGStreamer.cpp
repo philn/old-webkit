@@ -21,9 +21,7 @@
 
 #if USE(GSTREAMER_WEBRTC)
 
-#include "Logging.h"
 #include "MediaSampleGStreamer.h"
-#include "NotImplemented.h"
 
 namespace WebCore {
 
@@ -31,20 +29,19 @@ RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(Strin
     : RealtimeMediaSource(RealtimeMediaSource::Type::Video, WTFMove(videoTrackId))
     , DecoderSourceGStreamer(nullptr, nullptr)
 {
-    notImplemented();
 }
 
-
 RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(GstElement* pipeline, GstPad* pad)
-    : RealtimeMediaSource(RealtimeMediaSource::Type::Video, String { })
+    : RealtimeMediaSource(RealtimeMediaSource::Type::Video, "remote video"_s)
     , DecoderSourceGStreamer(pipeline, pad)
 {
-    m_currentSettings.setWidth(640);
-    m_currentSettings.setHeight(480);
-    // notifyMutedChange(!m_videoTrack);
+    RealtimeMediaSourceSupportedConstraints constraints;
+    constraints.setSupportsWidth(true);
+    constraints.setSupportsHeight(true);
+    m_currentSettings = RealtimeMediaSourceSettings { };
+    m_currentSettings->setSupportedConstraints(WTFMove(constraints));
 
-    // setWidth(640);
-    // setHeight(480);
+    // notifyMutedChange(!m_videoTrack);
     start();
 }
 
@@ -56,17 +53,14 @@ void RealtimeIncomingVideoSourceGStreamer::handleDecodedSample(GRefPtr<GstSample
     });
 }
 
-
 void RealtimeIncomingVideoSourceGStreamer::startProducingData()
 {
-    notImplemented();
-    // m_isProducingData = true;
+    releaseValve();
 }
 
 void RealtimeIncomingVideoSourceGStreamer::stopProducingData()
 {
-    notImplemented();
-    // m_isProducingData = false;
+    lockValve();
 }
 
 const RealtimeMediaSourceCapabilities& RealtimeIncomingVideoSourceGStreamer::capabilities()
@@ -76,7 +70,27 @@ const RealtimeMediaSourceCapabilities& RealtimeIncomingVideoSourceGStreamer::cap
 
 const RealtimeMediaSourceSettings& RealtimeIncomingVideoSourceGStreamer::settings()
 {
-    return m_currentSettings;
+    if (m_currentSettings)
+        return m_currentSettings.value();
+
+    RealtimeMediaSourceSupportedConstraints constraints;
+    constraints.setSupportsWidth(true);
+    constraints.setSupportsHeight(true);
+
+    RealtimeMediaSourceSettings settings;
+    auto& size = this->size();
+    settings.setWidth(size.width());
+    settings.setHeight(size.height());
+    settings.setSupportedConstraints(constraints);
+
+    m_currentSettings = WTFMove(settings);
+    return m_currentSettings.value();
+}
+
+void RealtimeIncomingVideoSourceGStreamer::settingsDidChange(OptionSet<RealtimeMediaSourceSettings::Flag> settings)
+{
+    if (settings.containsAny({ RealtimeMediaSourceSettings::Flag::Width, RealtimeMediaSourceSettings::Flag::Height }))
+        m_currentSettings = WTF::nullopt;
 }
 
 } // namespace WebCore

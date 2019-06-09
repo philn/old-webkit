@@ -31,8 +31,6 @@ namespace WebCore {
 std::unique_ptr<GStreamerRtpReceiverBackend> GStreamerRtpTransceiverBackend::createReceiverBackend()
 {
     GstWebRTCRTPReceiver* receiver;
-    g_printerr("this: %p\n", this);
-    g_printerr(">>> transceiver %p\n", m_rtcTransceiver.get());
     g_object_get(m_rtcTransceiver.get(), "receiver", &receiver, nullptr);
     return std::make_unique<GStreamerRtpReceiverBackend>(receiver);
 }
@@ -61,7 +59,6 @@ Optional<RTCRtpTransceiverDirection> GStreamerRtpTransceiverBackend::currentDire
 
 void GStreamerRtpTransceiverBackend::setDirection(RTCRtpTransceiverDirection direction)
 {
-    // FIXME: Why no direction GObject property in GstWebRTCRTPTransceiver?
     gst_webrtc_rtp_transceiver_set_direction(m_rtcTransceiver.get(), fromRTCRtpTransceiverDirection(direction));
 }
 

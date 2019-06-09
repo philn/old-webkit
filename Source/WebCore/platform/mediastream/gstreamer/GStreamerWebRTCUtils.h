@@ -66,6 +66,7 @@ inline GstWebRTCRTPTransceiverDirection fromRTCRtpTransceiverDirection(RTCRtpTra
     case RTCRtpTransceiverDirection::Sendrecv:
         return GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV;
     }
+    ASSERT_NOT_REACHED();
     return GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_NONE;
 }
 
@@ -74,16 +75,16 @@ inline GstWebRTCRTPTransceiverDirection fromRTCRtpTransceiverDirection(RTCRtpTra
 /*     // FIXME */
 /* } */
 
-static GstClockTime getWebRTCBaseTime()
-{
-    static GstClockTime webrtcBaseTime = GST_CLOCK_TIME_NONE;
-    if(!GST_CLOCK_TIME_IS_VALID(webrtcBaseTime)) {
-        GstClock* clock = gst_system_clock_obtain();
-        webrtcBaseTime = gst_clock_get_time(clock);
-        gst_object_unref(clock);
-    }
-    return webrtcBaseTime;
-}
+/* static GstClockTime getWebRTCBaseTime() */
+/* { */
+/*     static GstClockTime webrtcBaseTime = GST_CLOCK_TIME_NONE; */
+/*     if(!GST_CLOCK_TIME_IS_VALID(webrtcBaseTime)) { */
+/*         GstClock* clock = gst_system_clock_obtain(); */
+/*         webrtcBaseTime = gst_clock_get_time(clock); */
+/*         gst_object_unref(clock); */
+/*     } */
+/*     return webrtcBaseTime; */
+/* } */
 
 
 static inline GstWebRTCSDPType toSessionDescriptionType(RTCSdpType sdpType)
@@ -114,7 +115,7 @@ static inline RTCSdpType fromSessionDescriptionType(GstWebRTCSessionDescription*
     return RTCSdpType::Pranswer;
 }
 
-static RTCSignalingState toSignalingState(GstWebRTCSignalingState state)
+static inline RTCSignalingState toSignalingState(GstWebRTCSignalingState state)
 {
     switch (state) {
     case GST_WEBRTC_SIGNALING_STATE_STABLE:
@@ -163,7 +164,7 @@ static inline GstWebRTCBundlePolicy bundlePolicyFromConfiguration(MediaEndpointC
 {
     switch (configuration.bundlePolicy) {
     case RTCBundlePolicy::Balanced:
-        return GST_WEBRTC_BUNDLE_POLICY_BALANCED;
+        /* return GST_WEBRTC_BUNDLE_POLICY_BALANCED; */
     case RTCBundlePolicy::MaxCompat:
         return GST_WEBRTC_BUNDLE_POLICY_MAX_COMPAT;
     case RTCBundlePolicy::MaxBundle:
