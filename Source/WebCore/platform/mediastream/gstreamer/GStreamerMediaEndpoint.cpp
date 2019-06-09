@@ -421,8 +421,10 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
         if (m_delayedNegotiation) {
             // TODO(phil): Move this to RealtimeOutgoingMediaSourceGStreamer ?
             GstWebRTCRTPTransceiver* transceiver;
-            g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV, audioSource->caps().get(), &transceiver);
+            g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_INACTIVE, audioSource->caps().get(), &transceiver);
             g_object_get(transceiver, "sender", &rtcSender.outPtr(), nullptr);
+            // g_object_set(transceiver, "fec-type", GST_WEBRTC_FEC_TYPE_ULP_RED, "fec-percentage", 100, nullptr);
+            // g_object_set(transceiver, "do-nack", true, nullptr);
 
             m_pendingSources.append(audioSource.copyRef());
         } else {
@@ -437,7 +439,10 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
         if (m_delayedNegotiation) {
             // TODO(phil): Move this to RealtimeOutgoingMediaSourceGStreamer ?
             GstWebRTCRTPTransceiver* transceiver;
-            g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV, videoSource->caps().get(), &transceiver);
+            g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_INACTIVE, videoSource->caps().get(), &transceiver);
+            g_object_get(transceiver, "sender", &rtcSender.outPtr(), nullptr);
+            // g_object_set(transceiver, "fec-type", GST_WEBRTC_FEC_TYPE_ULP_RED, "fec-percentage", 100, nullptr);
+            // g_object_set(transceiver, "do-nack", true, nullptr);
 
             m_pendingSources.append(videoSource.copyRef());
         } else {
@@ -622,15 +627,28 @@ Optional<GStreamerMediaEndpoint::Backends> GStreamerMediaEndpoint::addTransceive
         return WTF::nullopt;
 
     GST_DEBUG_OBJECT(m_pipeline.get(), "%u streams in init data", init.streams.size());
-    auto caps = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, trackKind.utf8().data(), nullptr));
-    const char* encodingName = trackKind == "video" ? "VP9" : "OPUS";
-    gst_caps_set_simple(caps.get(), "encoding-name", G_TYPE_STRING, encodingName, nullptr);
+    const char* encodingName;
+    int clockRate;
+    if (trackKind == "video") {
+        encodingName = "VP9";
+        clockRate = 90000;
+    } else {
+        encodingName = "OPUS";
+        clockRate = 48000;
+    }
+    auto caps = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, trackKind.utf8().data(), "encoding-name", G_TYPE_STRING, encodingName,
+        "payload", G_TYPE_INT, m_ptCounter++, "clock-rate", G_TYPE_INT, clockRate,
+        // "ssrc", G_TYPE_UINT, static_cast<unsigned>(3484078950),
+                                              nullptr));
     auto direction = fromRTCRtpTransceiverDirection(init.direction);
     GST_DEBUG_OBJECT(m_pipeline.get(), "Adding %s transceiver for payload %" GST_PTR_FORMAT, enumValue(GST_TYPE_WEBRTC_RTP_TRANSCEIVER_DIRECTION, direction).get(), caps.get());
     GRefPtr<GstWebRTCRTPTransceiver> rtcTransceiver;
     g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", direction, caps.get(), &rtcTransceiver.outPtr());
     if (!rtcTransceiver)
         return WTF::nullopt;
+
+    // g_object_set(rtcTransceiver.get(), "fec-type", GST_WEBRTC_FEC_TYPE_ULP_RED, "fec-percentage", 100, nullptr);
+    // g_object_set(rtcTransceiver.get(), "do-nack", true, nullptr);
 
     auto transceiver = std::make_unique<GStreamerRtpTransceiverBackend>(WTFMove(rtcTransceiver));
     return GStreamerMediaEndpoint::Backends { transceiver->createSenderBackend(m_peerConnectionBackend, nullptr), transceiver->createReceiverBackend(), WTFMove(transceiver) };

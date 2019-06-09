@@ -76,7 +76,7 @@ void RealtimeOutgoingMediaSourceGStreamer::sourceEnabledChanged()
 void RealtimeOutgoingMediaSourceGStreamer::linkToWebRTCBinPad(GstPad* sinkPad)
 {
     m_pad = sinkPad;
-    
+
     gst_element_link(m_postEncoderQueue.get(), m_capsFilter.get());
 
     GRefPtr<GstPad> srcPad = adoptGRef(gst_element_get_static_pad(m_capsFilter.get(), "src"));

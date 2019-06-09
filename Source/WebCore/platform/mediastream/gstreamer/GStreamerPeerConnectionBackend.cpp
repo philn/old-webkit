@@ -192,12 +192,6 @@ void GStreamerPeerConnectionBackend::doAddIceCandidate(RTCIceCandidate& candidat
     addIceCandidateSucceeded();
 }
 
-void GStreamerPeerConnectionBackend::endOfIceCandidates(DOMPromiseDeferred<void>&& promise)
-{
-    g_printerr(">>>>>> endOfIceCandidates\n");
-    promise.resolve();
-}
-
 Ref<RTCRtpReceiver> GStreamerPeerConnectionBackend::createReceiverForSource(Ref<RealtimeMediaSource>&& source, std::unique_ptr<RTCRtpReceiverBackend>&& backend)
 {
     String trackID = source->persistentID();
@@ -209,6 +203,7 @@ Ref<RTCRtpReceiver> GStreamerPeerConnectionBackend::createReceiverForSource(Ref<
 
 static inline Ref<RealtimeMediaSource> createEmptySource(const String& trackKind, String&& trackId)
 {
+    g_printerr("Create empty %s source\n", trackKind.utf8().data());
     // FIXME: trackKind should be an enumeration
     if (trackKind == "audio")
         return RealtimeIncomingAudioSourceGStreamer::create(WTFMove(trackId));

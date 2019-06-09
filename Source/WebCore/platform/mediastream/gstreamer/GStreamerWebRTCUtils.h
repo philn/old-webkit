@@ -164,7 +164,7 @@ static inline GstWebRTCBundlePolicy bundlePolicyFromConfiguration(MediaEndpointC
 {
     switch (configuration.bundlePolicy) {
     case RTCBundlePolicy::Balanced:
-        /* return GST_WEBRTC_BUNDLE_POLICY_BALANCED; */
+        return GST_WEBRTC_BUNDLE_POLICY_BALANCED;
     case RTCBundlePolicy::MaxCompat:
         return GST_WEBRTC_BUNDLE_POLICY_MAX_COMPAT;
     case RTCBundlePolicy::MaxBundle:
