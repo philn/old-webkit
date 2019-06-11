@@ -421,7 +421,7 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
         if (m_delayedNegotiation) {
             // TODO(phil): Move this to RealtimeOutgoingMediaSourceGStreamer ?
             GstWebRTCRTPTransceiver* transceiver;
-            g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_INACTIVE, audioSource->caps().get(), &transceiver);
+            g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV, audioSource->caps().get(), &transceiver);
             g_object_get(transceiver, "sender", &rtcSender.outPtr(), nullptr);
             // g_object_set(transceiver, "fec-type", GST_WEBRTC_FEC_TYPE_ULP_RED, "fec-percentage", 100, nullptr);
             // g_object_set(transceiver, "do-nack", true, nullptr);
@@ -439,7 +439,7 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
         if (m_delayedNegotiation) {
             // TODO(phil): Move this to RealtimeOutgoingMediaSourceGStreamer ?
             GstWebRTCRTPTransceiver* transceiver;
-            g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_INACTIVE, videoSource->caps().get(), &transceiver);
+            g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV, videoSource->caps().get(), &transceiver);
             g_object_get(transceiver, "sender", &rtcSender.outPtr(), nullptr);
             // g_object_set(transceiver, "fec-type", GST_WEBRTC_FEC_TYPE_ULP_RED, "fec-percentage", 100, nullptr);
             // g_object_set(transceiver, "do-nack", true, nullptr);
