@@ -21,6 +21,7 @@
 
 #if USE(GSTREAMER_WEBRTC)
 
+#include "Document.h"
 #include "GStreamerCommon.h"
 #include "GStreamerRtpReceiverBackend.h"
 #include "GStreamerRtpTransceiverBackend.h"
@@ -578,7 +579,8 @@ MediaStream& GStreamerMediaEndpoint::mediaStreamFromRTCStream()
     GUniquePtr<gchar> name(gst_object_get_name(GST_OBJECT_CAST(m_pipeline.get())));
     String label(name.get());
     auto mediaStream = m_remoteStreamsById.ensure(label, [label, this]() mutable {
-        return MediaStream::create(*m_peerConnectionBackend.connection().scriptExecutionContext(), MediaStreamPrivate::create({ }, WTFMove(label)));
+        auto& document = downcast<Document>(*m_peerConnectionBackend.connection().scriptExecutionContext());
+        return MediaStream::create(document, MediaStreamPrivate::create(document.logger(), { }, WTFMove(label)));
     });
     return *mediaStream.iterator->value;
 }
