@@ -30,6 +30,8 @@
 #if USE(LIBWEBRTC) && USE(GSTREAMER)
 #include "RealtimeOutgoingVideoSourceLibWebRTC.h"
 
+#include <gst/app/gstappsink.h>
+#include "GStreamerVideoCaptureSource.h"
 #include "GStreamerVideoFrameLibWebRTC.h"
 #include "MediaSampleGStreamer.h"
 
@@ -45,9 +47,31 @@ Ref<RealtimeOutgoingVideoSourceLibWebRTC> RealtimeOutgoingVideoSourceLibWebRTC::
     return adoptRef(*new RealtimeOutgoingVideoSourceLibWebRTC(WTFMove(videoSource)));
 }
 
-RealtimeOutgoingVideoSourceLibWebRTC::RealtimeOutgoingVideoSourceLibWebRTC(Ref<MediaStreamTrackPrivate>&& videoSource)
-    : RealtimeOutgoingVideoSource(WTFMove(videoSource))
+GstFlowReturn RealtimeOutgoingVideoSourceLibWebRTC::newSampleCallback(GstElement* sink, RealtimeOutgoingVideoSourceLibWebRTC* source)
 {
+    auto gstSample = gst_app_sink_pull_sample(GST_APP_SINK(sink));
+    auto frameBuffer(GStreamerVideoFrameLibWebRTC::create(gstSample));
+
+    source->sendFrame(WTFMove(frameBuffer));
+
+    return GST_FLOW_OK;
+}
+
+RealtimeOutgoingVideoSourceLibWebRTC::RealtimeOutgoingVideoSourceLibWebRTC(Ref<MediaStreamTrackPrivate>&& track)
+    : RealtimeOutgoingVideoSource(WTFMove(track))
+{
+    MediaStreamTrackPrivate& pTrack = source();
+    if (pTrack.isCaptureTrack()) {
+        GStreamerVideoCaptureSource& source = static_cast<GStreamerVideoCaptureSource&>(pTrack.source());
+        auto capturer = source.capturer();
+        auto sink = gst_element_factory_make("appsink", NULL);
+
+        g_object_set(sink, "emit-signals", TRUE, "sync", FALSE, "qos", FALSE, NULL);
+        g_signal_connect(sink, "new-sample", G_CALLBACK (newSampleCallback), this);
+
+        capturer->addSink(sink);
+        capturer->play();
+    }
 }
 
 void RealtimeOutgoingVideoSourceLibWebRTC::sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample& sample)

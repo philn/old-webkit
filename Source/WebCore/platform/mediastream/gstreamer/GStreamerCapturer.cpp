@@ -114,17 +114,13 @@ void GStreamerCapturer::setupPipeline()
 
     m_capsfilter = makeElement("capsfilter");
     m_tee = makeElement("tee");
-    m_sink = makeElement("appsink");
 
-    gst_app_sink_set_emit_signals(GST_APP_SINK(m_sink.get()), TRUE);
     // g_object_set(m_sink.get(), "drop", true, "max-buffers", 1, "enable-last-sample", 0, nullptr);
 
     g_object_set(m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 
     gst_bin_add_many(GST_BIN(m_pipeline.get()), source.get(), converter.get(), m_capsfilter.get(), m_tee.get(), nullptr);
     gst_element_link_many(source.get(), converter.get(), m_capsfilter.get(), m_tee.get(), nullptr);
-
-    addSink(m_sink.get());
 
     connectSimpleBusMessageCallback(pipeline());
 }
@@ -161,13 +157,18 @@ void GStreamerCapturer::addSink(GstElement* newSink)
 
     GST_INFO_OBJECT(pipeline(), "Adding sink: %" GST_PTR_FORMAT, newSink);
 
-    GUniquePtr<char> dumpName(g_strdup_printf("%s_sink_%s_added", GST_OBJECT_NAME(pipeline()), GST_OBJECT_NAME(newSink)));
+    GUniquePtr<char> dumpName(g_strdup_printf("%s_sink_%s_added", GST_OBJECT_NAME(pipeline()), newSink ? GST_OBJECT_NAME(newSink) : "null"));
     GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(pipeline()), GST_DEBUG_GRAPH_SHOW_ALL, dumpName.get());
+
+    m_sink = newSink;
 }
 
 void GStreamerCapturer::play()
 {
     ASSERT(m_pipeline);
+
+    if (!m_sink)
+        return;
 
     GST_INFO_OBJECT(pipeline(), "Going to PLAYING!");
 

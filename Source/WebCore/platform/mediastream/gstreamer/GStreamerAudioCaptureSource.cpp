@@ -111,29 +111,11 @@ void GStreamerAudioCaptureSource::startProducingData()
 {
     m_capturer->setupPipeline();
     m_capturer->setSampleRate(sampleRate());
-    g_signal_connect(m_capturer->sink(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer->play();
-}
-
-GstFlowReturn GStreamerAudioCaptureSource::newSampleCallback(GstElement* sink, GStreamerAudioCaptureSource* source)
-{
-    auto sample = adoptGRef(gst_app_sink_pull_sample(GST_APP_SINK(sink)));
-
-    // FIXME - figure out a way to avoid copying (on write) the data.
-    GstBuffer* buf = gst_sample_get_buffer(sample.get());
-    auto frames(std::unique_ptr<GStreamerAudioData>(new GStreamerAudioData(WTFMove(sample))));
-    auto streamDesc(std::unique_ptr<GStreamerAudioStreamDescription>(new GStreamerAudioStreamDescription(frames->getAudioInfo())));
-
-    source->audioSamplesAvailable(
-        MediaTime(GST_TIME_AS_USECONDS(GST_BUFFER_PTS(buf)), G_USEC_PER_SEC),
-        *frames, *streamDesc, gst_buffer_get_size(buf) / frames->getAudioInfo().bpf);
-
-    return GST_FLOW_OK;
 }
 
 void GStreamerAudioCaptureSource::stopProducingData()
 {
-    g_signal_handlers_disconnect_by_func(m_capturer->sink(), reinterpret_cast<gpointer>(newSampleCallback), this);
     m_capturer->stop();
 }
 

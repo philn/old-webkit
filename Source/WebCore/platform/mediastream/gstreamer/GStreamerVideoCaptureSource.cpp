@@ -159,7 +159,6 @@ void GStreamerVideoCaptureSource::startProducingData()
     m_capturer->setupPipeline();
     m_capturer->setSize(size().width(), size().height());
     m_capturer->setFrameRate(frameRate());
-    g_signal_connect(m_capturer->sink(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer->play();
 }
 
