@@ -96,7 +96,7 @@ Ref<MediaSampleGStreamer> MediaSampleGStreamer::create(Vector<unsigned char>&& d
     }));
 
     auto gstSample = adoptGRef(gst_sample_new(buffer.get(), caps.get(), nullptr, nullptr));
-    return MediaSampleGStreamer::create(WTFMove(gstSample), FloatSize(), String());
+    return adoptRef(*new MediaSampleGStreamer(gstSample.get(), FloatSize(), String()));
 }
 
 Ref<MediaSampleGStreamer> MediaSampleGStreamer::createFakeSample(GstCaps*, MediaTime pts, MediaTime dts, MediaTime duration, const FloatSize& presentationSize, const AtomString& trackId)

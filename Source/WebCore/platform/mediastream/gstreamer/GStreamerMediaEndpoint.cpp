@@ -639,9 +639,7 @@ Optional<GStreamerMediaEndpoint::Backends> GStreamerMediaEndpoint::addTransceive
         clockRate = 48000;
     }
     auto caps = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, trackKind.utf8().data(), "encoding-name", G_TYPE_STRING, encodingName,
-        "payload", G_TYPE_INT, m_ptCounter++, "clock-rate", G_TYPE_INT, clockRate,
-        // "ssrc", G_TYPE_UINT, static_cast<unsigned>(3484078950),
-                                              nullptr));
+        "payload", G_TYPE_INT, m_ptCounter++, "clock-rate", G_TYPE_INT, clockRate, nullptr));
     auto direction = fromRTCRtpTransceiverDirection(init.direction);
     GST_DEBUG_OBJECT(m_pipeline.get(), "Adding %s transceiver for payload %" GST_PTR_FORMAT, enumValue(GST_TYPE_WEBRTC_RTP_TRANSCEIVER_DIRECTION, direction).get(), caps.get());
     GRefPtr<GstWebRTCRTPTransceiver> rtcTransceiver;

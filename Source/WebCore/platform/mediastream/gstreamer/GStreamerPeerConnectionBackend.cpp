@@ -93,7 +93,6 @@ static inline GStreamerRtpSenderBackend& backendFromRTPSender(RTCRtpSender& send
 
 static inline GStreamerRtpReceiverBackend& backendFromRTPReceiver(RTCRtpReceiver& receiver)
 {
-    ASSERT(!receiver.isStopped());
     return static_cast<GStreamerRtpReceiverBackend&>(*receiver.backend());
 }
 

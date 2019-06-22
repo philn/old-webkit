@@ -284,7 +284,7 @@ void GStreamerStatsCollector::processStats(const GstStructure* stats)
         if (!report)
             return;
 
-        ASSERT(protectedThis->m_report->backingMap());
+        ASSERT(report->backingMap());
         gst_structure_foreach(stats, fillReportCallback, report.get());
     });
 }
