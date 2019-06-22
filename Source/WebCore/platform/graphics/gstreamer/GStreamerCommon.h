@@ -219,6 +219,14 @@ private:
 void connectSimpleBusMessageCallback(GstElement* pipeline);
 void disconnectSimpleBusMessageCallback(GstElement* pipeline);
 
+GstClockTime getSharedBaseTime();
+
+struct GStreamerProxy {
+    GstElement* source;
+    GstElement* sink;
+};
+GStreamerProxy createProxy();
+
 }
 
 #ifndef GST_BUFFER_DTS_OR_PTS

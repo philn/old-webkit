@@ -33,8 +33,8 @@ public:
     ~RealtimeOutgoingMediaSourceGStreamer() { stop(); }
 
     void stop();
-    bool setSource(Ref<MediaStreamTrackPrivate>&&);
-    MediaStreamTrackPrivate& source() const { return m_source.get(); }
+    bool setTrack(Ref<MediaStreamTrackPrivate>&&);
+    MediaStreamTrackPrivate& track() const { return m_track.get(); }
 
     GRefPtr<GstCaps> caps() const { return m_caps; }
     void linkToWebRTCBinPad(GstPad*);
@@ -50,12 +50,12 @@ public:
 protected:
     explicit RealtimeOutgoingMediaSourceGStreamer(Ref<MediaStreamTrackPrivate>&&, GstElement*);
 
-    void initializeFromSource();
+    void initializeFromTrack();
 
     bool m_enabled { true };
     bool m_muted { false };
     bool m_isStopped { false };
-    Ref<MediaStreamTrackPrivate> m_source;
+    Ref<MediaStreamTrackPrivate> m_track;
     WTF::Optional<RealtimeMediaSourceSettings> m_initialSettings;
     GRefPtr<GstElement> m_pipeline;
     GRefPtr<GstElement> m_outgoingSource;
@@ -75,7 +75,7 @@ private:
     // MediaStreamTrackPrivate::Observer API
     void trackMutedChanged(MediaStreamTrackPrivate&) override { sourceMutedChanged(); }
     void trackEnabledChanged(MediaStreamTrackPrivate&) override { sourceEnabledChanged(); }
-    void trackSettingsChanged(MediaStreamTrackPrivate&) override { initializeFromSource(); }
+    void trackSettingsChanged(MediaStreamTrackPrivate&) override { initializeFromTrack(); }
     void trackEnded(MediaStreamTrackPrivate&) override { }
 
     GstPad* m_pad;

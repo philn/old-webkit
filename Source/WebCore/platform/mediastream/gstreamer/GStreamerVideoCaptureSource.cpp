@@ -25,18 +25,6 @@
 #include "GStreamerVideoCaptureSource.h"
 
 #include "GStreamerCaptureDeviceManager.h"
-#include "MediaSampleGStreamer.h"
-
-#include <gst/app/gstappsink.h>
-
-#if USE(LIBWEBRTC)
-#include <webrtc/api/mediastreaminterface.h>
-#include <webrtc/api/peerconnectioninterface.h>
-#include <webrtc/media/base/videocommon.h>
-#include <webrtc/media/engine/webrtcvideocapturer.h>
-#include <webrtc/media/engine/webrtcvideocapturerfactory.h>
-#include <webrtc/modules/video_capture/video_capture_defines.h>
-#endif
 
 namespace WebCore {
 
@@ -162,22 +150,8 @@ void GStreamerVideoCaptureSource::startProducingData()
     m_capturer->play();
 }
 
-GstFlowReturn GStreamerVideoCaptureSource::newSampleCallback(GstElement* sink, GStreamerVideoCaptureSource* source)
-{
-    auto gstSample = adoptGRef(gst_app_sink_pull_sample(GST_APP_SINK(sink)));
-    auto mediaSample = MediaSampleGStreamer::create(WTFMove(gstSample), WebCore::FloatSize(), String());
-
-    // FIXME - Check how presentationSize is supposed to be used here.
-    callOnMainThread([protectedThis = makeRef(*source), mediaSample = WTFMove(mediaSample)] {
-        protectedThis->videoSampleAvailable(mediaSample.get());
-    });
-
-    return GST_FLOW_OK;
-}
-
 void GStreamerVideoCaptureSource::stopProducingData()
 {
-    g_signal_handlers_disconnect_by_func(m_capturer->sink(), reinterpret_cast<gpointer>(newSampleCallback), this);
     m_capturer->stop();
 
     GST_INFO("Reset height and width after stopping source");
@@ -285,6 +259,14 @@ void GStreamerVideoCaptureSource::generatePresets()
     }
 
     setSupportedPresets(WTFMove(presets));
+}
+
+GstElement* GStreamerVideoCaptureSource::registerClient()
+{
+    auto proxy = createProxy();
+    m_capturer->addSink(proxy.sink);
+    m_capturer->play();
+    return proxy.source;
 }
 
 } // namespace WebCore

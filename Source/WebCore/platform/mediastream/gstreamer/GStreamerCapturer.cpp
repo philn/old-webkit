@@ -22,15 +22,12 @@
 #include "config.h"
 
 #if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
-#include "GStreamerCapturer.h"
 
-#include <gst/app/gstappsink.h>
+#include "GStreamerCapturer.h"
+#include "GStreamerCommon.h"
+
 #include <gst/app/gstappsrc.h>
 #include <mutex>
-
-#if USE(LIBWEBRTC)
-#include <webrtc/api/mediastreaminterface.h>
-#endif
 
 GST_DEBUG_CATEGORY(webkit_capturer_debug);
 #define GST_CAT_DEFAULT webkit_capturer_debug
@@ -74,7 +71,7 @@ GstElement* GStreamerCapturer::createSource()
     if (m_sourceFactory) {
         m_src = makeElement(m_sourceFactory);
         if (GST_IS_APP_SRC(m_src.get()))
-            g_object_set(m_src.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
+            g_object_set(m_src.get(), "is-live", true, "format", GST_FORMAT_TIME, "do-timestamp", true, nullptr);
 
         ASSERT(m_src);
         return m_src.get();
@@ -108,6 +105,11 @@ void GStreamerCapturer::setupPipeline()
         disconnectSimpleBusMessageCallback(pipeline());
 
     m_pipeline = makeElement("pipeline");
+
+    GRefPtr<GstClock> clock = adoptGRef(gst_system_clock_obtain());
+    gst_pipeline_use_clock(GST_PIPELINE(m_pipeline.get()), clock.get());
+    gst_element_set_base_time(m_pipeline.get(), getSharedBaseTime());
+    gst_element_set_start_time(m_pipeline.get(), GST_CLOCK_TIME_NONE);
 
     GRefPtr<GstElement> source = createSource();
     GRefPtr<GstElement> converter = createConverter();

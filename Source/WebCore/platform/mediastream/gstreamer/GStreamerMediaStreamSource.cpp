@@ -32,13 +32,22 @@
 #include "MediaSampleGStreamer.h"
 #include "VideoTrackPrivate.h"
 
+#if USE(LIBWEBRTC)
 #include <gst/app/gstappsrc.h>
+#elif USE(GSTREAMER_WEBRTC)
+#include "RealtimeIncomingAudioSourceGStreamer.h"
+#include "RealtimeIncomingVideoSourceGStreamer.h"
+#endif
+
 #include <gst/base/gstflowcombiner.h>
 
 namespace WebCore {
 
+#if USE(LIBWEBRTC)
 static void webkitMediaStreamSrcPushVideoSample(WebKitMediaStreamSrc* self, GstSample* gstsample);
 static void webkitMediaStreamSrcPushAudioSample(WebKitMediaStreamSrc* self, GstSample* gstsample);
+#endif
+
 static void webkitMediaStreamSrcTrackEnded(WebKitMediaStreamSrc* self, MediaStreamTrackPrivate&);
 static void webkitMediaStreamSrcRemoveTrackByType(WebKitMediaStreamSrc* self, RealtimeMediaSource::Type trackType);
 
@@ -124,6 +133,7 @@ public:
     void trackEnabledChanged(MediaStreamTrackPrivate&) final { };
     void readyStateChanged(MediaStreamTrackPrivate&) final { };
 
+#if USE(LIBWEBRTC)
     void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample& sample) final
     {
         auto gstsample = static_cast<MediaSampleGStreamer*>(&sample)->platformSample().sample.gstSample;
@@ -137,6 +147,7 @@ public:
 
         webkitMediaStreamSrcPushAudioSample(m_mediaStreamSrc, audiodata.getSample());
     }
+#endif
 
 private:
     WebKitMediaStreamSrc* m_mediaStreamSrc;
@@ -467,6 +478,7 @@ static gboolean webkitMediaStreamSrcSetupSrc(WebKitMediaStreamSrc* self,
     return TRUE;
 }
 
+#if USE(LIBWEBRTC)
 static gboolean webkitMediaStreamSrcSetupAppSrc(WebKitMediaStreamSrc* self,
     MediaStreamTrackPrivate* track, GstElement** element,
     GstStaticPadTemplate* pad_template, bool onlyTrack)
@@ -476,6 +488,7 @@ static gboolean webkitMediaStreamSrcSetupAppSrc(WebKitMediaStreamSrc* self,
 
     return webkitMediaStreamSrcSetupSrc(self, track, *element, pad_template, TRUE, onlyTrack);
 }
+#endif
 
 static void webkitMediaStreamSrcPostStreamCollection(WebKitMediaStreamSrc* self, MediaStreamPrivate* stream)
 {
@@ -497,35 +510,32 @@ bool webkitMediaStreamSrcAddTrack(WebKitMediaStreamSrc* self, MediaStreamTrackPr
     bool res = false;
 
     if (track->type() == RealtimeMediaSource::Type::Audio) {
-        res = true;
         if (!track->isCaptureTrack()) {
+#if USE(LIBWEBRTC)
             res = webkitMediaStreamSrcSetupAppSrc(self, track, &self->audioSrc, &audioSrcTemplate, onlyTrack);
+#elif USE(GSTREAMER_WEBRTC)
+            auto & source = static_cast<RealtimeIncomingAudioSourceGStreamer&>(track->source());
+            self->audioSrc = source.registerClient();
+            res = webkitMediaStreamSrcSetupSrc(self, track, self->audioSrc, &audioSrcTemplate, FALSE, onlyTrack);
+#endif
         } else {
-            GStreamerAudioCaptureSource& source = static_cast<GStreamerAudioCaptureSource&>(track->source());
-            auto capturer = source.capturer();
-            auto sink = gst_element_factory_make("proxysink", NULL);
-            capturer->addSink(sink);
-
-            self->audioSrc = gst_element_factory_make("proxysrc", NULL);
-            g_object_set(self->audioSrc, "proxysink", sink, NULL);
-            capturer->play();
-
-            webkitMediaStreamSrcSetupSrc(self, track, self->audioSrc, &audioSrcTemplate, FALSE, onlyTrack);
+            auto& source = static_cast<GStreamerAudioCaptureSource&>(track->source());
+            self->audioSrc = source.registerClient();
+            res = webkitMediaStreamSrcSetupSrc(self, track, self->audioSrc, &audioSrcTemplate, FALSE, onlyTrack);
         }
     } else if (track->type() == RealtimeMediaSource::Type::Video) {
-        res = true;
         if (!track->isCaptureTrack()) {
+#if USE(LIBWEBRTC)
             res = webkitMediaStreamSrcSetupAppSrc(self, track, &self->videoSrc, &videoSrcTemplate, onlyTrack);
+#elif USE(GSTREAMER_WEBRTC)
+            auto & source = static_cast<RealtimeIncomingVideoSourceGStreamer&>(track->source());
+            self->videoSrc = source.registerClient();
+            res = webkitMediaStreamSrcSetupSrc(self, track, self->videoSrc, &videoSrcTemplate, FALSE, onlyTrack);
+#endif
         } else {
-            GStreamerVideoCaptureSource& source = static_cast<GStreamerVideoCaptureSource&>(track->source());
-            auto capturer = source.capturer();
-            auto sink = gst_element_factory_make("proxysink", NULL);
-
-            capturer->addSink(sink);
-            self->videoSrc = gst_element_factory_make("proxysrc", NULL);
-            g_object_set(self->videoSrc, "proxysink", sink, NULL);
-            capturer->play();
-            webkitMediaStreamSrcSetupSrc(self, track, self->videoSrc, &videoSrcTemplate, FALSE, onlyTrack);
+            auto& source = static_cast<GStreamerVideoCaptureSource&>(track->source());
+            self->videoSrc = source.registerClient();
+            res = webkitMediaStreamSrcSetupSrc(self, track, self->videoSrc, &videoSrcTemplate, FALSE, onlyTrack);
         }
     } else
         GST_INFO("Unsupported track type: %d", static_cast<int>(track->type()));
@@ -571,6 +581,7 @@ bool webkitMediaStreamSrcSetStream(WebKitMediaStreamSrc* self, MediaStreamPrivat
     return TRUE;
 }
 
+#if USE(LIBWEBRTC)
 static void webkitMediaStreamSrcPushVideoSample(WebKitMediaStreamSrc* self, GstSample* gstsample)
 {
     if (self->videoSrc) {
@@ -599,6 +610,7 @@ static void webkitMediaStreamSrcPushAudioSample(WebKitMediaStreamSrc* self, GstS
         gst_app_src_push_sample(GST_APP_SRC(self->audioSrc), gstsample);
     }
 }
+#endif
 
 static void webkitMediaStreamSrcTrackEnded(WebKitMediaStreamSrc* self,
     MediaStreamTrackPrivate& track)

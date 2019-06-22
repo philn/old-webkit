@@ -30,8 +30,6 @@ public:
     static Ref<RealtimeIncomingAudioSourceGStreamer> create(String&& audioTrackId) { return adoptRef(*new RealtimeIncomingAudioSourceGStreamer(WTFMove(audioTrackId))); }
     static Ref<RealtimeIncomingAudioSourceGStreamer> create(GstElement* pipeline, GstPad* pad) { return adoptRef(*new RealtimeIncomingAudioSourceGStreamer(pipeline, pad)); }
 
-    void handleDecodedSample(GRefPtr<GstSample>&&) final;
-
 protected:
     RealtimeIncomingAudioSourceGStreamer(String&&);
     RealtimeIncomingAudioSourceGStreamer(GstElement*, GstPad*);
@@ -48,7 +46,6 @@ private:
     bool isIncomingAudioSource() const final { return true; }
 
     RealtimeMediaSourceSettings m_currentSettings;
-    uint64_t m_numberOfFrames { 0 };
 };
 
 } // namespace WebCore

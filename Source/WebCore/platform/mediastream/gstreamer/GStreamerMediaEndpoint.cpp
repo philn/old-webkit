@@ -81,9 +81,11 @@ GStreamerMediaEndpoint::GStreamerMediaEndpoint(GStreamerPeerConnectionBackend& p
 
     GUniquePtr<char> pipeName(g_strdup_printf("MediaEndPoint%d", nPipeline++));
     m_pipeline = gst_pipeline_new(pipeName.get());
-    // gst_pipeline_use_clock(GST_PIPELINE(m_pipeline.get()), gst_system_clock_obtain());
-    // gst_element_set_base_time(m_pipeline.get(), getWebRTCBaseTime());
-    // gst_element_set_start_time(m_pipeline.get(), GST_CLOCK_TIME_NONE);
+
+    GRefPtr<GstClock> clock = adoptGRef(gst_system_clock_obtain());
+    gst_pipeline_use_clock(GST_PIPELINE(m_pipeline.get()), clock.get());
+    gst_element_set_base_time(m_pipeline.get(), getSharedBaseTime());
+    gst_element_set_start_time(m_pipeline.get(), GST_CLOCK_TIME_NONE);
 
     connectSimpleBusMessageCallback(m_pipeline.get());
 

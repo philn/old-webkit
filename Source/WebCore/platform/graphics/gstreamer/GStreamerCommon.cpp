@@ -364,6 +364,37 @@ Ref<SharedBuffer> GstMappedBuffer::createSharedBuffer()
     return SharedBuffer::create(*this);
 }
 
+GstClockTime getSharedBaseTime()
+{
+    static GstClockTime sharedBaseTime = GST_CLOCK_TIME_NONE;
+    static std::once_flag onceFlag;
+    std::call_once(onceFlag, [] {
+        GstClock* clock = gst_system_clock_obtain();
+        sharedBaseTime = gst_clock_get_time(clock);
+        gst_object_unref(clock);
+    });
+    return sharedBaseTime;
+}
+
+GStreamerProxy createProxy()
+{
+    auto sink = gst_element_factory_make("proxysink", nullptr);
+    auto src = gst_element_factory_make("proxysrc", nullptr);
+    g_object_set(src, "proxysink", sink, nullptr);
+
+    // Workaround to reduce the latency introduced by the queue in the proxysrc element.
+    GUniquePtr<GstIterator> iterator(gst_bin_iterate_elements(GST_BIN_CAST(src)));
+    while (gst_iterator_foreach(iterator.get(), static_cast<GstIteratorForeachFunction>([](const GValue* item, gpointer) {
+        GstElement* element = GST_ELEMENT_CAST(g_value_get_object(item));
+        GUniquePtr<char> name(gst_element_get_name(element));
+        if (g_str_has_prefix(name.get(), "queue"))
+            g_object_set(element, "max-size-buffers", 1, nullptr);
+    }), nullptr) == GST_ITERATOR_RESYNC)
+        gst_iterator_resync(iterator.get());
+
+    return { src, sink };
+}
+
 }
 
 #endif // USE(GSTREAMER)

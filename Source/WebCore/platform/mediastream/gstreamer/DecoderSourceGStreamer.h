@@ -30,7 +30,7 @@ public:
     void linkDecodePad(GstPad*);
     GstFlowReturn pullDecodedSample();
 
-    virtual void handleDecodedSample(GRefPtr<GstSample>&&) = 0;
+    GstElement* registerClient();
 
     GstPad* pad() const { return m_pad; }
 
@@ -47,7 +47,7 @@ private:
     GRefPtr<GstElement> m_queue1;
     GRefPtr<GstElement> m_decoder;
     GRefPtr<GstElement> m_queue2;
-    GRefPtr<GstElement> m_sink;
+    GRefPtr<GstElement> m_tee;
 };
 
 } // namespace WebCore

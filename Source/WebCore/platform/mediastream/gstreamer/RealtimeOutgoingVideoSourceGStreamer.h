@@ -41,9 +41,6 @@ protected:
     const char* m_encodingName { nullptr };
 
 private:
-    // MediaStreamTrackPrivate::Observer API
-    void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample&) final;
-
     GRefPtr<GstElement> m_videoConvert;
 };
 

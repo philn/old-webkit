@@ -184,6 +184,14 @@ const RealtimeMediaSourceSettings& GStreamerAudioCaptureSource::settings()
     return m_currentSettings.value();
 }
 
+GstElement* GStreamerAudioCaptureSource::registerClient()
+{
+    auto proxy = createProxy();
+    m_capturer->addSink(proxy.sink);
+    m_capturer->play();
+    return proxy.source;
+}
+
 } // namespace WebCore
 
 #endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)

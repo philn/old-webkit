@@ -38,7 +38,7 @@ static inline bool updateTrackSource(Source& source, MediaStreamTrack* track)
         source.stop();
         return true;
     }
-    return source.setSource(track->privateTrack());
+    return source.setTrack(track->privateTrack());
 }
 
 void GStreamerRtpSenderBackend::replaceTrack(ScriptExecutionContext& context, RTCRtpSender& sender, RefPtr<MediaStreamTrack>&& track, DOMPromiseDeferred<void>&& promise)

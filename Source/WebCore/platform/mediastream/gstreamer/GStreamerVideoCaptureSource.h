@@ -41,6 +41,8 @@ public:
     GstElement* pipeline() { return m_capturer->pipeline(); }
     GStreamerCapturer* capturer() { return m_capturer.get(); }
 
+    GstElement* registerClient();
+
 protected:
     GStreamerVideoCaptureSource(String&& deviceID, String&& name, String&& hashSalt, const gchar * source_factory);
     GStreamerVideoCaptureSource(GStreamerCaptureDevice, String&& hashSalt);
@@ -56,8 +58,6 @@ protected:
     CaptureDevice::DeviceType deviceType() const override { return CaptureDevice::DeviceType::Camera; }
 
 private:
-    static GstFlowReturn newSampleCallback(GstElement*, GStreamerVideoCaptureSource*);
-
     bool isCaptureSource() const final { return true; }
     void settingsDidChange(OptionSet<RealtimeMediaSourceSettings::Flag>) final;
 

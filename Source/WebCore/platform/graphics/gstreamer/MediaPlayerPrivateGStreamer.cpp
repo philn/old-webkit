@@ -334,6 +334,11 @@ void MediaPlayerPrivateGStreamer::load(MediaStreamPrivate& stream)
     loadFull(String("mediastream://") + stream.id(), pipelineName);
     syncOnClock(false);
 
+    GRefPtr<GstClock> clock = adoptGRef(gst_system_clock_obtain());
+    gst_pipeline_use_clock(GST_PIPELINE(m_pipeline.get()), clock.get());
+    gst_element_set_base_time(m_pipeline.get(), getSharedBaseTime());
+    gst_element_set_start_time(m_pipeline.get(), GST_CLOCK_TIME_NONE);
+
 #if USE(GSTREAMER_GL)
     ensureGLVideoSinkContext();
 #endif

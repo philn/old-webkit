@@ -40,6 +40,8 @@ public:
     GstElement* pipeline() { return m_capturer->pipeline(); }
     GStreamerCapturer* capturer() { return m_capturer.get(); }
 
+    GstElement* registerClient();
+
 protected:
     GStreamerAudioCaptureSource(GStreamerCaptureDevice, String&& hashSalt);
     GStreamerAudioCaptureSource(String&& deviceID, String&& name, String&& hashSalt);

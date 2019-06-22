@@ -39,10 +39,6 @@ protected:
     void synchronizeStates() final;
 
 private:
-
-    // MediaStreamTrackPrivate::Observer API
-    void audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t sampleCount);
-
     GRefPtr<GstElement> m_audioconvert;
     GRefPtr<GstElement> m_audioresample;
 };

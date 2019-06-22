@@ -21,16 +21,15 @@
 
 #if USE(GSTREAMER_WEBRTC)
 
-#include "MediaSampleGStreamer.h"
-#include <gst/app/gstappsrc.h>
+#include "GStreamerVideoCaptureSource.h"
 
 namespace WebCore {
 
-RealtimeOutgoingVideoSourceGStreamer::RealtimeOutgoingVideoSourceGStreamer(Ref<MediaStreamTrackPrivate>&& source, GstElement* pipeline)
-    : RealtimeOutgoingMediaSourceGStreamer(WTFMove(source), pipeline)
+RealtimeOutgoingVideoSourceGStreamer::RealtimeOutgoingVideoSourceGStreamer(Ref<MediaStreamTrackPrivate>&& track, GstElement* pipeline)
+    : RealtimeOutgoingMediaSourceGStreamer(WTFMove(track), pipeline)
 {
-    m_source->addObserver(*this);
-    initializeFromSource();
+    m_track->addObserver(*this);
+    initializeFromTrack();
 }
 
 void RealtimeOutgoingVideoSourceGStreamer::setPayloadType(int payloadType)
@@ -73,17 +72,13 @@ void RealtimeOutgoingVideoSourceGStreamer::initialize()
     m_encoder = gst_element_factory_make("webrtcvideoencoder", nullptr);
     g_object_set(m_encoder.get(), "format", caps.get(), nullptr);
 
-    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_videoConvert.get(), m_encoder.get(), m_payloader.get(), nullptr);
+    auto& source = static_cast<GStreamerVideoCaptureSource&>(m_track->source());
+    m_outgoingSource = source.registerClient();
+
+    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_outgoingSource.get(), m_videoConvert.get(), m_encoder.get(), m_payloader.get(), nullptr);
 
     gst_element_link_many(m_outgoingSource.get(), m_valve.get(), m_videoConvert.get(), m_preEncoderQueue.get(),
         m_encoder.get(), m_payloader.get(), m_postEncoderQueue.get(), nullptr);
-}
-
-void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample& mediaSample)
-{
-    ASSERT(mediaSample.platformSample().type == PlatformSample::GStreamerSampleType);
-    auto gstSample = static_cast<MediaSampleGStreamer*>(&mediaSample)->platformSample().sample.gstSample;
-    gst_app_src_push_sample(GST_APP_SRC(m_outgoingSource.get()), gstSample);
 }
 
 } // namespace WebCore

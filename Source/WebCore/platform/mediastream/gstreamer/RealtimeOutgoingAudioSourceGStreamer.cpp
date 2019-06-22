@@ -21,16 +21,15 @@
 
 #if USE(GSTREAMER_WEBRTC)
 
-#include "GStreamerAudioData.h"
-#include <gst/app/gstappsrc.h>
+#include "GStreamerAudioCaptureSource.h"
 
 namespace WebCore {
 
-RealtimeOutgoingAudioSourceGStreamer::RealtimeOutgoingAudioSourceGStreamer(Ref<MediaStreamTrackPrivate>&& audioSource, GstElement* pipeline)
-    : RealtimeOutgoingMediaSourceGStreamer(WTFMove(audioSource), pipeline)
+RealtimeOutgoingAudioSourceGStreamer::RealtimeOutgoingAudioSourceGStreamer(Ref<MediaStreamTrackPrivate>&& track, GstElement* pipeline)
+    : RealtimeOutgoingMediaSourceGStreamer(WTFMove(track), pipeline)
 {
-    m_source->addObserver(*this);
-    initializeFromSource();
+    m_track->addObserver(*this);
+    initializeFromTrack();
 }
 
 void RealtimeOutgoingAudioSourceGStreamer::setPayloadType(int payloadType)
@@ -63,7 +62,10 @@ void RealtimeOutgoingAudioSourceGStreamer::initialize()
 //     g_object_set(rtpapay, "pt", 111, nullptr);
 // #endif
 
-    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_audioconvert.get(), m_audioresample.get(), m_encoder.get(), m_payloader.get(), nullptr);
+    auto& source = static_cast<GStreamerAudioCaptureSource&>(m_track->source());
+    m_outgoingSource = source.registerClient();
+
+    gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_outgoingSource.get(), m_audioconvert.get(), m_audioresample.get(), m_encoder.get(), m_payloader.get(), nullptr);
     gst_element_link_many(m_outgoingSource.get(), m_valve.get(), m_audioconvert.get(), m_audioresample.get(), m_preEncoderQueue.get(), m_encoder.get(), m_payloader.get(), m_postEncoderQueue.get(), nullptr);
 }
 
@@ -79,12 +81,6 @@ void RealtimeOutgoingAudioSourceGStreamer::synchronizeStates()
     gst_element_sync_state_with_parent(m_postEncoderQueue.get());
     gst_element_sync_state_with_parent(m_capsFilter.get());
     GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN_CAST(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "webkit-rtc-outgoing-audio");
-}
-
-void RealtimeOutgoingAudioSourceGStreamer::audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData& audioData, const AudioStreamDescription&, size_t)
-{
-    auto gstAudioData = static_cast<const GStreamerAudioData&>(audioData);
-    gst_app_src_push_sample(GST_APP_SRC(m_outgoingSource.get()), gstAudioData.getSample());
 }
 
 } // namespace WebCore
