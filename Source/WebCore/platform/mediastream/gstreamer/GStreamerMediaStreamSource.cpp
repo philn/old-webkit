@@ -515,7 +515,7 @@ bool webkitMediaStreamSrcAddTrack(WebKitMediaStreamSrc* self, MediaStreamTrackPr
     } else if (track->type() == RealtimeMediaSource::Type::Video) {
         res = true;
         if (!track->isCaptureTrack()) {
-            res = webkitMediaStreamSrcSetupAppSrc(self, track, &self->videoSrc, &audioSrcTemplate, onlyTrack);
+            res = webkitMediaStreamSrcSetupAppSrc(self, track, &self->videoSrc, &videoSrcTemplate, onlyTrack);
         } else {
             GStreamerVideoCaptureSource& source = static_cast<GStreamerVideoCaptureSource&>(track->source());
             auto capturer = source.capturer();
