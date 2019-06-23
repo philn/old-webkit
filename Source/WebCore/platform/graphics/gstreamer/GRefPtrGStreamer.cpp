@@ -495,14 +495,13 @@ template<> void derefGPtr<GstGLContext>(GstGLContext* ptr)
 
 template <> GRefPtr<GstWebRTCRTPReceiver> adoptGRef(GstWebRTCRTPReceiver* ptr)
 {
-    ASSERT(!ptr || !g_object_is_floating(ptr));
     return GRefPtr<GstWebRTCRTPReceiver>(ptr, GRefPtrAdopt);
 }
 
 template <> GstWebRTCRTPReceiver* refGPtr<GstWebRTCRTPReceiver>(GstWebRTCRTPReceiver* ptr)
 {
     if (ptr)
-        gst_object_ref_sink(GST_OBJECT(ptr));
+        gst_object_ref(GST_OBJECT(ptr));
 
     return ptr;
 }
@@ -515,14 +514,13 @@ template <> void derefGPtr<GstWebRTCRTPReceiver>(GstWebRTCRTPReceiver* ptr)
 
 template <> GRefPtr<GstWebRTCRTPSender> adoptGRef(GstWebRTCRTPSender* ptr)
 {
-    ASSERT(!ptr || !g_object_is_floating(ptr));
     return GRefPtr<GstWebRTCRTPSender>(ptr, GRefPtrAdopt);
 }
 
 template <> GstWebRTCRTPSender* refGPtr<GstWebRTCRTPSender>(GstWebRTCRTPSender* ptr)
 {
     if (ptr)
-        gst_object_ref_sink(GST_OBJECT(ptr));
+        gst_object_ref(GST_OBJECT(ptr));
 
     return ptr;
 }
@@ -535,14 +533,13 @@ template <> void derefGPtr<GstWebRTCRTPSender>(GstWebRTCRTPSender* ptr)
 
 template <> GRefPtr<GstWebRTCRTPTransceiver> adoptGRef(GstWebRTCRTPTransceiver* ptr)
 {
-    ASSERT(!ptr || !g_object_is_floating(ptr));
     return GRefPtr<GstWebRTCRTPTransceiver>(ptr, GRefPtrAdopt);
 }
 
 template <> GstWebRTCRTPTransceiver* refGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver* ptr)
 {
     if (ptr)
-        gst_object_ref_sink(GST_OBJECT(ptr));
+        gst_object_ref(GST_OBJECT(ptr));
 
     return ptr;
 }
