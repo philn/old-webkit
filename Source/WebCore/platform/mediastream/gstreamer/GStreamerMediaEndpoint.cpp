@@ -23,6 +23,7 @@
 
 #include "Document.h"
 #include "GStreamerCommon.h"
+#include "GStreamerDataChannelHandler.h"
 #include "GStreamerRtpReceiverBackend.h"
 #include "GStreamerRtpTransceiverBackend.h"
 #include "GStreamerStatsCollector.h"
@@ -30,6 +31,8 @@
 #include "JSRTCStatsReport.h"
 #include "MediaEndpointConfiguration.h"
 #include "NotImplemented.h"
+#include "RTCDataChannel.h"
+#include "RTCDataChannelEvent.h"
 #include "RTCIceCandidate.h"
 #include "RTCOfferOptions.h"
 #include "RTCPeerConnection.h"
@@ -122,6 +125,10 @@ GStreamerMediaEndpoint::GStreamerMediaEndpoint(GStreamerPeerConnectionBackend& p
         if (endPoint->isStopped())
             return;
         endPoint->removeRemoteStream(pad);
+    }), this);
+
+    g_signal_connect(m_webrtcBin.get(), "on-data-channel", G_CALLBACK(+[](GstElement*, GstWebRTCDataChannel* channel, GStreamerMediaEndpoint* endPoint) {
+        endPoint->onDataChannel(channel);
     }), this);
 
     gst_bin_add(GST_BIN_CAST(m_pipeline.get()), m_webrtcBin.get());
@@ -335,12 +342,14 @@ void GStreamerMediaEndpoint::storeRemoteMLineInfo(GstSDPMessage* message)
         }
 
         auto totalCaps = gst_caps_get_size(caps.get());
-        for (unsigned j = 0; j < totalCaps; j++) {
-            GstStructure* structure = gst_caps_get_structure(caps.get(), j);
-            gst_structure_set_name(structure, "application/x-rtp");
+        if (totalCaps) {
+            for (unsigned j = 0; j < totalCaps; j++) {
+                GstStructure* structure = gst_caps_get_structure(caps.get(), j);
+                gst_structure_set_name(structure, "application/x-rtp");
+            }
+            GST_DEBUG_OBJECT(m_pipeline.get(), "Caching payload caps: %" GST_PTR_FORMAT, caps.get());
+            m_pendingRemoteMLineInfos.append({ WTFMove(caps), false, WTFMove(payloadTypes) });
         }
-        GST_DEBUG_OBJECT(m_pipeline.get(), "Caching payload caps: %" GST_PTR_FORMAT, caps.get());
-        m_pendingRemoteMLineInfos.append({ WTFMove(caps), false, WTFMove(payloadTypes) });
     }
 }
 
@@ -705,6 +714,30 @@ bool GStreamerMediaEndpoint::addIceCandidate(GStreamerIceCandidate& candidate)
     GST_DEBUG_OBJECT(m_pipeline.get(), "Adding ICE candidate %s", candidate.candidate.utf8().data());
     g_signal_emit_by_name(m_webrtcBin.get(), "add-ice-candidate", candidate.sdpMLineIndex, candidate.candidate.utf8().data());
     return true;
+}
+
+std::unique_ptr<RTCDataChannelHandler> GStreamerMediaEndpoint::createDataChannel(const String& label, const RTCDataChannelInit& options)
+{
+    if (!m_webrtcBin)
+        return nullptr;
+
+    GRefPtr<GstWebRTCDataChannel> channel;
+    auto init = GStreamerDataChannelHandler::fromRTCDataChannelInit(options);
+    GST_DEBUG_OBJECT(m_pipeline.get(), "Creating data channel");
+    g_signal_emit_by_name(m_webrtcBin.get(), "create-data-channel", label.utf8().data(), init.get(), &channel.outPtr());
+    return channel ? std::make_unique<GStreamerDataChannelHandler>(WTFMove(channel)) : nullptr;
+}
+
+void GStreamerMediaEndpoint::onDataChannel(GstWebRTCDataChannel* dataChannel)
+{
+    GST_DEBUG_OBJECT(m_pipeline.get(), "Incoming data channel");
+    GRefPtr<GstWebRTCDataChannel> channel = dataChannel;
+    callOnMainThread([protectedThis = makeRef(*this), dataChannel = WTFMove(channel)]() mutable {
+        if (protectedThis->isStopped())
+            return;
+        auto& connection = protectedThis->m_peerConnectionBackend.connection();
+        connection.fireEvent(GStreamerDataChannelHandler::channelEvent(*connection.scriptExecutionContext(), WTFMove(dataChannel)));
+    });
 }
 
 void GStreamerMediaEndpoint::stop()

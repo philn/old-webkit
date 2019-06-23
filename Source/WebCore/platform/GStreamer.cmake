@@ -144,6 +144,7 @@ if (ENABLE_VIDEO)
         )
         list(APPEND WebCore_SOURCES
             platform/mediastream/gstreamer/DecoderSourceGStreamer.cpp
+            platform/mediastream/gstreamer/GStreamerDataChannelHandler.cpp
             platform/mediastream/gstreamer/GStreamerMediaEndpoint.cpp
             platform/mediastream/gstreamer/GStreamerPeerConnectionBackend.cpp
             platform/mediastream/gstreamer/GStreamerRtpReceiverBackend.cpp

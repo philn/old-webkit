@@ -33,6 +33,7 @@ typedef struct _GstGLContext GstGLContext;
 #endif
 
 #if USE(GSTREAMER_WEBRTC)
+typedef struct _GstWebRTCDataChannel GstWebRTCDataChannel;
 typedef struct _GstWebRTCRTPReceiver GstWebRTCRTPReceiver;
 typedef struct _GstWebRTCRTPSender GstWebRTCRTPSender;
 typedef struct _GstWebRTCRTPTransceiver GstWebRTCRTPTransceiver;
@@ -147,6 +148,11 @@ template <> void derefGPtr<GstWebRTCRTPSender>(GstWebRTCRTPSender* ptr);
 template <> GRefPtr<GstWebRTCRTPTransceiver> adoptGRef(GstWebRTCRTPTransceiver* ptr);
 template <> GstWebRTCRTPTransceiver* refGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver* ptr);
 template <> void derefGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver* ptr);
+
+template <> GRefPtr<GstWebRTCDataChannel> adoptGRef(GstWebRTCDataChannel* ptr);
+template <> GstWebRTCDataChannel* refGPtr<GstWebRTCDataChannel>(GstWebRTCDataChannel* ptr);
+template <> void derefGPtr<GstWebRTCDataChannel>(GstWebRTCDataChannel* ptr);
+
 #endif
 
 } // namespace WTF

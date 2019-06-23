@@ -247,9 +247,7 @@ GStreamerPeerConnectionBackend::AudioReceiver GStreamerPeerConnectionBackend::au
 
 std::unique_ptr<RTCDataChannelHandler> GStreamerPeerConnectionBackend::createDataChannelHandler(const String& label, const RTCDataChannelInit& options)
 {
-    g_printerr("createDataChannelHandler\n");
-    notImplemented();
-    return nullptr;
+    return m_endpoint->createDataChannel(label, options);
 }
 
 RefPtr<RTCSessionDescription> GStreamerPeerConnectionBackend::currentLocalDescription() const

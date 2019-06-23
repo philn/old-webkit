@@ -550,6 +550,25 @@ template <> void derefGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver* ptr
         gst_object_unref(ptr);
 }
 
+template <> GRefPtr<GstWebRTCDataChannel> adoptGRef(GstWebRTCDataChannel* ptr)
+{
+    return GRefPtr<GstWebRTCDataChannel>(ptr, GRefPtrAdopt);
+}
+
+template <> GstWebRTCDataChannel* refGPtr<GstWebRTCDataChannel>(GstWebRTCDataChannel* ptr)
+{
+    if (ptr)
+        gst_object_ref(GST_OBJECT(ptr));
+
+    return ptr;
+}
+
+template <> void derefGPtr<GstWebRTCDataChannel>(GstWebRTCDataChannel* ptr)
+{
+    if (ptr)
+        gst_object_unref(ptr);
+}
+
 #endif // USE(GSTREAMER_WEBRTC)
 
 } // namespace WTF

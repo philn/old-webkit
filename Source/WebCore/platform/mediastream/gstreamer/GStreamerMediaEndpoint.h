@@ -57,6 +57,9 @@ public:
 
     void getStats(GstPad*, Ref<DeferredPromise>&&);
 
+    std::unique_ptr<RTCDataChannelHandler> createDataChannel(const String&, const RTCDataChannelInit&);
+    void onDataChannel(GstWebRTCDataChannel*);
+
     bool addIceCandidate(GStreamerIceCandidate&);
     void stop();
     bool isStopped() const { /* FIXME: implement */ return false; }
