@@ -27,12 +27,7 @@ namespace WebCore {
 
 class DecoderSourceGStreamer {
 public:
-    void linkDecodePad(GstPad*);
-    GstFlowReturn pullDecodedSample();
-
     GstElement* registerClient();
-
-    GstPad* pad() const { return m_pad; }
 
 protected:
     DecoderSourceGStreamer(GstElement*, GstPad*);
@@ -41,12 +36,8 @@ protected:
     void releaseValve() const;
 
 private:
-    GstPad* m_pad;
     GRefPtr<GstElement> m_pipeline;
     GRefPtr<GstElement> m_valve;
-    GRefPtr<GstElement> m_queue1;
-    GRefPtr<GstElement> m_decoder;
-    GRefPtr<GstElement> m_queue2;
     GRefPtr<GstElement> m_tee;
 };
 
