@@ -294,6 +294,7 @@ bool isGStreamerPluginAvailable(const char* name);
 
 GstElement* createPlatformAudioSink();
 
+String structureToJSONString(const GstStructure*);
 }
 
 #ifndef GST_BUFFER_DTS_OR_PTS
