@@ -302,6 +302,8 @@ bool webkitGstSetElementStateSynchronously(GstElement*, GstState, Function<bool(
 
 GstBuffer* gstBufferNewWrappedFast(void* data, size_t length);
 
+String structureToJSONString(const GstStructure*);
+
 }
 
 #ifndef GST_BUFFER_DTS_OR_PTS
