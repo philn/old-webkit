@@ -508,6 +508,85 @@ GstBuffer* gstBufferNewWrappedFast(void* data, size_t length)
     return gst_buffer_new_wrapped_full(static_cast<GstMemoryFlags>(0), data, length, 0, length, data, fastFree);
 }
 
+static RefPtr<JSON::Value> structureToJSON(const GstStructure* structure);
+
+static Optional<RefPtr<JSON::Value>> structureValueToJSON(const GValue* value)
+{
+    if (GST_VALUE_HOLDS_STRUCTURE(value))
+        return structureToJSON(gst_value_get_structure(value));
+
+    if (GST_VALUE_HOLDS_ARRAY(value)) {
+        unsigned size = gst_value_array_get_size(value);
+        auto array = JSON::Array::create();
+        for (unsigned i = 0; i < size; i++) {
+            if (auto innerJson = structureValueToJSON(gst_value_array_get_value(value, i)))
+                array->pushValue(innerJson->releaseNonNull());
+        }
+        auto resultArray = array->asArray();
+        return resultArray->asValue();
+    }
+    auto valueType = G_VALUE_TYPE(value);
+    if (valueType == G_TYPE_BOOLEAN) {
+        auto boolValue = JSON::Value::create(g_value_get_boolean(value));
+        return boolValue->asValue();
+    }
+    if (valueType == G_TYPE_INT) {
+        auto intValue = JSON::Value::create(g_value_get_int(value));
+        return intValue->asValue();
+    }
+    if (valueType == G_TYPE_UINT) {
+        auto uintValue = JSON::Value::create(static_cast<int>(g_value_get_uint(value)));
+        return uintValue->asValue();
+    }
+    if (valueType == G_TYPE_DOUBLE) {
+        auto doubleValue = JSON::Value::create(g_value_get_double(value));
+        return doubleValue->asValue();
+    }
+    if (valueType == G_TYPE_FLOAT) {
+        auto floatValue = JSON::Value::create(static_cast<double>(g_value_get_float(value)));
+        return floatValue->asValue();
+    }
+    if (valueType == G_TYPE_UINT64) {
+        // FIXME: bigint support missing in JSON.
+        auto intValue = JSON::Value::create(static_cast<int>(g_value_get_uint64(value)));
+        return intValue->asValue();
+    }
+    if (valueType == G_TYPE_STRING) {
+        auto stringValue = JSON::Value::create(makeString(g_value_get_string(value)));
+        return stringValue->asValue();
+    }
+    GST_WARNING("Unhandled GValue type: %s", G_VALUE_TYPE_NAME(value));
+    return WTF::nullopt;
+}
+
+static gboolean parseStructureValue(GQuark fieldId, const GValue* value, gpointer userData)
+{
+    if (auto jsonValue = structureValueToJSON(value)) {
+        auto* object = reinterpret_cast<JSON::Object*>(userData);
+        object->setValue(g_quark_to_string(fieldId), jsonValue->releaseNonNull());
+    }
+    return TRUE;
+}
+
+static RefPtr<JSON::Value> structureToJSON(const GstStructure* structure)
+{
+    auto jsonObject = JSON::Object::create();
+    auto resultValue = jsonObject->asObject();
+    if (!resultValue)
+        return nullptr;
+
+    gst_structure_foreach(structure, parseStructureValue, resultValue.get());
+    return resultValue;
+}
+
+String structureToJSONString(const GstStructure* structure)
+{
+    auto value = structureToJSON(structure);
+    if (!value)
+        return { };
+    return value->toJSONString();
+}
+
 }
 
 #endif // USE(GSTREAMER)
