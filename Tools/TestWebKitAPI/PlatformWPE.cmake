@@ -36,6 +36,7 @@ list(APPEND TestWebCore_SOURCES
     Tests/WebCore/UserAgentQuirks.cpp
     Tests/WebCore/gstreamer/GStreamerTest.cpp
     Tests/WebCore/gstreamer/GstMappedBuffer.cpp
+    Tests/WebCore/gstreamer/Common.cpp
 
     glib/UtilitiesGLib.cpp
 )
