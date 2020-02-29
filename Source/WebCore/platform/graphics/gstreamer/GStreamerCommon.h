@@ -300,6 +300,8 @@ bool webkitGstSetElementStateSynchronously(GstElement*, GstState, Function<bool(
     return true;
 });
 
+String structureToJSONString(const GstStructure*);
+
 }
 
 #ifndef GST_BUFFER_DTS_OR_PTS
