@@ -38,6 +38,7 @@
 #include <wtf/EnumTraits.h>
 #include <wtf/Function.h>
 #include <wtf/Vector.h>
+#include <wtf/JSONValues.h>
 
 namespace WebCore {
     
@@ -336,6 +337,24 @@ public:
     bool isEmpty() const { return !m_min && !m_max && !m_exact && !m_ideal; }
     bool isMandatory() const { return m_min || m_max || m_exact; }
 
+    RefPtr<JSON::Value> toJSONObject() const
+    {
+        auto jsonObject = JSON::Object::create();
+        RefPtr<JSON::Object> resultValue = jsonObject->asObject();
+        if (!resultValue)
+            return nullptr;
+
+        if (m_min)
+            resultValue->setValue("min"_s, JSON::Value::create(*m_min));
+        if (m_max)
+            resultValue->setValue("max"_s, JSON::Value::create(*m_max));
+        if (m_exact)
+            resultValue->setValue("exact"_s, JSON::Value::create(*m_exact));
+        if (m_ideal)
+            resultValue->setValue("ideal"_s, JSON::Value::create(*m_ideal));
+        return resultValue;
+    }
+
     template <class Encoder> void encode(Encoder& encoder) const
     {
         MediaConstraint::encode(encoder);
@@ -513,6 +532,22 @@ public:
     bool isEmpty() const { return !m_exact && !m_ideal; };
     bool isMandatory() const { return bool(m_exact); }
 
+    RefPtr<JSON::Value> toJSONObject() const
+    {
+        auto jsonObject = JSON::Object::create();
+        RefPtr<JSON::Object> resultValue = jsonObject->Value::asObject();
+        if (!resultValue)
+            return nullptr;
+
+        if (m_exact)
+            resultValue->setValue("exact"_s, JSON::Value::create(*m_exact));
+
+        if (m_ideal)
+            resultValue->setValue("ideal"_s, JSON::Value::create(*m_ideal));
+
+        return resultValue;
+    }
+
     template <class Encoder> void encode(Encoder& encoder) const
     {
         MediaConstraint::encode(encoder);
@@ -598,6 +633,35 @@ public:
     bool isMandatory() const { return !m_exact.isEmpty(); }
     WEBCORE_EXPORT void merge(const MediaConstraint&);
 
+    RefPtr<JSON::Value> toJSONObject() const
+    {
+        auto jsonObject = JSON::Object::create();
+        RefPtr<JSON::Object> resultValue = jsonObject->asObject();
+        if (!resultValue)
+            return nullptr;
+
+        auto exactArray = JSON::Array::create();
+        for (auto& constraint : m_exact)
+            exactArray->pushString(constraint);
+
+        RefPtr<JSON::Array> resultExactArray = exactArray->asArray();
+        if (!resultExactArray)
+            return nullptr;
+
+        resultValue->setArray("exact"_s, resultExactArray.releaseNonNull());
+
+        auto idealArray = JSON::Array::create();
+        for (auto& constraint : m_ideal)
+            idealArray->pushString(constraint);
+
+        RefPtr<JSON::Array> resultIdealArray = idealArray->asArray();
+        if (!resultIdealArray)
+            return nullptr;
+
+        resultValue->setArray("ideal"_s, resultIdealArray.releaseNonNull());
+        return resultValue;
+    }
+
     template <class Encoder> void encode(Encoder& encoder) const
     {
         MediaConstraint::encode(encoder);
@@ -675,6 +739,55 @@ public:
     Optional<StringConstraint> facingMode() const { return m_facingMode; }
     Optional<StringConstraint> deviceId() const { return m_deviceId; }
     Optional<StringConstraint> groupId() const { return m_groupId; }
+
+    RefPtr<JSON::Value> toJSONObject() const
+    {
+        auto jsonObject = JSON::Object::create();
+        RefPtr<JSON::Object> resultValue = jsonObject->asObject();
+        if (!resultValue)
+            return nullptr;
+
+        if (m_width)
+            resultValue->setValue("width"_s, m_width->toJSONObject().releaseNonNull());
+
+        if (m_height)
+            resultValue->setValue("height"_s, m_height->toJSONObject().releaseNonNull());
+
+        if (m_sampleRate)
+            resultValue->setValue("sampleRate"_s, m_sampleRate->toJSONObject().releaseNonNull());
+
+        if (m_sampleSize)
+            resultValue->setValue("sampleSize"_s, m_sampleSize->toJSONObject().releaseNonNull());
+
+        if (m_aspectRatio)
+            resultValue->setValue("aspectRatio"_s, m_aspectRatio->toJSONObject().releaseNonNull());
+
+        if (m_frameRate)
+            resultValue->setValue("frameRate"_s, m_frameRate->toJSONObject().releaseNonNull());
+
+        if (m_volume)
+            resultValue->setValue("volume"_s, m_volume->toJSONObject().releaseNonNull());
+
+        if (m_echoCancellation)
+            resultValue->setValue("echoCancellation"_s, m_echoCancellation->toJSONObject().releaseNonNull());
+
+        if (m_displaySurface)
+            resultValue->setValue("displaySurface"_s, m_displaySurface->toJSONObject().releaseNonNull());
+
+        if (m_logicalSurface)
+            resultValue->setValue("logicalSurface"_s, m_logicalSurface->toJSONObject().releaseNonNull());
+
+        if (m_facingMode)
+            resultValue->setValue("facingMode"_s, m_facingMode->toJSONObject().releaseNonNull());
+
+        if (m_deviceId)
+            resultValue->setValue("deviceID"_s, m_deviceId->toJSONObject().releaseNonNull());
+
+        if (m_groupId)
+            resultValue->setValue("groupID"_s, m_groupId->toJSONObject().releaseNonNull());
+
+        return resultValue;
+    }
 
     template <class Encoder> void encode(Encoder& encoder) const
     {
@@ -899,6 +1012,26 @@ struct MediaConstraints {
     MediaTrackConstraintSetMap mandatoryConstraints;
     Vector<MediaTrackConstraintSetMap> advancedConstraints;
     bool isValid { false };
+
+    String toJSONString() {
+        auto jsonObject = JSON::Object::create();
+        RefPtr<JSON::Object> resultValue = jsonObject->asObject();
+        if (!resultValue)
+            return {};
+
+        resultValue->setValue("mandatoryConstraints", mandatoryConstraints.toJSONObject().releaseNonNull());
+
+        auto array = JSON::Array::create();
+        for (auto& c : advancedConstraints)
+            array->pushValue(c.toJSONObject().releaseNonNull());
+
+        RefPtr<JSON::Array> resultArray = array->asArray();
+        if (!resultArray)
+            return {};
+
+        resultValue->setArray("advancedConstraints", resultArray.releaseNonNull());
+        return resultValue->toJSONString();
+    }
 };
     
 } // namespace WebCore

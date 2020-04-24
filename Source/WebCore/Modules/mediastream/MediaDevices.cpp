@@ -128,6 +128,8 @@ void MediaDevices::getUserMedia(const StreamConstraints& constraints, Promise&& 
     auto audioConstraints = createMediaConstraints(constraints.audio);
     auto videoConstraints = createMediaConstraints(constraints.video);
 
+    RELEASE_LOG(MediaStream, "MediaDevices::getUserMedia audioConstraints %s videoConstraints %s", audioConstraints.toJSONString().utf8().data(), videoConstraints.toJSONString().utf8().data());
+
     bool isUserGesturePriviledged = false;
 
     if (audioConstraints.isValid)
