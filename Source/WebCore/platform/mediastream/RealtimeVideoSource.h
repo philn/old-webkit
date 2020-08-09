@@ -58,6 +58,9 @@ private:
     const RealtimeMediaSourceCapabilities& capabilities() final { return m_source->capabilities(); }
     const RealtimeMediaSourceSettings& settings() final { return m_currentSettings; }
     bool isCaptureSource() const final { return m_source->isCaptureSource(); }
+    bool isMockSource() const final { return m_source->isMockSource(); }
+    bool isIncomingAudioSource() const final { return m_source->isIncomingAudioSource(); }
+    bool isIncomingVideoSource() const final { return m_source->isIncomingVideoSource(); }
     CaptureDevice::DeviceType deviceType() const final { return m_source->deviceType(); }
     void monitorOrientation(OrientationNotifier& notifier) final { m_source->monitorOrientation(notifier); }
     bool interrupted() const final { return m_source->interrupted(); }
