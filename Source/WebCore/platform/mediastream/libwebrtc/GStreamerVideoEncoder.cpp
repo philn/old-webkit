@@ -296,7 +296,7 @@ static void webkit_webrtc_video_encoder_class_init(WebKitWebrtcVideoEncoderClass
     Encoders::registerEncoder(
         Vp9, "vp9enc", nullptr, "video/x-vp9", nullptr,
         [](WebKitWebrtcVideoEncoder* self) {
-            g_object_set(self->priv->encoder.get(), "lag-in-frames", 0, "deadline", 1, nullptr);
+            g_object_set(self->priv->encoder.get(), "threads", 12, "cpu-used", 4, "tile-rows", 2, "row-mt", true, nullptr);
         },
         "target-bitrate", setBitrateBitPerSec, "keyframe-max-dist");
 }
