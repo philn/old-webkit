@@ -266,8 +266,9 @@ register_known_encoder (EncoderId encId, const gchar * name,
 static void
 setup_x264enc (GstWebrtcVideoEncoder * self)
 {
-  gst_util_set_object_arg (G_OBJECT (PRIV (self)->encoder), "tune",
-      "zerolatency");
+  gst_util_set_object_arg (G_OBJECT (PRIV (self)->encoder), "tune", "zerolatency");
+  gst_util_set_object_arg (G_OBJECT (PRIV (self)->encoder), "speed-preset", "ultrafast");
+  g_object_set (G_OBJECT (PRIV (self)->encoder), "key-int-max", 15, NULL);
   g_object_set (PRIV (self)->parser, "config-interval", 1, NULL);
 }
 
@@ -351,7 +352,7 @@ gst_webrtc_video_encoder_class_init (GstWebrtcVideoEncoderClass * klass)
       "video/x-h264,alignment=au,stream-format=byte-stream,profile=baseline",
       setup_omxh264enc, "target-bitrate", set_bitrate_bit_per_sec, "interval-intraframes");
   register_known_encoder (ENCODER_X264, "x264enc", "h264parse", "video/x-h264",
-      "video/x-h264,alignment=au,stream-format=byte-stream,profile=baseline",
+      "video/x-h264,alignment=au,stream-format=byte-stream,profile=constrained-baseline",
       setup_x264enc, "bitrate", set_bitrate_kbit_per_sec, "key-int-max");
   register_known_encoder (ENCODER_OPENH264, "openh264enc", "h264parse",
       "video/x-h264",
