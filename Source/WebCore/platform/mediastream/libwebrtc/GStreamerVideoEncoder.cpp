@@ -295,7 +295,7 @@ setup_vp8enc (GstWebrtcVideoEncoder * self)
 static void
 setup_vp9enc (GstWebrtcVideoEncoder * self)
 {
-    g_object_set (PRIV (self)->encoder, "lag-in-frames", 0, "deadline", 1, NULL);
+    g_object_set(PRIV(self)->encoder, "threads", 12, "cpu-used", 4, "tile-rows", 2, "row-mt", TRUE, NULL);
 }
 
 static void
