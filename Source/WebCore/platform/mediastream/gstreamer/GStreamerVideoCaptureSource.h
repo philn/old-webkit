@@ -31,10 +31,9 @@ namespace WebCore {
 
 class GStreamerVideoCaptureSource : public RealtimeVideoCaptureSource {
 public:
-    static CaptureSourceOrError create(String&& deviceID, String&& hashSalt, const MediaConstraints*);
+    static CaptureSourceOrError create(String&& deviceID, String&& hashSalt, const MediaConstraints*, Optional<unsigned> fd = WTF::nullopt);
     WEBCORE_EXPORT static VideoCaptureFactory& factory();
 
-    // FIXME: Implement this.
     WEBCORE_EXPORT static DisplayCaptureFactory& displayFactory(); 
 
     const RealtimeMediaSourceCapabilities& capabilities() override;
@@ -46,7 +45,7 @@ public:
     GstElement* registerClient();
 
 protected:
-    GStreamerVideoCaptureSource(String&& deviceID, String&& name, String&& hashSalt, const gchar * source_factory);
+    GStreamerVideoCaptureSource(String&& deviceID, String&& name, String&& hashSalt, const gchar * source_factory, Optional<unsigned> fd = WTF::nullopt);
     GStreamerVideoCaptureSource(GStreamerCaptureDevice, String&& hashSalt);
     virtual ~GStreamerVideoCaptureSource();
     void startProducingData() override;

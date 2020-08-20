@@ -35,7 +35,7 @@ class GStreamerCapturer {
     WTF_MAKE_FAST_ALLOCATED;
 public:
     GStreamerCapturer(GStreamerCaptureDevice, GRefPtr<GstCaps>);
-    GStreamerCapturer(const char* sourceFactory, GRefPtr<GstCaps>);
+    GStreamerCapturer(const char* sourceFactory, GRefPtr<GstCaps>, Optional<unsigned> fd = WTF::nullopt);
     ~GStreamerCapturer();
 
     void setupPipeline();
@@ -65,7 +65,7 @@ protected:
 
 private:
     const char* m_sourceFactory;
-
+    Optional<unsigned> m_fd;
 };
 
 } // namespace WebCore

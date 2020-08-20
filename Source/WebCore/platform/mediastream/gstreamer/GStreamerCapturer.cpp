@@ -53,10 +53,11 @@ GStreamerCapturer::GStreamerCapturer(GStreamerCaptureDevice device, GRefPtr<GstC
     initializeDebugCategory();
 }
 
-GStreamerCapturer::GStreamerCapturer(const char* sourceFactory, GRefPtr<GstCaps> caps)
+GStreamerCapturer::GStreamerCapturer(const char* sourceFactory, GRefPtr<GstCaps> caps, Optional<unsigned> fd)
     : m_device(nullptr)
     , m_caps(caps)
     , m_sourceFactory(sourceFactory)
+    , m_fd(WTFMove(fd))
 {
     initializeDebugCategory();
 }
@@ -74,6 +75,11 @@ GstElement* GStreamerCapturer::createSource()
         if (GST_IS_APP_SRC(m_src.get()))
             g_object_set(m_src.get(), "is-live", true, "format", GST_FORMAT_TIME, "do-timestamp", true, nullptr);
 
+        if (m_fd.hasValue()) {
+            g_object_set(m_src.get(), "fd", *m_fd, nullptr);
+            close(*m_fd);
+            m_fd.reset();
+        }
         ASSERT(m_src);
         return m_src.get();
     }

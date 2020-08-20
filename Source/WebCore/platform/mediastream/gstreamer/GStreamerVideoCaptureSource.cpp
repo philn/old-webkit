@@ -77,10 +77,23 @@ VideoCaptureFactory& libWebRTCVideoCaptureSourceFactory()
 
 class GStreamerDisplayCaptureSourceFactory final : public DisplayCaptureFactory {
 public:
-    CaptureSourceOrError createDisplayCaptureSource(const CaptureDevice&, const MediaConstraints*) final
+    CaptureSourceOrError createDisplayCaptureSource(const CaptureDevice& device, const MediaConstraints* constraints) final
     {
-        // FIXME: Implement this.
-        return { };
+#if USE(LIBPORTAL)
+        g_printerr(">>> %s\n", device.persistentId().utf8().data());
+        return GStreamerVideoCaptureSource::create(String{ device.persistentId() }, { }, constraints, makeOptional(device.persistentId().toUInt()));
+        // auto source = adoptRef(*new GStreamerVideoCaptureSource(device.persistentId().isolatedCopy(), "foo", { }, "pipewiresrc", fd));
+
+        // if (constraints) {
+        //     if (auto result = source->applyConstraints(*constraints))
+        //         return WTFMove(result->badConstraint);
+        // }
+        // return CaptureSourceOrError(WTFMove(source));
+#else
+        UNUSED_PARAM(device);
+        UNUSED_PARAM(constraints);
+        return {};
+#endif
     }
 private:
     CaptureDeviceManager& displayCaptureDeviceManager() final { return GStreamerDisplayCaptureDeviceManager::singleton(); }
@@ -92,21 +105,31 @@ DisplayCaptureFactory& libWebRTCDisplayCaptureSourceFactory()
     return factory.get();
 }
 
-CaptureSourceOrError GStreamerVideoCaptureSource::create(String&& deviceID, String&& hashSalt, const MediaConstraints* constraints)
+CaptureSourceOrError GStreamerVideoCaptureSource::create(String&& deviceID, String&& hashSalt, const MediaConstraints* constraints, Optional<unsigned> fd)
 {
-    auto device = GStreamerVideoCaptureDeviceManager::singleton().gstreamerDeviceWithUID(deviceID);
-    if (!device) {
-        auto errorMessage = makeString("GStreamerVideoCaptureSource::create(): GStreamer did not find the device: ", deviceID, '.');
-        return CaptureSourceOrError(WTFMove(errorMessage));
-    }
+    if (fd.hasValue()) {
+        auto source = adoptRef(*new GStreamerVideoCaptureSource("foo", "bar", WTFMove(hashSalt), "pipewiresrc", fd));
 
-    auto source = adoptRef(*new GStreamerVideoCaptureSource(device.value(), WTFMove(hashSalt)));
+        if (constraints) {
+            if (auto result = source->applyConstraints(*constraints))
+                return WTFMove(result->badConstraint);
+        }
+        return CaptureSourceOrError(WTFMove(source));
+    } else {
+        auto device = GStreamerVideoCaptureDeviceManager::singleton().gstreamerDeviceWithUID(deviceID);
+        if (!device) {
+            auto errorMessage = makeString("GStreamerVideoCaptureSource::create(): GStreamer did not find the device: ", deviceID, '.');
+            return CaptureSourceOrError(WTFMove(errorMessage));
+        }
 
-    if (constraints) {
-        if (auto result = source->applyConstraints(*constraints))
-            return WTFMove(result->badConstraint);
+        auto source = adoptRef(*new GStreamerVideoCaptureSource(device.value(), WTFMove(hashSalt)));
+
+        if (constraints) {
+            if (auto result = source->applyConstraints(*constraints))
+                return WTFMove(result->badConstraint);
+        }
+        return CaptureSourceOrError(WTFMove(source));
     }
-    return CaptureSourceOrError(WTFMove(source));
 }
 
 VideoCaptureFactory& GStreamerVideoCaptureSource::factory()
@@ -119,9 +142,9 @@ DisplayCaptureFactory& GStreamerVideoCaptureSource::displayFactory()
     return libWebRTCDisplayCaptureSourceFactory();
 }
 
-GStreamerVideoCaptureSource::GStreamerVideoCaptureSource(String&& deviceID, String&& name, String&& hashSalt, const gchar *source_factory)
+GStreamerVideoCaptureSource::GStreamerVideoCaptureSource(String&& deviceID, String&& name, String&& hashSalt, const gchar* source_factory, Optional<unsigned> fd)
     : RealtimeVideoCaptureSource(WTFMove(deviceID), WTFMove(name), WTFMove(hashSalt))
-    , m_capturer(makeUnique<GStreamerVideoCapturer>(source_factory))
+    , m_capturer(makeUnique<GStreamerVideoCapturer>(source_factory, fd))
 {
     initializeDebugCategory();
 }

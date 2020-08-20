@@ -154,6 +154,96 @@ void GStreamerCaptureDeviceManager::refreshCaptureDevices()
     gst_device_monitor_stop(m_deviceMonitor.get());
 }
 
+const Vector<CaptureDevice>& GStreamerDisplayCaptureDeviceManager::captureDevices()
+{
+    if (m_devices.isEmpty())
+        refreshCaptureDevices();
+
+    return m_devices;
+}
+
+#if USE(LIBPORTAL)
+static void session_created(GObject* source, GAsyncResult* result, gpointer)
+{
+    auto* portal = XDP_PORTAL(source);
+    GStreamerDisplayCaptureDeviceManager& manager = GStreamerDisplayCaptureDeviceManager::singleton();
+    g_autoptr(GError) error = NULL;
+
+    g_printerr("session started\n");
+    manager.setSession(xdp_portal_create_screencast_session_finish(portal, result, &error));
+}
+
+static void session_started(GObject* source, GAsyncResult* result, gpointer)
+{
+    auto* session = XDP_SESSION(source);
+    g_autoptr(GError) error = NULL;
+    guint id;
+    g_autoptr(GVariantIter) iter = NULL;
+    GVariant* props;
+    GStreamerDisplayCaptureDeviceManager& manager = GStreamerDisplayCaptureDeviceManager::singleton();
+
+    g_printerr("hello\n");
+    if (!xdp_session_start_finish(session, result, &error)) {
+        g_warning("Failed to start screencast session: %s", error->message);
+        manager.sessionStarted(WTF::nullopt);
+        return;
+    }
+    iter = g_variant_iter_new(xdp_session_get_streams(session));
+    g_variant_iter_next(iter, "(u@a{sv})", &id, &props);
+    g_variant_unref(props);
+    manager.sessionStarted(id);
+}
+#endif
+
+void GStreamerDisplayCaptureDeviceManager::refreshCaptureDevices()
+{
+#if USE(LIBPORTAL)
+    g_printerr("refreshCaptureDevices 0\n");
+    m_portal = xdp_portal_new();
+    g_printerr("refreshCaptureDevices 1\n");
+    xdp_portal_create_screencast_session(m_portal, static_cast<XdpOutputType>(XDP_OUTPUT_MONITOR | XDP_OUTPUT_WINDOW), XDP_SCREENCAST_FLAG_NONE, NULL, session_created, nullptr);
+    g_printerr("refreshCaptureDevices 2\n");
+
+    CaptureDevice captureDevice("Dummy", CaptureDevice::DeviceType::Screen, makeString("Screen"));
+    captureDevice.setEnabled(true);
+    m_devices.append(WTFMove(captureDevice));
+
+    // {
+    //     LockHolder lock(m_sessionMutex);
+    //     m_sessionCondition.wait(m_sessionMutex);
+    // }
+    g_printerr("refreshCaptureDevices 3\n");
+#endif
+}
+
+void GStreamerDisplayCaptureDeviceManager::sessionStarted(Optional<guint> id)
+{
+    LockHolder lock(m_sessionMutex);
+    if (id) {
+        m_devices.remove(0);
+        CaptureDevice captureDevice(String::number(*id), CaptureDevice::DeviceType::Screen, makeString("Screen"));
+        captureDevice.setEnabled(true);
+        m_devices.append(WTFMove(captureDevice));
+    }
+    deviceChanged();
+    m_sessionCondition.notifyOne();
+}
+
+#if USE(LIBPORTAL)
+void GStreamerDisplayCaptureDeviceManager::setSession(XdpSession* session)
+{
+    m_session = session;
+    g_printerr("session %p\n", session);
+    if (!session) {
+        LockHolder lock(m_sessionMutex);
+        m_sessionCondition.notifyOne();
+        return;
+    }
+
+    xdp_session_start(session, nullptr, nullptr, session_started, nullptr);
+}
+#endif
+
 } // namespace WebCore
 
 #endif // ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
