@@ -65,6 +65,14 @@ if (ENABLE_MEDIA_STREAM AND ENABLE_WEB_RTC)
         SET_AND_EXPOSE_TO_BUILD(USE_LIBWEBRTC FALSE)
 
         find_package(OpenSSL REQUIRED)
+
+        #find_package(Libportal)
+        #if (LIBPORTAL_FOUND)
+        #    SET_AND_EXPOSE_TO_BUILD(USE_LIBPORTAL TRUE)
+        #else ()
+            SET_AND_EXPOSE_TO_BUILD(USE_LIBPORTAL FALSE)
+        #endif ()
+
     else ()
         SET_AND_EXPOSE_TO_BUILD(USE_LIBWEBRTC TRUE)
     endif ()

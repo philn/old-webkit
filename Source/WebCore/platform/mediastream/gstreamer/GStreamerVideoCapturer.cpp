@@ -32,8 +32,8 @@ GStreamerVideoCapturer::GStreamerVideoCapturer(GStreamerCaptureDevice device)
 {
 }
 
-GStreamerVideoCapturer::GStreamerVideoCapturer(const char* sourceFactory)
-    : GStreamerCapturer(sourceFactory, adoptGRef(gst_caps_new_empty_simple("video/x-raw")))
+GStreamerVideoCapturer::GStreamerVideoCapturer(const char* sourceFactory, Optional<unsigned> pipewireNodeId)
+    : GStreamerCapturer(sourceFactory, adoptGRef(gst_caps_new_empty_simple("video/x-raw")), pipewireNodeId)
 {
 }
 
