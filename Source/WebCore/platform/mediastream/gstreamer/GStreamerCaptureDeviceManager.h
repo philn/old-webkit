@@ -28,6 +28,13 @@
 #include "GStreamerCaptureDevice.h"
 #include "RealtimeMediaSourceFactory.h"
 
+#include <wtf/Condition.h>
+#include <wtf/Forward.h>
+
+#if USE(LIBPORTAL)
+#include <libportal/portal.h>
+#endif
+
 namespace WebCore {
 
 class GStreamerCaptureDeviceManager : public CaptureDeviceManager {
@@ -66,15 +73,31 @@ private:
     GStreamerVideoCaptureDeviceManager() = default;
 };
 
-class GStreamerDisplayCaptureDeviceManager final : public GStreamerCaptureDeviceManager {
+class GStreamerDisplayCaptureDeviceManager final : public CaptureDeviceManager {
     friend class NeverDestroyed<GStreamerDisplayCaptureDeviceManager>;
 public:
     static GStreamerDisplayCaptureDeviceManager& singleton();
-    CaptureDevice::DeviceType deviceType() final { return CaptureDevice::DeviceType::Screen; }
+    const Vector<CaptureDevice>& captureDevices() final;
+
+#if USE(LIBPORTAL)
+    void setSession(XdpSession*);
+    const XdpSession* session() const { return m_session; }
+#endif
+    void sessionStarted(Optional<guint>);
+
 private:
     GStreamerDisplayCaptureDeviceManager() = default;
-};
+    ~GStreamerDisplayCaptureDeviceManager() = default;
+    void refreshCaptureDevices();
 
+    Vector<CaptureDevice> m_devices;
+#if USE(LIBPORTAL)
+    XdpPortal* m_portal;
+    XdpSession* m_session;
+#endif
+    Condition m_sessionCondition;
+    Lock m_sessionMutex;
+};
 }
 
 #endif // ENABLE(MEDIA_STREAM)  && USE(GSTREAMER)
