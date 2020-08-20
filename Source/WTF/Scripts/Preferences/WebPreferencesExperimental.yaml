@@ -609,7 +609,7 @@ ResizeObserverEnabled:
 # FIXME: Is this implemented for WebKitLegacy? If not, this should be excluded from WebKitLegacy entirely.
 ScreenCaptureEnabled:
   type: bool
-  condition: ENABLE(MEDIA_STREAM) && PLATFORM(MAC)
+  condition: ENABLE(MEDIA_STREAM) && (PLATFORM(MAC) || USE(LIBPORTAL))
   humanReadableName: "ScreenCapture"
   humanReadableDescription: "Enable ScreenCapture"
   defaultValue:

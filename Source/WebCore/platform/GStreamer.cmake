@@ -165,6 +165,11 @@ if (ENABLE_VIDEO)
 
         list(APPEND WebCore_LIBRARIES OpenSSL::Crypto)
 
+        if (USE_LIBPORTAL)
+            list(APPEND WebCore_SYSTEM_INCLUDE_DIRECTORIES ${LIBPORTAL_INCLUDE_DIRS})
+            list(APPEND WebCore_LIBRARIES ${LIBPORTAL_LIBRARIES})
+        endif ()
+
         list(APPEND WebCore_SOURCES
             platform/mediastream/gstreamer/GStreamerDataChannelHandler.cpp
             platform/mediastream/gstreamer/GStreamerDTMFSenderBackend.cpp

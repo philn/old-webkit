@@ -33,7 +33,7 @@ namespace WebCore {
 class GStreamerVideoCapturer final : public GStreamerCapturer {
 public:
     GStreamerVideoCapturer(GStreamerCaptureDevice);
-    GStreamerVideoCapturer(const char* source_factory);
+    GStreamerVideoCapturer(const char* source_factory, Optional<unsigned> pipewireNodeId = WTF::nullopt);
 
     GstElement* createConverter() final;
     const char* name() final { return "Video"; }

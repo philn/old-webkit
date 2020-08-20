@@ -75,6 +75,13 @@ if (ENABLE_MEDIA_STREAM AND ENABLE_WEB_RTC)
 
         find_package(OpenSSL REQUIRED)
 
+        #find_package(Libportal)
+        #if (LIBPORTAL_FOUND)
+        #    SET_AND_EXPOSE_TO_BUILD(USE_LIBPORTAL TRUE)
+        #else ()
+            SET_AND_EXPOSE_TO_BUILD(USE_LIBPORTAL FALSE)
+        #endif ()
+
     else ()
         if (PC_GSTREAMER_VERSION VERSION_LESS "1.12")
             message(FATAL_ERROR "GStreamer 1.12 is needed for LibWebRTC support.")
