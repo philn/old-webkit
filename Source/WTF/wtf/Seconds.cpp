@@ -34,6 +34,10 @@
 #include <wtf/WallTime.h>
 #include <wtf/text/TextStream.h>
 
+#if OS(LINUX)
+#include <sys/sysinfo.h>
+#endif
+
 namespace WTF {
 
 WallTime Seconds::operator+(WallTime other) const
@@ -88,6 +92,20 @@ void sleep(Seconds value)
     Condition fakeCondition;
     LockHolder fakeLocker(fakeLock);
     fakeCondition.waitFor(fakeLock, value);
+}
+
+Seconds Seconds::uptime()
+{
+#if OS(LINUX)
+    struct sysinfo info;
+    if (sysinfo(&info))
+        return Seconds::nan();
+    return Seconds(info.uptime);
+#elif PLATFORM(MAC)
+    return Seconds([[NSProcessInfo processInfo] systemUptime]);
+#else
+    return Seconds::nan();
+#endif
 }
 
 } // namespace WTF

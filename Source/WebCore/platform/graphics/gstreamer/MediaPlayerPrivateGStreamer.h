@@ -190,6 +190,7 @@ public:
 #endif
     void paint(GraphicsContext&, const FloatRect&) final;
     bool supportsFullscreen() const final;
+    bool supportsPictureInPicture() const final { return true; }
     MediaPlayer::MovieLoadType movieLoadType() const final;
 
     Optional<VideoPlaybackQualityMetrics> videoPlaybackQualityMetrics() final;
@@ -212,6 +213,16 @@ public:
     bool waitingForKey() const final;
 
     void handleProtectionEvent(GstEvent*);
+#endif
+
+#if ENABLE(VIDEO_PRESENTATION_MODE)
+    PlatformLayerContainer createVideoFullscreenLayer() final;
+    void setVideoFullscreenLayer(PlatformLayer*, WTF::Function<void()>&&) final;
+    void updateVideoFullscreenInlineImage() final;
+    void setVideoFullscreenFrame(FloatRect) final;
+    void setVideoFullscreenGravity(MediaPlayer::VideoGravity) final;
+    void setVideoFullscreenMode(MediaPlayer::VideoFullscreenMode) final;
+    void videoFullscreenStandbyChanged() final;
 #endif
 
 #if USE(GSTREAMER_GL)

@@ -31,8 +31,6 @@
 #import "APIUIClient.h"
 #import "DrawingAreaProxy.h"
 #import "PlaybackSessionManagerProxy.h"
-#import "VideoFullscreenManagerMessages.h"
-#import "VideoFullscreenManagerProxyMessages.h"
 #import "WebPageProxy.h"
 #import "WebProcessProxy.h"
 #import <QuartzCore/CoreAnimation.h>
@@ -119,15 +117,37 @@
 
 @end
 
+UIViewController *VideoFullscreenModelContext::presentingViewController()
+{
+    if (m_manager)
+        return m_manager->m_page->uiClient().presentingViewController();
+
+    return nullptr;
+}
+
+UIViewController *VideoFullscreenModelContext::createVideoFullscreenViewController(AVPlayerViewController *avPlayerViewController)
+{
+    return [[WKVideoFullScreenViewController alloc] initWithAVPlayerViewController:avPlayerViewController];
+}
+
+#endif // PLATFORM(IOS_FAMILY)
+
+#if PLATFORM(IOS_FAMILY) || PLATFORM(MAC)
+void VideoFullscreenModelContext::requestRouteSharingPolicyAndContextUID(CompletionHandler<void(WebCore::RouteSharingPolicy, String)>&& completionHandler)
+{
+    if (m_manager)
+        m_manager->requestRouteSharingPolicyAndContextUID(m_contextId, WTFMove(completionHandler));
+    else
+        completionHandler(WebCore::RouteSharingPolicy::Default, emptyString());
+}
+
+void VideoFullscreenManagerProxy::requestRouteSharingPolicyAndContextUID(PlaybackSessionContextIdentifier contextId, CompletionHandler<void(WebCore::RouteSharingPolicy, String)>&& callback)
+{
+    m_page->sendWithAsyncReply(Messages::VideoFullscreenManager::RequestRouteSharingPolicyAndContextUID(contextId), WTFMove(callback));
+}
 #endif
 
-#define MESSAGE_CHECK(assertion) MESSAGE_CHECK_BASE(assertion, m_page->process().connection())
-
-namespace WebKit {
-using namespace WebCore;
-
 #if PLATFORM(IOS_FAMILY) && !HAVE(AVKIT)
-
 RefPtr<VideoFullscreenManagerProxy> VideoFullscreenManagerProxy::create(WebPageProxy&)
 {
     return nullptr;
@@ -154,190 +174,10 @@ void VideoFullscreenManagerProxy::requestHideAndExitFullscreen()
 void VideoFullscreenManagerProxy::applicationDidBecomeActive()
 {
 }
-#else
-
-#pragma mark - VideoFullscreenModelContext
-
-VideoFullscreenModelContext::VideoFullscreenModelContext(VideoFullscreenManagerProxy& manager, PlaybackSessionModelContext& playbackSessionModel, PlaybackSessionContextIdentifier contextId)
-    : m_manager(&manager)
-    , m_playbackSessionModel(playbackSessionModel)
-    , m_contextId(contextId)
-{
-}
-
-VideoFullscreenModelContext::~VideoFullscreenModelContext()
-{
-}
-
-void VideoFullscreenModelContext::addClient(VideoFullscreenModelClient& client)
-{
-    ASSERT(!m_clients.contains(&client));
-    m_clients.add(&client);
-}
-
-void VideoFullscreenModelContext::removeClient(VideoFullscreenModelClient& client)
-{
-    ASSERT(m_clients.contains(&client));
-    m_clients.remove(&client);
-}
-
-void VideoFullscreenModelContext::requestFullscreenMode(HTMLMediaElementEnums::VideoFullscreenMode mode, bool finishedWithMedia)
-{
-    if (m_manager)
-        m_manager->requestFullscreenMode(m_contextId, mode, finishedWithMedia);
-}
-
-void VideoFullscreenModelContext::setVideoLayerFrame(WebCore::FloatRect frame)
-{
-    if (m_manager)
-        m_manager->setVideoLayerFrame(m_contextId, frame);
-}
-
-void VideoFullscreenModelContext::setVideoLayerGravity(WebCore::MediaPlayerEnums::VideoGravity gravity)
-{
-    if (m_manager)
-        m_manager->setVideoLayerGravity(m_contextId, gravity);
-}
-
-void VideoFullscreenModelContext::fullscreenModeChanged(WebCore::HTMLMediaElementEnums::VideoFullscreenMode mode)
-{
-    if (m_manager)
-        m_manager->fullscreenModeChanged(m_contextId, mode);
-}
-
-#if PLATFORM(IOS_FAMILY)
-UIViewController *VideoFullscreenModelContext::presentingViewController()
-{
-    if (m_manager)
-        return m_manager->m_page->uiClient().presentingViewController();
-
-    return nullptr;
-}
-
-UIViewController *VideoFullscreenModelContext::createVideoFullscreenViewController(AVPlayerViewController *avPlayerViewController)
-{
-    return [[WKVideoFullScreenViewController alloc] initWithAVPlayerViewController:avPlayerViewController];
-}
 #endif
 
-void VideoFullscreenModelContext::requestUpdateInlineRect()
+void VideoFullscreenManagerProxy::platformInvalidate()
 {
-    if (m_manager)
-        m_manager->requestUpdateInlineRect(m_contextId);
-}
-
-void VideoFullscreenModelContext::requestVideoContentLayer()
-{
-    if (m_manager)
-        m_manager->requestVideoContentLayer(m_contextId);
-}
-
-void VideoFullscreenModelContext::returnVideoContentLayer()
-{
-    if (m_manager)
-        m_manager->returnVideoContentLayer(m_contextId);
-}
-
-void VideoFullscreenModelContext::didSetupFullscreen()
-{
-    if (m_manager)
-        m_manager->didSetupFullscreen(m_contextId);
-}
-
-void VideoFullscreenModelContext::didEnterFullscreen(const WebCore::FloatSize& size)
-{
-    if (m_manager)
-        m_manager->didEnterFullscreen(m_contextId, size);
-}
-
-void VideoFullscreenModelContext::willExitFullscreen()
-{
-    if (m_manager)
-        m_manager->willExitFullscreen(m_contextId);
-}
-
-void VideoFullscreenModelContext::didExitFullscreen()
-{
-    if (m_manager)
-        m_manager->didExitFullscreen(m_contextId);
-}
-
-void VideoFullscreenModelContext::didCleanupFullscreen()
-{
-    if (m_manager)
-        m_manager->didCleanupFullscreen(m_contextId);
-}
-
-void VideoFullscreenModelContext::fullscreenMayReturnToInline()
-{
-    if (m_manager)
-        m_manager->fullscreenMayReturnToInline(m_contextId);
-}
-
-void VideoFullscreenModelContext::requestRouteSharingPolicyAndContextUID(CompletionHandler<void(WebCore::RouteSharingPolicy, String)>&& completionHandler)
-{
-    if (m_manager)
-        m_manager->requestRouteSharingPolicyAndContextUID(m_contextId, WTFMove(completionHandler));
-    else
-        completionHandler(WebCore::RouteSharingPolicy::Default, emptyString());
-}
-
-void VideoFullscreenModelContext::didEnterPictureInPicture()
-{
-    if (m_manager)
-        m_manager->hasVideoInPictureInPictureDidChange(true);
-}
-
-void VideoFullscreenModelContext::didExitPictureInPicture()
-{
-    if (m_manager)
-        m_manager->hasVideoInPictureInPictureDidChange(false);
-}
-
-void VideoFullscreenModelContext::willEnterPictureInPicture()
-{
-    for (auto& client : copyToVector(m_clients))
-        client->willEnterPictureInPicture();
-}
-
-void VideoFullscreenModelContext::failedToEnterPictureInPicture()
-{
-    for (auto& client : copyToVector(m_clients))
-        client->failedToEnterPictureInPicture();
-}
-
-void VideoFullscreenModelContext::willExitPictureInPicture()
-{
-    for (auto& client : copyToVector(m_clients))
-        client->willExitPictureInPicture();
-}
-
-#pragma mark - VideoFullscreenManagerProxy
-
-Ref<VideoFullscreenManagerProxy> VideoFullscreenManagerProxy::create(WebPageProxy& page, PlaybackSessionManagerProxy& playbackSessionManagerProxy)
-{
-    return adoptRef(*new VideoFullscreenManagerProxy(page, playbackSessionManagerProxy));
-}
-
-VideoFullscreenManagerProxy::VideoFullscreenManagerProxy(WebPageProxy& page, PlaybackSessionManagerProxy& playbackSessionManagerProxy)
-    : m_page(&page)
-    , m_playbackSessionManagerProxy(playbackSessionManagerProxy)
-{
-    m_page->process().addMessageReceiver(Messages::VideoFullscreenManagerProxy::messageReceiverName(), m_page->webPageID(), *this);
-}
-
-VideoFullscreenManagerProxy::~VideoFullscreenManagerProxy()
-{
-    if (!m_page)
-        return;
-    invalidate();
-}
-
-void VideoFullscreenManagerProxy::invalidate()
-{
-    m_page->process().removeMessageReceiver(Messages::VideoFullscreenManagerProxy::messageReceiverName(), m_page->webPageID());
-    m_page = nullptr;
-
     auto contextMap = WTFMove(m_contextMap);
     m_clientCounts.clear();
 
@@ -348,165 +188,33 @@ void VideoFullscreenManagerProxy::invalidate()
     }
 }
 
-void VideoFullscreenManagerProxy::requestHideAndExitFullscreen()
+#if PLATFORM(IOS_FAMILY)
+
+void VideoFullscreenManagerProxy::setInlineRect(PlaybackSessionContextIdentifier contextId, const WebCore::IntRect& inlineRect, bool visible)
 {
-    for (auto& [model, interface] : m_contextMap.values())
-        interface->requestHideAndExitFullscreen();
+    if (m_mockVideoPresentationModeEnabled)
+        return;
+
+    ensureInterface(contextId).setInlineRect(inlineRect, visible);
 }
 
-bool VideoFullscreenManagerProxy::hasMode(HTMLMediaElementEnums::VideoFullscreenMode mode) const
+void VideoFullscreenManagerProxy::setHasVideoContentLayer(PlaybackSessionContextIdentifier contextId, bool value)
 {
-    for (auto& [model, interface] : m_contextMap.values()) {
-        if (interface->hasMode(mode))
-            return true;
+    if (m_mockVideoPresentationModeEnabled) {
+        if (value)
+            didSetupFullscreen(contextId);
+        else
+            didExitFullscreen(contextId);
+
+        return;
     }
-    return false;
+
+    ensureInterface(contextId).setHasVideoContentLayer(value);
 }
 
-bool VideoFullscreenManagerProxy::mayAutomaticallyShowVideoPictureInPicture() const
-{
-    for (auto& [model, interface] : m_contextMap.values()) {
-        if (interface->mayAutomaticallyShowVideoPictureInPicture())
-            return true;
-    }
-    return false;
-}
-
-#if ENABLE(VIDEO_PRESENTATION_MODE)
-bool VideoFullscreenManagerProxy::isPlayingVideoInEnhancedFullscreen() const
-{
-    for (auto& [model, interface] : m_contextMap.values()) {
-        if (interface->isPlayingVideoInEnhancedFullscreen())
-            return true;
-    }
-    
-    return false;
-}
 #endif
 
-PlatformVideoFullscreenInterface* VideoFullscreenManagerProxy::controlsManagerInterface()
-{
-    if (auto contextId = m_playbackSessionManagerProxy->controlsManagerContextId())
-        return &ensureInterface(contextId);
-    return nullptr;
-}
-
-void VideoFullscreenManagerProxy::applicationDidBecomeActive()
-{
-    for (auto& [model, interface] : m_contextMap.values())
-        interface->applicationDidBecomeActive();
-}
-
-void VideoFullscreenManagerProxy::requestRouteSharingPolicyAndContextUID(PlaybackSessionContextIdentifier contextId, CompletionHandler<void(WebCore::RouteSharingPolicy, String)>&& callback)
-{
-    m_page->sendWithAsyncReply(Messages::VideoFullscreenManager::RequestRouteSharingPolicyAndContextUID(contextId), WTFMove(callback));
-}
-
-VideoFullscreenManagerProxy::ModelInterfaceTuple VideoFullscreenManagerProxy::createModelAndInterface(PlaybackSessionContextIdentifier contextId)
-{
-    auto& playbackSessionModel = m_playbackSessionManagerProxy->ensureModel(contextId);
-    Ref<VideoFullscreenModelContext> model = VideoFullscreenModelContext::create(*this, playbackSessionModel, contextId);
-    auto& playbackSessionInterface = m_playbackSessionManagerProxy->ensureInterface(contextId);
-    Ref<PlatformVideoFullscreenInterface> interface = PlatformVideoFullscreenInterface::create(playbackSessionInterface);
-    m_playbackSessionManagerProxy->addClientForContext(contextId);
-
-    interface->setVideoFullscreenModel(&model.get());
-    interface->setVideoFullscreenChangeObserver(&model.get());
-
-    return std::make_tuple(WTFMove(model), WTFMove(interface));
-}
-
-VideoFullscreenManagerProxy::ModelInterfaceTuple& VideoFullscreenManagerProxy::ensureModelAndInterface(PlaybackSessionContextIdentifier contextId)
-{
-    auto addResult = m_contextMap.add(contextId, ModelInterfaceTuple());
-    if (addResult.isNewEntry)
-        addResult.iterator->value = createModelAndInterface(contextId);
-    return addResult.iterator->value;
-}
-
-VideoFullscreenModelContext& VideoFullscreenManagerProxy::ensureModel(PlaybackSessionContextIdentifier contextId)
-{
-    return *std::get<0>(ensureModelAndInterface(contextId));
-}
-
-PlatformVideoFullscreenInterface& VideoFullscreenManagerProxy::ensureInterface(PlaybackSessionContextIdentifier contextId)
-{
-    return *std::get<1>(ensureModelAndInterface(contextId));
-}
-
-PlatformVideoFullscreenInterface* VideoFullscreenManagerProxy::findInterface(PlaybackSessionContextIdentifier contextId)
-{
-    auto it = m_contextMap.find(contextId);
-    if (it == m_contextMap.end())
-        return nullptr;
-
-    return std::get<1>(it->value).get();
-}
-
-void VideoFullscreenManagerProxy::ensureClientForContext(PlaybackSessionContextIdentifier contextId)
-{
-    m_clientCounts.add(contextId, 1);
-}
-
-void VideoFullscreenManagerProxy::addClientForContext(PlaybackSessionContextIdentifier contextId)
-{
-    auto addResult = m_clientCounts.add(contextId, 1);
-    if (!addResult.isNewEntry)
-        addResult.iterator->value++;
-}
-
-void VideoFullscreenManagerProxy::removeClientForContext(PlaybackSessionContextIdentifier contextId)
-{
-    if (!m_clientCounts.contains(contextId))
-        return;
-
-    int clientCount = m_clientCounts.get(contextId);
-    ASSERT(clientCount > 0);
-    clientCount--;
-
-    if (clientCount <= 0) {
-        ensureInterface(contextId).setVideoFullscreenModel(nullptr);
-        m_playbackSessionManagerProxy->removeClientForContext(contextId);
-        m_clientCounts.remove(contextId);
-        m_contextMap.remove(contextId);
-        return;
-    }
-
-    m_clientCounts.set(contextId, clientCount);
-}
-
-void VideoFullscreenManagerProxy::forEachSession(Function<void(VideoFullscreenModel&, PlatformVideoFullscreenInterface&)>&& callback)
-{
-    if (m_contextMap.isEmpty())
-        return;
-
-    Vector<ModelInterfaceTuple> values;
-    values.reserveInitialCapacity(m_contextMap.size());
-    for (auto& value : m_contextMap.values())
-        values.uncheckedAppend(value);
-
-    for (auto& value : values) {
-        RefPtr<VideoFullscreenModelContext> model;
-        RefPtr<PlatformVideoFullscreenInterface> interface;
-        std::tie(model, interface) = value;
-
-        ASSERT(model);
-        ASSERT(interface);
-        if (!model || !interface)
-            continue;
-
-        callback(*model, *interface);
-    }
-}
-
-void VideoFullscreenManagerProxy::hasVideoInPictureInPictureDidChange(bool value)
-{
-    m_page->uiClient().hasVideoInPictureInPictureDidChange(m_page, value);
-    if (m_client)
-        m_client->hasVideoInPictureInPictureDidChange(value);
-}
-
-#pragma mark Messages from VideoFullscreenManager
+#define MESSAGE_CHECK(assertion) MESSAGE_CHECK_BASE(assertion, m_page->process().connection())
 
 void VideoFullscreenManagerProxy::setupFullscreenWithID(PlaybackSessionContextIdentifier contextId, WebKit::LayerHostingContextID videoLayerID, const WebCore::IntRect& initialRect, const WebCore::FloatSize& videoDimensions, float hostingDeviceScaleFactor, HTMLMediaElementEnums::VideoFullscreenMode videoFullscreenMode, bool allowsPictureInPicture, bool standby)
 {
@@ -553,54 +261,6 @@ void VideoFullscreenManagerProxy::setupFullscreenWithID(PlaybackSessionContextId
 #endif
 }
 
-void VideoFullscreenManagerProxy::setHasVideo(PlaybackSessionContextIdentifier contextId, bool hasVideo)
-{
-    if (m_mockVideoPresentationModeEnabled)
-        return;
-
-    if (auto* interface = findInterface(contextId))
-        interface->hasVideoChanged(hasVideo);
-}
-
-void VideoFullscreenManagerProxy::setVideoDimensions(PlaybackSessionContextIdentifier contextId, const FloatSize& videoDimensions)
-{
-    auto* interface = findInterface(contextId);
-    if (!interface)
-        return;
-
-    if (m_mockVideoPresentationModeEnabled) {
-        if (videoDimensions.isEmpty())
-            return;
-
-        m_mockPictureInPictureWindowSize.setHeight(DefaultMockPictureInPictureWindowWidth / videoDimensions.aspectRatio());
-        return;
-    }
-
-    interface->videoDimensionsChanged(videoDimensions);
-}
-
-void VideoFullscreenManagerProxy::enterFullscreen(PlaybackSessionContextIdentifier contextId)
-{
-    if (m_mockVideoPresentationModeEnabled) {
-        didEnterFullscreen(contextId, m_mockPictureInPictureWindowSize);
-        return;
-    }
-
-    auto& interface = ensureInterface(contextId);
-    interface.enterFullscreen();
-
-    // Only one context can be in a given full screen mode at a time:
-    for (auto& contextPair : m_contextMap) {
-        auto& otherContextId = contextPair.key;
-        if (contextId == otherContextId)
-            continue;
-
-        auto& otherInterface = std::get<1>(contextPair.value);
-        if (otherInterface->hasMode(interface.mode()))
-            otherInterface->requestHideAndExitFullscreen();
-    }
-}
-
 void VideoFullscreenManagerProxy::exitFullscreen(PlaybackSessionContextIdentifier contextId, WebCore::IntRect finalRect, CompletionHandler<void(bool)>&& completionHandler)
 {
     ASSERT(m_contextMap.contains(contextId));
@@ -609,7 +269,7 @@ void VideoFullscreenManagerProxy::exitFullscreen(PlaybackSessionContextIdentifie
         return;
     }
 
-#if !PLATFORM(IOS_FAMILY)
+#if PLATFORM(MAC)
     IntRect finalWindowRect;
     m_page->rootViewToWindow(finalRect, finalWindowRect);
 #endif
@@ -649,59 +309,11 @@ void VideoFullscreenManagerProxy::exitFullscreenWithoutAnimationToMode(PlaybackS
     hasVideoInPictureInPictureDidChange(targetMode & MediaPlayerEnums::VideoFullscreenModePictureInPicture);
 }
 
-#if PLATFORM(IOS_FAMILY)
-
-void VideoFullscreenManagerProxy::setInlineRect(PlaybackSessionContextIdentifier contextId, const WebCore::IntRect& inlineRect, bool visible)
-{
-    if (m_mockVideoPresentationModeEnabled)
-        return;
-
-    ensureInterface(contextId).setInlineRect(inlineRect, visible);
-}
-
-void VideoFullscreenManagerProxy::setHasVideoContentLayer(PlaybackSessionContextIdentifier contextId, bool value)
-{
-    if (m_mockVideoPresentationModeEnabled) {
-        if (value)
-            didSetupFullscreen(contextId);
-        else
-            didExitFullscreen(contextId);
-
-        return;
-    }
-
-    ensureInterface(contextId).setHasVideoContentLayer(value);
-}
-
-#else
-
-NO_RETURN_DUE_TO_ASSERT void VideoFullscreenManagerProxy::setInlineRect(PlaybackSessionContextIdentifier, const WebCore::IntRect&, bool)
-{
-    ASSERT_NOT_REACHED();
-}
-
-NO_RETURN_DUE_TO_ASSERT void VideoFullscreenManagerProxy::setHasVideoContentLayer(PlaybackSessionContextIdentifier, bool)
-{
-    ASSERT_NOT_REACHED();
-}
-
-#endif
-
-void VideoFullscreenManagerProxy::cleanupFullscreen(PlaybackSessionContextIdentifier contextId)
-{
-    if (m_mockVideoPresentationModeEnabled) {
-        didCleanupFullscreen(contextId);
-        return;
-    }
-
-    ensureInterface(contextId).cleanupFullscreen();
-}
-
 void VideoFullscreenManagerProxy::preparedToReturnToInline(PlaybackSessionContextIdentifier contextId, bool visible, WebCore::IntRect inlineRect)
 {
     m_page->fullscreenMayReturnToInline();
 
-#if !PLATFORM(IOS_FAMILY)
+#if PLATFORM(MAC)
     IntRect inlineWindowRect;
     m_page->rootViewToWindow(inlineRect, inlineWindowRect);
 #endif
@@ -716,36 +328,6 @@ void VideoFullscreenManagerProxy::preparedToReturnToInline(PlaybackSessionContex
 #endif
 }
 
-void VideoFullscreenManagerProxy::preparedToExitFullscreen(PlaybackSessionContextIdentifier contextId)
-{
-    if (m_mockVideoPresentationModeEnabled)
-        return;
-
-    ensureInterface(contextId).preparedToExitFullscreen();
-}
-
-#pragma mark Messages to VideoFullscreenManager
-
-void VideoFullscreenManagerProxy::requestFullscreenMode(PlaybackSessionContextIdentifier contextId, WebCore::HTMLMediaElementEnums::VideoFullscreenMode mode, bool finishedWithMedia)
-{
-    m_page->send(Messages::VideoFullscreenManager::RequestFullscreenMode(contextId, mode, finishedWithMedia));
-}
-
-void VideoFullscreenManagerProxy::requestUpdateInlineRect(PlaybackSessionContextIdentifier contextId)
-{
-    m_page->send(Messages::VideoFullscreenManager::RequestUpdateInlineRect(contextId));
-}
-
-void VideoFullscreenManagerProxy::requestVideoContentLayer(PlaybackSessionContextIdentifier contextId)
-{
-    m_page->send(Messages::VideoFullscreenManager::RequestVideoContentLayer(contextId));
-}
-
-void VideoFullscreenManagerProxy::returnVideoContentLayer(PlaybackSessionContextIdentifier contextId)
-{
-    m_page->send(Messages::VideoFullscreenManager::ReturnVideoContentLayer(contextId));
-}
-
 void VideoFullscreenManagerProxy::didSetupFullscreen(PlaybackSessionContextIdentifier contextId)
 {
 #if PLATFORM(IOS_FAMILY)
@@ -753,27 +335,6 @@ void VideoFullscreenManagerProxy::didSetupFullscreen(PlaybackSessionContextIdent
 #else
     m_page->send(Messages::VideoFullscreenManager::DidSetupFullscreen(contextId));
 #endif
-}
-
-void VideoFullscreenManagerProxy::willExitFullscreen(PlaybackSessionContextIdentifier contextId)
-{
-    m_page->send(Messages::VideoFullscreenManager::WillExitFullscreen(contextId));
-}
-
-void VideoFullscreenManagerProxy::didExitFullscreen(PlaybackSessionContextIdentifier contextId)
-{
-    m_page->send(Messages::VideoFullscreenManager::DidExitFullscreen(contextId));
-    m_page->didExitFullscreen();
-}
-
-void VideoFullscreenManagerProxy::didEnterFullscreen(PlaybackSessionContextIdentifier contextId, const WebCore::FloatSize& size)
-{
-    Optional<FloatSize> optionalSize;
-    if (!size.isEmpty())
-        optionalSize = size;
-
-    m_page->send(Messages::VideoFullscreenManager::DidEnterFullscreen(contextId, optionalSize));
-    m_page->didEnterFullscreen();
 }
 
 void VideoFullscreenManagerProxy::didCleanupFullscreen(PlaybackSessionContextIdentifier contextId)
@@ -801,25 +362,6 @@ void VideoFullscreenManagerProxy::setVideoLayerFrame(PlaybackSessionContextIdent
 
     m_page->send(Messages::VideoFullscreenManager::SetVideoLayerFrameFenced(contextId, frame, fenceSendRight));
 }
-
-void VideoFullscreenManagerProxy::setVideoLayerGravity(PlaybackSessionContextIdentifier contextId, WebCore::MediaPlayerEnums::VideoGravity gravity)
-{
-    m_page->send(Messages::VideoFullscreenManager::SetVideoLayerGravityEnum(contextId, (unsigned)gravity));
-}
-
-void VideoFullscreenManagerProxy::fullscreenModeChanged(PlaybackSessionContextIdentifier contextId, WebCore::HTMLMediaElementEnums::VideoFullscreenMode mode)
-{
-    m_page->send(Messages::VideoFullscreenManager::FullscreenModeChanged(contextId, mode));
-}
-
-void VideoFullscreenManagerProxy::fullscreenMayReturnToInline(PlaybackSessionContextIdentifier contextId)
-{
-    m_page->send(Messages::VideoFullscreenManager::FullscreenMayReturnToInline(contextId, m_page->isViewVisible()));
-}
-
-#endif
-
-} // namespace WebKit
 
 #undef MESSAGE_CHECK
 

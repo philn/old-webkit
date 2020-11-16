@@ -477,7 +477,7 @@ void VideoFullscreenInterfaceMac::enterFullscreen()
     }
 }
 
-bool VideoFullscreenInterfaceMac::exitFullscreen(const IntRect& finalRect, NSWindow *parentWindow)
+bool VideoFullscreenInterfaceMac::exitFullscreen(const IntRect& finalRect, PlatformWindow *parentWindow)
 {
     LOG(Fullscreen, "VideoFullscreenInterfaceMac::exitFullscreen(%p), finalRect:{%d, %d, %d, %d}, parentWindow:%p", this, finalRect.x(), finalRect.y(), finalRect.width(), finalRect.height(), parentWindow);
 
@@ -552,7 +552,7 @@ static const char* boolString(bool val)
 }
 #endif
 
-void VideoFullscreenInterfaceMac::preparedToReturnToInline(bool visible, const IntRect& inlineRect, NSWindow *parentWindow)
+void VideoFullscreenInterfaceMac::preparedToReturnToInline(bool visible, const IntRect& inlineRect, PlatformWindow *parentWindow)
 {
     UNUSED_PARAM(visible);
     UNUSED_PARAM(inlineRect);

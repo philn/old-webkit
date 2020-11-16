@@ -60,7 +60,9 @@ public:
     template<typename T> T millisecondsAs() const { static_assert(std::is_integral<T>::value, ""); return clampToAccepting64<T>(milliseconds()); }
     template<typename T> T microsecondsAs() const { static_assert(std::is_integral<T>::value, ""); return clampToAccepting64<T>(microseconds()); }
     template<typename T> T nanosecondsAs() const { static_assert(std::is_integral<T>::value, ""); return clampToAccepting64<T>(nanoseconds()); }
-    
+
+    static Seconds uptime();
+
     static constexpr Seconds fromMinutes(double minutes)
     {
         return Seconds(minutes * 60);

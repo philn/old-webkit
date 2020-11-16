@@ -173,11 +173,11 @@ public:
     void setPreparedToReturnVideoLayerToInline(bool);
     void waitForPreparedForInlineThen(WTF::Function<void()>&& completionHandler = [] { });
 #if ENABLE(VIDEO_PRESENTATION_MODE)
-    RetainPtr<PlatformLayer> createVideoFullscreenLayer();
-    WEBCORE_EXPORT void setVideoFullscreenLayer(PlatformLayer*, WTF::Function<void()>&& completionHandler = [] { });
-#ifdef __OBJC__
+    PlatformLayerContainer createVideoFullscreenLayer();
+#if PLATFORM(COCOA) || PLATFORM(GTK)
     PlatformLayer* videoFullscreenLayer() const { return m_videoFullscreenLayer.get(); }
 #endif
+    WEBCORE_EXPORT void setVideoFullscreenLayer(PlatformLayer*, WTF::Function<void()>&& completionHandler = [] { });
     virtual void setVideoFullscreenFrame(const FloatRect&);
     void setVideoFullscreenGravity(MediaPlayer::VideoGravity);
     MediaPlayer::VideoGravity videoFullscreenGravity() const { return m_videoFullscreenGravity; }
@@ -1010,7 +1010,9 @@ private:
     bool m_temporarilyAllowingInlinePlaybackAfterFullscreen { false };
 
 #if ENABLE(VIDEO_PRESENTATION_MODE)
-    RetainPtr<PlatformLayer> m_videoFullscreenLayer;
+#if PLATFORM(COCOA) || PLATFORM(GTK)
+    PlatformLayerContainer m_videoFullscreenLayer;
+#endif
     FloatRect m_videoFullscreenFrame;
     MediaPlayer::VideoGravity m_videoFullscreenGravity { MediaPlayer::VideoGravity::ResizeAspect };
 #endif

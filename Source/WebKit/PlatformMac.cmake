@@ -171,7 +171,7 @@ list(APPEND WebKit_MESSAGES_IN_FILES
 
     UIProcess/Cocoa/PlaybackSessionManagerProxy.messages.in
     UIProcess/Cocoa/UserMediaCaptureManagerProxy.messages.in
-    UIProcess/Cocoa/VideoFullscreenManagerProxy.messages.in
+    UIProcess/VideoFullscreenManagerProxy.messages.in
 
     UIProcess/Network/CustomProtocols/LegacyCustomProtocolManagerProxy.messages.in
 
@@ -183,10 +183,8 @@ list(APPEND WebKit_MESSAGES_IN_FILES
 
     WebProcess/ApplePay/WebPaymentCoordinator.messages.in
 
-    WebProcess/cocoa/PlaybackSessionManager.messages.in
     WebProcess/cocoa/RemoteCaptureSampleManager.messages.in
     WebProcess/cocoa/UserMediaCaptureManager.messages.in
-    WebProcess/cocoa/VideoFullscreenManager.messages.in
 
     WebProcess/GPU/media/ios/RemoteMediaSessionHelper.messages.in
 

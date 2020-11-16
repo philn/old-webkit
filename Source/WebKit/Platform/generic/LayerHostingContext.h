@@ -25,16 +25,43 @@
 
 #pragma once
 
+#include "LayerTreeContext.h"
+#include <WebCore/PlatformLayer.h>
 #include <wtf/Forward.h>
 #include <wtf/Noncopyable.h>
 
 namespace WebKit {
 
 using LayerHostingContextID = uint32_t;
+enum class LayerHostingMode : uint8_t;
 
 class LayerHostingContext {
     WTF_MAKE_NONCOPYABLE(LayerHostingContext); WTF_MAKE_FAST_ALLOCATED;
 public:
+    static std::unique_ptr<LayerHostingContext> createForExternalHostingProcess()
+    {
+        auto layerHostingContext = makeUnique<LayerHostingContext>();
+        // FIXME: Use OutOfProcess?
+        layerHostingContext->m_layerHostingMode = LayerHostingMode::InProcess;
+        return layerHostingContext;
+    }
+
+    LayerHostingContext() = default;
+    ~LayerHostingContext() = default;
+
+    void setRootLayer(PlatformLayerContainer container) {
+        m_platformLayer = WTFMove(container);
+    }
+    PlatformLayer* rootLayer() const { return m_platformLayer.get(); }
+
+    void setContextID(LayerHostingContextID id) { m_context.contextID = id; }
+    LayerHostingContextID contextID() const { return m_context.contextID; }
+    LayerHostingMode layerHostingMode() { return m_layerHostingMode; }
+
+private:
+    PlatformLayerContainer m_platformLayer;
+    LayerHostingMode m_layerHostingMode;
+    LayerTreeContext m_context;
 };
 
 } // namespace WebKit

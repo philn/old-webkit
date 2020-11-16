@@ -25,18 +25,21 @@
 
 #pragma once
 
-#if PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))
+#if PLATFORM(IOS_FAMILY) || ENABLE(VIDEO_PRESENTATION_MODE)
 
 #include "MessageReceiver.h"
 #include "PlaybackSessionContextIdentifier.h"
 #include <WebCore/EventListener.h>
 #include <WebCore/HTMLMediaElementEnums.h>
-#include <WebCore/PlatformCALayer.h>
 #include <WebCore/PlaybackSessionModelMediaElement.h>
 #include <wtf/HashCountedSet.h>
 #include <wtf/HashMap.h>
 #include <wtf/RefCounted.h>
 #include <wtf/RefPtr.h>
+
+#if USE(CA)
+#include <WebCore/PlatformCALayer.h>
+#endif
 
 namespace IPC {
 class Attachment;
@@ -171,4 +174,4 @@ protected:
 
 } // namespace WebKit
 
-#endif // PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))
+#endif // PLATFORM(IOS_FAMILY) || ENABLE(VIDEO_PRESENTATION_MODE)

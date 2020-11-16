@@ -138,6 +138,10 @@
 #include <wpe/extensions/video-plane-display-dmabuf.h>
 #endif
 
+#if ENABLE(VIDEO_PRESENTATION_MODE)
+#include "PictureInPictureSupport.h"
+#endif
+
 GST_DEBUG_CATEGORY(webkit_media_player_debug);
 #define GST_CAT_DEFAULT webkit_media_player_debug
 
@@ -146,6 +150,26 @@ using namespace std;
 
 #if USE(GSTREAMER_HOLEPUNCH)
 static const FloatSize s_holePunchDefaultFrameSize(1280, 720);
+#endif
+
+#if ENABLE(VIDEO_PRESENTATION_MODE)
+static Optional<bool> isPictureInPictureSupported;
+
+void setSupportsPictureInPicture(bool isSupported)
+{
+    isPictureInPictureSupported = isSupported;
+}
+
+bool supportsPictureInPicture()
+{
+    if (isPictureInPictureSupported.hasValue())
+        return *isPictureInPictureSupported;
+#if PLATFORM(GTK)
+    return true;
+#else
+    return false;
+#endif
+}
 #endif
 
 static void busMessageCallback(GstBus*, GstMessage* message, MediaPlayerPrivateGStreamer* player)
@@ -3614,6 +3638,47 @@ WTFLogChannel& MediaPlayerPrivateGStreamer::logChannel() const
     return WebCore::LogMedia;
 }
 #endif
+
+#if ENABLE(VIDEO_PRESENTATION_MODE)
+PlatformLayerContainer MediaPlayerPrivateGStreamer::createVideoFullscreenLayer()
+{
+    gst_printerrln("%s", __PRETTY_FUNCTION__);
+    //return Nicosia::ContentLayer::create(Nicosia::ContentLayerTextureMapperImpl::createFactory(*this));
+    return m_nicosiaLayer.ptr();
+}
+
+void MediaPlayerPrivateGStreamer::setVideoFullscreenLayer(PlatformLayer*, WTF::Function<void()>&& completionHandler)
+{
+    gst_printerrln("%s", __PRETTY_FUNCTION__);
+    completionHandler();
+}
+
+void MediaPlayerPrivateGStreamer::updateVideoFullscreenInlineImage()
+{
+    gst_printerrln("%s", __PRETTY_FUNCTION__);
+}
+
+void MediaPlayerPrivateGStreamer::setVideoFullscreenFrame(FloatRect)
+{
+    gst_printerrln("%s", __PRETTY_FUNCTION__);
+}
+
+void MediaPlayerPrivateGStreamer::setVideoFullscreenGravity(MediaPlayer::VideoGravity)
+{
+    gst_printerrln("%s", __PRETTY_FUNCTION__);
+}
+
+void MediaPlayerPrivateGStreamer::setVideoFullscreenMode(MediaPlayer::VideoFullscreenMode)
+{
+    gst_printerrln("%s", __PRETTY_FUNCTION__);
+}
+
+void MediaPlayerPrivateGStreamer::videoFullscreenStandbyChanged()
+{
+    gst_printerrln("%s", __PRETTY_FUNCTION__);
+}
+#endif
+
 
 }
 

@@ -23,25 +23,28 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import "config.h"
-#import "PlaybackSessionManager.h"
+#include "config.h"
+#include "PlaybackSessionManager.h"
 
-#if PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))
+#if PLATFORM(IOS_FAMILY) || ENABLE(VIDEO_PRESENTATION_MODE)
 
-#import "Attachment.h"
-#import "PlaybackSessionManagerMessages.h"
-#import "PlaybackSessionManagerProxyMessages.h"
-#import "WebCoreArgumentCoders.h"
-#import "WebPage.h"
-#import "WebProcess.h"
-#import <WebCore/Color.h>
-#import <WebCore/Event.h>
-#import <WebCore/EventNames.h>
-#import <WebCore/HTMLMediaElement.h>
-#import <WebCore/Settings.h>
-#import <WebCore/TimeRanges.h>
-#import <WebCore/UserGestureIndicator.h>
-#import <mach/mach_port.h>
+#include "Attachment.h"
+#include "PlaybackSessionManagerMessages.h"
+#include "PlaybackSessionManagerProxyMessages.h"
+#include "WebCoreArgumentCoders.h"
+#include "WebPage.h"
+#include "WebProcess.h"
+#include <WebCore/Color.h>
+#include <WebCore/Event.h>
+#include <WebCore/EventNames.h>
+#include <WebCore/HTMLMediaElement.h>
+#include <WebCore/Settings.h>
+#include <WebCore/TimeRanges.h>
+#include <WebCore/UserGestureIndicator.h>
+
+#if PLATFORM(IOS_FAMILY) || PLATFORM(MAC)
+#include <mach/mach_port.h>
+#endif
 
 namespace WebKit {
 using namespace WebCore;
@@ -520,4 +523,4 @@ void PlaybackSessionManager::setPlayingOnSecondScreen(PlaybackSessionContextIden
 
 } // namespace WebKit
 
-#endif // PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))
+#endif // PLATFORM(IOS_FAMILY) || ENABLE(VIDEO_PRESENTATION_MODE)

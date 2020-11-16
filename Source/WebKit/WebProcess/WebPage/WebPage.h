@@ -378,12 +378,12 @@ public:
 
     void inspectorFrontendCountChanged(unsigned);
 
-#if PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))
+#if PLATFORM(IOS_FAMILY) || ENABLE(VIDEO_PRESENTATION_MODE)
     PlaybackSessionManager& playbackSessionManager();
     void videoControlsManagerDidChange();
 #endif
 
-#if ENABLE(VIDEO_PRESENTATION_MODE)
+#if ENABLE(VIDEO_PRESENTATION_MODE) && (PLATFORM(COCOA) || PLATFORM(GTK))
     VideoFullscreenManager& videoFullscreenManager();
 #endif
 
@@ -1899,7 +1899,7 @@ private:
     RefPtr<RemoteWebInspectorUI> m_remoteInspectorUI;
     std::unique_ptr<WebPageInspectorTargetController> m_inspectorTargetController;
 
-#if ENABLE(VIDEO_PRESENTATION_MODE)
+#if ENABLE(VIDEO_PRESENTATION_MODE) && (PLATFORM(COCOA) || PLATFORM(GTK))
     RefPtr<PlaybackSessionManager> m_playbackSessionManager;
     RefPtr<VideoFullscreenManager> m_videoFullscreenManager;
 #endif

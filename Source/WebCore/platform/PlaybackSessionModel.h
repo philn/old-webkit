@@ -25,8 +25,6 @@
 
 #pragma once
 
-#if PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))
-
 #include <wtf/Forward.h>
 #include <wtf/Ref.h>
 #include <wtf/Vector.h>
@@ -115,4 +113,3 @@ public:
 
 }
 
-#endif // PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))

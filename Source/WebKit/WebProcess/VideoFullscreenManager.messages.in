@@ -33,10 +33,14 @@ messages -> VideoFullscreenManager {
     DidExitFullscreen(WebKit::PlaybackSessionContextIdentifier contextId)
     DidEnterFullscreen(WebKit::PlaybackSessionContextIdentifier contextId, Optional<WebCore::FloatSize> size)
     DidCleanupFullscreen(WebKit::PlaybackSessionContextIdentifier contextId)
+#if PLATFORM(MAC) || PLATFORM(IOS_FAMILY)
     SetVideoLayerFrameFenced(WebKit::PlaybackSessionContextIdentifier contextId, WebCore::FloatRect bounds, MachSendRight machSendRight)
+#endif
     SetVideoLayerGravityEnum(WebKit::PlaybackSessionContextIdentifier contextId, unsigned gravity)
     FullscreenModeChanged(WebKit::PlaybackSessionContextIdentifier contextId, WebCore::HTMLMediaElementEnums::VideoFullscreenMode videoFullscreenMode)
     FullscreenMayReturnToInline(WebKit::PlaybackSessionContextIdentifier contextId, bool isPageVisible)
+#if PLATFORM(IOS_FAMILY) || PLATFORM(MAC)
     RequestRouteSharingPolicyAndContextUID(WebKit::PlaybackSessionContextIdentifier contextId) -> (enum:uint8_t WebCore::RouteSharingPolicy routeSharingPolicy, String routingContextUID) Async
+#endif
 }
 #endif

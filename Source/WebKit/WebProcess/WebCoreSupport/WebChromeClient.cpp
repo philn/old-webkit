@@ -971,7 +971,28 @@ RefPtr<ScrollingCoordinator> WebChromeClient::createScrollingCoordinator(Page& p
 
 #endif
 
-#if ENABLE(VIDEO_PRESENTATION_MODE)
+#if ENABLE(VIDEO_PRESENTATION_MODE) && USE(GSTREAMER)
+bool WebChromeClient::supportsVideoFullscreen(HTMLMediaElementEnums::VideoFullscreenMode mode)
+{
+    return true;
+}
+
+void WebChromeClient::enterVideoFullscreenForVideoElement(HTMLVideoElement& videoElement, HTMLMediaElementEnums::VideoFullscreenMode mode, bool standby)
+{
+    ASSERT(mode != HTMLMediaElementEnums::VideoFullscreenModeNone);
+    WTFLogAlways("enterVideoFullscreenForVideoElement()");
+    m_page.videoFullscreenManager().enterVideoFullscreenForVideoElement(videoElement, mode, standby);
+}
+
+void WebChromeClient::exitVideoFullscreenForVideoElement(HTMLVideoElement& videoElement, CompletionHandler<void(bool)>&& completionHandler)
+{
+    WTFLogAlways("exitVideoFullscreenForVideoElement()");
+    m_page.videoFullscreenManager().exitVideoFullscreenForVideoElement(videoElement, WTFMove(completionHandler));
+}
+
+#endif
+
+#if ENABLE(VIDEO_PRESENTATION_MODE) && PLATFORM(COCOA)
 
 void WebChromeClient::prepareForVideoFullscreen()
 {
@@ -1042,7 +1063,7 @@ void WebChromeClient::removeMediaUsageManagerSession(MediaSessionIdentifier iden
 }
 #endif // ENABLE(MEDIA_USAGE)
 
-#if ENABLE(VIDEO_PRESENTATION_MODE)
+#if ENABLE(VIDEO_PRESENTATION_MODE) && PLATFORM(COCOA)
 
 void WebChromeClient::exitVideoFullscreenToModeWithoutAnimation(HTMLVideoElement& videoElement, HTMLMediaElementEnums::VideoFullscreenMode targetMode)
 {

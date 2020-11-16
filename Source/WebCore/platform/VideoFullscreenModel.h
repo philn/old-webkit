@@ -65,12 +65,12 @@ public:
     virtual void willExitPictureInPicture() = 0;
     virtual void didExitPictureInPicture() = 0;
 
-#if PLATFORM(IOS_FAMILY) || PLATFORM(Mac)
+#if PLATFORM(IOS_FAMILY) || PLATFORM(MAC)
     virtual void requestRouteSharingPolicyAndContextUID(CompletionHandler<void(RouteSharingPolicy, String)>&& completionHandler) { completionHandler(RouteSharingPolicy::Default, emptyString()); }
 #endif
 
 #if PLATFORM(IOS_FAMILY)
-    virtual UIViewController* presentingViewController() { return nullptr; }
+    virtual UIViewController *presentingViewController() { return nullptr; }
     virtual UIViewController *createVideoFullscreenViewController(AVPlayerViewController *) { return nullptr; }
 #endif
 };
@@ -87,7 +87,7 @@ public:
     virtual void didExitPictureInPicture() { }
     virtual void modelDestroyed() { }
 };
-
+    
 }
 
 #endif

@@ -256,6 +256,8 @@ UIProcess/gtk/PointerLockManager.cpp @no-unify
 UIProcess/gtk/PointerLockManagerWayland.cpp @no-unify
 UIProcess/gtk/PointerLockManagerX11.cpp @no-unify
 UIProcess/gtk/TextCheckerGtk.cpp @no-unify
+UIProcess/gtk/VideoFullscreenManagerProxyGtk.cpp
+UIProcess/gtk/VideoRenderer.cpp
 UIProcess/gtk/ViewSnapshotStoreGtk.cpp
 UIProcess/gtk/WaylandCompositor.cpp @no-unify
 UIProcess/gtk/WebColorPickerGtk.cpp
@@ -431,5 +433,6 @@ WebProcess/WebPage/libwpe/AcceleratedSurfaceLibWPE.cpp @no-unify
 
 WebProcess/glib/WebProcessGLib.cpp
 
+WebProcess/gtk/VideoFullscreenManagerGtk.cpp
 WebProcess/gtk/WaylandCompositorDisplay.cpp
 WebProcess/gtk/WebProcessMainGtk.cpp

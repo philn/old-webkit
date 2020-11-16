@@ -26,6 +26,7 @@
 #pragma once
 
 #include "IntRect.h"
+#include "PlatformView.h"
 #include <wtf/Forward.h>
 #include <wtf/text/WTFString.h>
 
@@ -40,16 +41,6 @@ OBJC_CLASS UIViewController;
 OBJC_CLASS WebValidationBubbleDelegate;
 OBJC_CLASS WebValidationBubbleTapRecognizer;
 OBJC_CLASS WebValidationBubbleViewController;
-#endif
-
-#if PLATFORM(MAC)
-OBJC_CLASS NSView;
-using PlatformView = NSView;
-#elif PLATFORM(IOS_FAMILY)
-OBJC_CLASS UIView;
-using PlatformView = UIView;
-#else
-using PlatformView = void;
 #endif
 
 namespace WebCore {

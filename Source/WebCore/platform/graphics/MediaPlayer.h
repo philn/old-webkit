@@ -310,7 +310,7 @@ public:
     void reloadAndResumePlaybackIfNeeded();
 
 #if ENABLE(VIDEO_PRESENTATION_MODE)
-    RetainPtr<PlatformLayer> createVideoFullscreenLayer();
+    PlatformLayerContainer createVideoFullscreenLayer();
     void setVideoFullscreenLayer(PlatformLayer*, WTF::Function<void()>&& completionHandler = [] { });
     void setVideoFullscreenFrame(FloatRect);
     void updateVideoFullscreenInlineImage();

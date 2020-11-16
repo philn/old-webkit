@@ -1,0 +1,277 @@
+/*
+ * Copyright (C) 2014 Apple Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY APPLE INC. ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL APPLE INC. OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "config.h"
+#include "VideoFullscreenModelVideoElement.h"
+
+#if ENABLE(VIDEO_PRESENTATION_MODE)
+
+#include "DOMWindow.h"
+#include "Event.h"
+#include "EventListener.h"
+#include "EventNames.h"
+#include "HTMLElement.h"
+#include "HTMLVideoElement.h"
+#include "History.h"
+#include "Logging.h"
+#include "MediaControlsHost.h"
+#include "Page.h"
+#include "PlaybackSessionModelMediaElement.h"
+#include "TextTrackList.h"
+#include "TimeRanges.h"
+#include <wtf/NeverDestroyed.h>
+
+#undef LOG
+#define LOG(foo, ...) WTFLogAlways(__VA_ARGS__)
+
+namespace WebCore {
+
+VideoFullscreenModelVideoElement::VideoFullscreenModelVideoElement()
+    : EventListener(EventListener::CPPEventListenerType)
+{
+    LOG(Fullscreen, "VideoFullscreenModelVideoElement %p ctor", this);
+}
+
+VideoFullscreenModelVideoElement::~VideoFullscreenModelVideoElement()
+{
+    LOG(Fullscreen, "VideoFullscreenModelVideoElement %p dtor", this);
+}
+
+void VideoFullscreenModelVideoElement::setVideoElement(HTMLVideoElement* videoElement)
+{
+    if (m_videoElement == videoElement)
+        return;
+
+    LOG(Fullscreen, "VideoFullscreenModelVideoElement %p setVideoElement(%p)", this, videoElement);
+
+    if (m_videoElement && m_videoElement->videoFullscreenLayer())
+        m_videoElement->setVideoFullscreenLayer(nullptr);
+
+    if (m_videoElement && m_isListening) {
+        for (auto& eventName : observedEventNames())
+            m_videoElement->removeEventListener(eventName, *this, false);
+    }
+    m_isListening = false;
+
+    m_videoElement = videoElement;
+
+    if (m_videoElement) {
+        for (auto& eventName : observedEventNames())
+            m_videoElement->addEventListener(eventName, *this, false);
+        m_isListening = true;
+    }
+
+    updateForEventName(eventNameAll());
+}
+
+void VideoFullscreenModelVideoElement::handleEvent(WebCore::ScriptExecutionContext&, WebCore::Event& event)
+{
+    updateForEventName(event.type());
+}
+
+void VideoFullscreenModelVideoElement::updateForEventName(const WTF::AtomString& eventName)
+{
+    if (m_clients.isEmpty())
+        return;
+    
+    bool all = eventName == eventNameAll();
+
+    if (all
+        || eventName == eventNames().resizeEvent) {
+        setHasVideo(m_videoElement);
+        setVideoDimensions(m_videoElement ? FloatSize(m_videoElement->videoWidth(), m_videoElement->videoHeight()) : FloatSize());
+    }
+}
+
+void VideoFullscreenModelVideoElement::willExitFullscreen()
+{
+    if (m_videoElement)
+        m_videoElement->willExitFullscreen();
+}
+
+PlatformLayerContainer VideoFullscreenModelVideoElement::createVideoFullscreenLayer()
+{
+    if (m_videoElement)
+        return m_videoElement->createVideoFullscreenLayer();
+    return nullptr;
+}
+
+void VideoFullscreenModelVideoElement::setVideoFullscreenLayer(PlatformLayer* videoLayer, WTF::Function<void()>&& completionHandler)
+{
+    if (m_videoFullscreenLayer == videoLayer) {
+        completionHandler();
+        return;
+    }
+
+    m_videoFullscreenLayer = videoLayer;
+
+#if PLATFORM(COCOA)
+    #if PLATFORM(MAC)
+        [m_videoFullscreenLayer setAnchorPoint:CGPointMake(0, 0)];
+    #else
+        [m_videoFullscreenLayer setAnchorPoint:CGPointMake(0.5, 0.5)];
+    #endif
+        [m_videoFullscreenLayer setBounds:m_videoFrame];
+#endif
+
+    if (!m_videoElement) {
+        completionHandler();
+        return;
+    }
+
+    m_videoElement->setVideoFullscreenLayer(m_videoFullscreenLayer.get(), WTFMove(completionHandler));
+}
+
+void VideoFullscreenModelVideoElement::waitForPreparedForInlineThen(WTF::Function<void()>&& completionHandler)
+{
+    if (!m_videoElement) {
+        completionHandler();
+        return;
+    }
+
+    m_videoElement->waitForPreparedForInlineThen(WTFMove(completionHandler));
+}
+
+void VideoFullscreenModelVideoElement::requestFullscreenMode(HTMLMediaElementEnums::VideoFullscreenMode mode, bool finishedWithMedia)
+{
+    if (m_videoElement)
+        m_videoElement->setPresentationMode(HTMLVideoElement::toPresentationMode(mode));
+
+    if (m_videoElement && finishedWithMedia && mode == MediaPlayer::VideoFullscreenModeNone) {
+        if (m_videoElement->document().isMediaDocument()) {
+            if (auto* window = m_videoElement->document().domWindow())
+                window->history().back();
+        }
+    }
+}
+
+void VideoFullscreenModelVideoElement::setVideoLayerFrame(FloatRect rect)
+{
+    m_videoFrame = rect;
+#if PLATFORM(COCOA)
+    [m_videoFullscreenLayer setBounds:CGRect(rect)];
+#endif
+    if (m_videoElement)
+        m_videoElement->setVideoFullscreenFrame(rect);
+}
+
+void VideoFullscreenModelVideoElement::setVideoLayerGravity(MediaPlayer::VideoGravity gravity)
+{
+    m_videoElement->setVideoFullscreenGravity(gravity);
+}
+
+const Vector<AtomString>& VideoFullscreenModelVideoElement::observedEventNames()
+{
+    static const auto names = makeNeverDestroyed(Vector<AtomString> { eventNames().resizeEvent });
+    return names;
+}
+
+const AtomString& VideoFullscreenModelVideoElement::eventNameAll()
+{
+    static MainThreadNeverDestroyed<const AtomString> sEventNameAll = "allEvents";
+    return sEventNameAll;
+}
+
+void VideoFullscreenModelVideoElement::fullscreenModeChanged(HTMLMediaElementEnums::VideoFullscreenMode videoFullscreenMode)
+{
+    if (m_videoElement)
+        m_videoElement->setPresentationMode(HTMLVideoElement::toPresentationMode(videoFullscreenMode));
+}
+
+#if PLATFORM(IOS_FAMILY) || PLATFORM(MAC)
+void VideoFullscreenModelVideoElement::requestRouteSharingPolicyAndContextUID(CompletionHandler<void(RouteSharingPolicy, String)>&& completionHandler)
+{
+    auto& session = AudioSession::sharedSession();
+    completionHandler(session.routeSharingPolicy(), session.routingContextUID());
+}
+#endif
+
+void VideoFullscreenModelVideoElement::addClient(VideoFullscreenModelClient& client)
+{
+    ASSERT(!m_clients.contains(&client));
+    m_clients.add(&client);
+}
+
+void VideoFullscreenModelVideoElement::removeClient(VideoFullscreenModelClient& client)
+{
+    ASSERT(m_clients.contains(&client));
+    m_clients.remove(&client);
+}
+
+void VideoFullscreenModelVideoElement::setHasVideo(bool hasVideo)
+{
+    if (hasVideo == m_hasVideo)
+        return;
+
+    m_hasVideo = hasVideo;
+
+    for (auto& client : copyToVector(m_clients))
+        client->hasVideoChanged(m_hasVideo);
+}
+
+void VideoFullscreenModelVideoElement::setVideoDimensions(const FloatSize& videoDimensions)
+{
+    if (m_videoDimensions == videoDimensions)
+        return;
+
+    m_videoDimensions = videoDimensions;
+
+    for (auto& client : copyToVector(m_clients))
+        client->videoDimensionsChanged(m_videoDimensions);
+}
+
+void VideoFullscreenModelVideoElement::willEnterPictureInPicture()
+{
+    for (auto& client : copyToVector(m_clients))
+        client->willEnterPictureInPicture();
+}
+
+void VideoFullscreenModelVideoElement::didEnterPictureInPicture()
+{
+    for (auto& client : copyToVector(m_clients))
+        client->didEnterPictureInPicture();
+}
+
+void VideoFullscreenModelVideoElement::failedToEnterPictureInPicture()
+{
+    for (auto& client : copyToVector(m_clients))
+        client->failedToEnterPictureInPicture();
+}
+
+void VideoFullscreenModelVideoElement::willExitPictureInPicture()
+{
+    for (auto& client : copyToVector(m_clients))
+        client->willExitPictureInPicture();
+}
+
+void VideoFullscreenModelVideoElement::didExitPictureInPicture()
+{
+    for (auto& client : copyToVector(m_clients))
+        client->didExitPictureInPicture();
+}
+
+} // namespace WebCore
+
+#endif

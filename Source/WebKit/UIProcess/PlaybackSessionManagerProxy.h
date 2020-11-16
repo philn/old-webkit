@@ -25,7 +25,7 @@
 
 #pragma once
 
-#if PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))
+#if PLATFORM(IOS_FAMILY) || ENABLE(VIDEO_PRESENTATION_MODE)
 
 #include "MessageReceiver.h"
 #include "PlaybackSessionContextIdentifier.h"
@@ -42,14 +42,18 @@
 
 #if PLATFORM(IOS_FAMILY)
 #include <WebCore/PlaybackSessionInterfaceAVKit.h>
-#else
+#elif PLATFORM(MAC)
 #include <WebCore/PlaybackSessionInterfaceMac.h>
+#elif PLATFORM(GTK)
+#include <WebCore/PlaybackSessionInterfaceGTK.h>
 #endif
 
 #if PLATFORM(IOS_FAMILY)
 typedef WebCore::PlaybackSessionInterfaceAVKit PlatformPlaybackSessionInterface;
-#else
+#elif PLATFORM(MAC)
 typedef WebCore::PlaybackSessionInterfaceMac PlatformPlaybackSessionInterface;
+#elif PLATFORM(GTK)
+typedef WebCore::PlaybackSessionInterfaceGTK PlatformPlaybackSessionInterface;
 #endif
 
 namespace WebKit {
@@ -249,4 +253,4 @@ private:
 
 } // namespace WebKit
 
-#endif // PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))
+#endif // PLATFORM(IOS_FAMILY) || ENABLE(VIDEO_PRESENTATION_MODE)

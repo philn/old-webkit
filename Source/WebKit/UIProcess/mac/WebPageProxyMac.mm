@@ -615,7 +615,7 @@ void WebPageProxy::startWindowDrag()
     pageClient().startWindowDrag();
 }
 
-NSWindow *WebPageProxy::platformWindow()
+PlatformWindow* WebPageProxy::platformWindow()
 {
     return m_pageClient ? m_pageClient->platformWindow() : nullptr;
 }

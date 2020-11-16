@@ -36,6 +36,7 @@
 #include "FloatSize.h"
 #include "NicosiaAnimatedBackingStoreClient.h"
 #include "NicosiaAnimation.h"
+#include "NicosiaPlatformLayerBase.h"
 #include "NicosiaSceneIntegration.h"
 #include "ScrollTypes.h"
 #include "TransformationMatrix.h"
@@ -45,41 +46,6 @@
 #include <wtf/TypeCasts.h>
 
 namespace Nicosia {
-
-class PlatformLayer : public ThreadSafeRefCounted<PlatformLayer> {
-public:
-    virtual ~PlatformLayer();
-
-    virtual bool isCompositionLayer() const { return false; }
-    virtual bool isContentLayer() const { return false; }
-
-    using LayerID = uint64_t;
-    LayerID id() const { return m_id; }
-
-    void setSceneIntegration(RefPtr<SceneIntegration>&& sceneIntegration)
-    {
-        LockHolder locker(m_state.lock);
-        m_state.sceneIntegration = WTFMove(sceneIntegration);
-    }
-
-    std::unique_ptr<SceneIntegration::UpdateScope> createUpdateScope()
-    {
-        LockHolder locker(m_state.lock);
-        if (m_state.sceneIntegration)
-            return m_state.sceneIntegration->createUpdateScope();
-        return nullptr;
-    }
-
-protected:
-    explicit PlatformLayer(uint64_t);
-
-    uint64_t m_id;
-
-    struct {
-        Lock lock;
-        RefPtr<SceneIntegration> sceneIntegration;
-    } m_state;
-};
 
 class ContentLayer;
 class BackingStore;

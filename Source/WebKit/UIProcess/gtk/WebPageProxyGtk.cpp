@@ -86,6 +86,12 @@ void WebPageProxy::loadRecentSearches(const String&, CompletionHandler<void(Vect
     completionHandler({ });
 }
 
+PlatformWindow* WebPageProxy::platformWindow()
+{
+    auto* topLevelWidget = gtk_widget_get_toplevel(viewWidget());
+    return gtk_widget_is_toplevel(topLevelWidget) ? GTK_WINDOW(topLevelWidget) : nullptr;
+}
+
 void WebsiteDataStore::platformRemoveRecentSearches(WallTime oldestTimeToRemove)
 {
     UNUSED_PARAM(oldestTimeToRemove);

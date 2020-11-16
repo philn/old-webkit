@@ -205,7 +205,11 @@ private:
     PlatformLayer* platformLayer() const final;
 
 #if ENABLE(VIDEO_PRESENTATION_MODE)
+#if PLATFORM(COCOA)
     PlatformLayerContainer createVideoFullscreenLayer() final;
+#else
+    PlatformLayerContainer createVideoFullscreenLayer() final { return nullptr; }
+#endif
     void setVideoFullscreenLayer(PlatformLayer*, WTF::Function<void()>&& completionHandler) final;
     void updateVideoFullscreenInlineImage() final;
     void setVideoFullscreenFrame(WebCore::FloatRect) final;

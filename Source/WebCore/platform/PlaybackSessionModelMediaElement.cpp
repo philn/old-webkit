@@ -26,23 +26,22 @@
 #import "config.h"
 #import "PlaybackSessionModelMediaElement.h"
 
-#if PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))
+#if PLATFORM(IOS_FAMILY) || ENABLE(VIDEO_PRESENTATION_MODE)
 
-#import "AudioTrackList.h"
-#import "Event.h"
-#import "EventListener.h"
-#import "EventNames.h"
-#import "HTMLVideoElement.h"
-#import "Logging.h"
-#import "MediaControlsHost.h"
-#import "MediaSelectionOption.h"
-#import "Page.h"
-#import "PageGroup.h"
-#import "TextTrackList.h"
-#import "TimeRanges.h"
-#import <QuartzCore/CoreAnimation.h>
-#import <wtf/NeverDestroyed.h>
-#import <wtf/SoftLinking.h>
+#include "AudioTrackList.h"
+#include "Event.h"
+#include "EventListener.h"
+#include "EventNames.h"
+#include "HTMLVideoElement.h"
+#include "Logging.h"
+#include "MediaControlsHost.h"
+#include "MediaSelectionOption.h"
+#include "Page.h"
+#include "PageGroup.h"
+#include "TextTrackList.h"
+#include "TimeRanges.h"
+#include <wtf/NeverDestroyed.h>
+#include <wtf/Seconds.h>
 
 namespace WebCore {
 
@@ -170,7 +169,7 @@ void PlaybackSessionModelMediaElement::updateForEventName(const WTF::AtomString&
     if (all
         || eventName == eventNames().timeupdateEvent) {
         auto currentTime = this->currentTime();
-        auto anchorTime = [[NSProcessInfo processInfo] systemUptime];
+        auto anchorTime = Seconds::uptime().value();
         for (auto client : m_clients)
             client->currentTimeChanged(currentTime, anchorTime);
     }
@@ -592,7 +591,11 @@ String PlaybackSessionModelMediaElement::externalPlaybackLocalizedDeviceName() c
 
 bool PlaybackSessionModelMediaElement::wirelessVideoPlaybackDisabled() const
 {
+#if ENABLE(WIRELESS_PLAYBACK_TARGET)
     return m_mediaElement && m_mediaElement->mediaSession().wirelessVideoPlaybackDisabled();
+#else
+    return true;
+#endif
 }
 
 bool PlaybackSessionModelMediaElement::isMuted() const

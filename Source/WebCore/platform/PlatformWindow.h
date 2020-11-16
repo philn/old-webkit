@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2012 Google Inc. All rights reserved.
- * Copyright (C) 2020 Sony Interactive Entertainment Inc. All Rights reserved.
+ * Copyright (C) 2016 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -21,37 +20,17 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #pragma once
 
-#if PLATFORM(COCOA)
-OBJC_CLASS CALayer;
-using PlatformLayer = CALayer;
-#elif PLATFORM(WIN) && USE(CA)
-typedef struct _CACFLayer PlatformLayer;
-#elif USE(NICOSIA)
-#include "NicosiaPlatformLayerBase.h"
-using PlatformLayer = Nicosia::PlatformLayer;
-#elif USE(COORDINATED_GRAPHICS)
-namespace WebCore {
-class TextureMapperPlatformLayerProxyProvider;
-};
-using PlatformLayer = WebCore::TextureMapperPlatformLayerProxyProvider;
-#elif USE(TEXTURE_MAPPER)
-namespace WebCore {
-class TextureMapperPlatformLayer;
-};
-using PlatformLayer = WebCore::TextureMapperPlatformLayer;
-#else
-using PlatformLayer = void*;
+#if PLATFORM(MAC)
+OBJC_CLASS NSView;
+typedef NSWindow PlatformWindow;
 #endif
 
-#if PLATFORM(COCOA)
-#include <wtf/RetainPtr.h>
-using PlatformLayerContainer = WTF::RetainPtr<PlatformLayer>;
-#else
-#include <wtf/RefPtr.h>
-using PlatformLayerContainer = WTF::RefPtr<PlatformLayer>;
+#if PLATFORM(GTK)
+#include <gtk/gtk.h>
+typedef GtkWindow PlatformWindow;
 #endif

@@ -162,7 +162,7 @@
 #include "NotImplemented.h"
 #endif
 
-#if ENABLE(VIDEO_PRESENTATION_MODE)
+#if ENABLE(VIDEO_PRESENTATION_MODE) && PLATFORM(MAC)
 #include "VideoFullscreenModel.h"
 #endif
 
@@ -4986,7 +4986,9 @@ void HTMLMediaElement::mediaEngineWasUpdated()
     if (m_player) {
         m_player->setVideoFullscreenFrame(m_videoFullscreenFrame);
         m_player->setVideoFullscreenGravity(m_videoFullscreenGravity);
+#if PLATFORM(COCOA) || PLATFORM(GTK)
         m_player->setVideoFullscreenLayer(m_videoFullscreenLayer.get());
+#endif
     }
 #endif
 
@@ -6126,20 +6128,28 @@ void HTMLMediaElement::willExitFullscreen()
 
 bool HTMLMediaElement::isVideoLayerInline()
 {
+#if PLATFORM(COCOA) || PLATFORM(GTK)
     return !m_videoFullscreenLayer;
+#else
+    return true;
+#endif
 }
 
-RetainPtr<PlatformLayer> HTMLMediaElement::createVideoFullscreenLayer()
+PlatformLayerContainer HTMLMediaElement::createVideoFullscreenLayer()
 {
+#if PLATFORM(COCOA) || PLATFORM(GTK)
     if (m_player)
         return m_player->createVideoFullscreenLayer();
+#endif
     return nullptr;
 }
 
 void HTMLMediaElement::setVideoFullscreenLayer(PlatformLayer* platformLayer, WTF::Function<void()>&& completionHandler)
 {
     INFO_LOG(LOGIDENTIFIER);
+#if PLATFORM(COCOA) || PLATFORM(GTK)
     m_videoFullscreenLayer = platformLayer;
+#endif
     if (!m_player) {
         completionHandler();
         return;

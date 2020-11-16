@@ -286,6 +286,7 @@ UIProcess/GeolocationPermissionRequestManagerProxy.cpp
 UIProcess/GeolocationPermissionRequestProxy.cpp
 UIProcess/LegacyGlobalSettings.cpp
 UIProcess/PageLoadState.cpp
+UIProcess/PlaybackSessionManagerProxy.cpp
 UIProcess/ProcessAssertion.cpp
 UIProcess/ProcessThrottler.cpp
 UIProcess/ProvisionalPageProxy.cpp
@@ -300,6 +301,7 @@ UIProcess/UserMediaPermissionCheckProxy.cpp
 UIProcess/UserMediaPermissionRequestManagerProxy.cpp
 UIProcess/UserMediaPermissionRequestProxy.cpp
 UIProcess/UserMediaProcessManager.cpp
+UIProcess/VideoFullscreenManagerProxy.cpp
 UIProcess/VisitedLinkStore.cpp
 UIProcess/WebBackForwardCache.cpp
 UIProcess/WebBackForwardCacheEntry.cpp
@@ -642,6 +644,9 @@ WebProcess/Storage/WebServiceWorkerFetchTaskClient.cpp
 WebProcess/Storage/WebServiceWorkerProvider.cpp
 
 WebProcess/UserContent/WebUserContentController.cpp
+
+WebProcess/PlaybackSessionManager.cpp
+WebProcess/VideoFullscreenManager.cpp
 
 WebProcess/WebAuthentication/WebAuthenticatorCoordinator.cpp
 WebProcess/WebAuthentication/WebAuthnProcessConnection.cpp

@@ -33,12 +33,15 @@
 #include "VideoFullscreenManagerMessagesReplies.h"
 #include <WebCore/EventListener.h>
 #include <WebCore/HTMLMediaElementEnums.h>
-#include <WebCore/PlatformCALayer.h>
 #include <WebCore/VideoFullscreenModelVideoElement.h>
 #include <wtf/CompletionHandler.h>
 #include <wtf/HashMap.h>
 #include <wtf/RefCounted.h>
 #include <wtf/RefPtr.h>
+
+#if PLATFORM(GTK)
+#include "LayerTreeHost.h"
+#endif
 
 namespace IPC {
 class Connection;
@@ -132,6 +135,8 @@ protected:
 
     explicit VideoFullscreenManager(WebPage&, PlaybackSessionManager&);
 
+    static WebCore::IntRect inlineVideoFrame(WebCore::HTMLVideoElement&);
+
     typedef std::tuple<RefPtr<WebCore::VideoFullscreenModelVideoElement>, RefPtr<VideoFullscreenInterfaceContext>> ModelInterfaceTuple;
     ModelInterfaceTuple createModelAndInterface(PlaybackSessionContextIdentifier);
     ModelInterfaceTuple& ensureModelAndInterface(PlaybackSessionContextIdentifier);
@@ -157,11 +162,13 @@ protected:
     void didExitFullscreen(PlaybackSessionContextIdentifier);
     void didEnterFullscreen(PlaybackSessionContextIdentifier, Optional<WebCore::FloatSize>);
     void didCleanupFullscreen(PlaybackSessionContextIdentifier);
-    void setVideoLayerFrameFenced(PlaybackSessionContextIdentifier, WebCore::FloatRect bounds, const WTF::MachSendRight&);
     void setVideoLayerGravityEnum(PlaybackSessionContextIdentifier, unsigned gravity);
     void fullscreenModeChanged(PlaybackSessionContextIdentifier, WebCore::HTMLMediaElementEnums::VideoFullscreenMode);
     void fullscreenMayReturnToInline(PlaybackSessionContextIdentifier, bool isPageVisible);
+#if PLATFORM(IOS_FAMILY) || PLATFORM(MAC)
+    void setVideoLayerFrameFenced(PlaybackSessionContextIdentifier, WebCore::FloatRect bounds, const WTF::MachSendRight&);
     void requestRouteSharingPolicyAndContextUID(PlaybackSessionContextIdentifier, Messages::VideoFullscreenManager::RequestRouteSharingPolicyAndContextUIDAsyncReply&&);
+#endif
 
     WebPage* m_page;
     Ref<PlaybackSessionManager> m_playbackSessionManager;
@@ -169,6 +176,10 @@ protected:
     HashMap<PlaybackSessionContextIdentifier, ModelInterfaceTuple> m_contextMap;
     PlaybackSessionContextIdentifier m_controlsManagerContextId;
     HashMap<PlaybackSessionContextIdentifier, int> m_clientCounts;
+
+#if PLATFORM(GTK)
+    LayerTreeHost m_layerTreeHost;
+#endif
 };
 
 } // namespace WebKit

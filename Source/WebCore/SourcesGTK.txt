@@ -112,11 +112,13 @@ platform/gtk/LocalizedStringsGtk.cpp
 platform/gtk/PasteboardGtk.cpp
 platform/gtk/PlatformKeyboardEventGtk.cpp
 platform/gtk/PlatformScreenGtk.cpp
+platform/gtk/PlaybackSessionInterfaceGTK.cpp
 platform/gtk/RenderThemeGadget.cpp
 platform/gtk/RenderThemeScrollbar.cpp
 platform/gtk/ScrollbarThemeGtk.cpp
 platform/gtk/SelectionData.cpp
 platform/gtk/ThemeGtk.cpp
+platform/gtk/VideoFullscreenInterfaceGTK.cpp
 platform/gtk/WidgetGtk.cpp
 
 platform/text/Hyphenation.cpp

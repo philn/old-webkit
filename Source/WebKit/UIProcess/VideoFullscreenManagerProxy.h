@@ -41,16 +41,24 @@
 #include <wtf/RefPtr.h>
 #include <wtf/text/WTFString.h>
 
+#if PLATFORM(GTK)
+#include <WebCore/GRefPtrGtk.h>
+#endif
+
 #if PLATFORM(IOS_FAMILY)
 #include <WebCore/VideoFullscreenInterfaceAVKit.h>
-#else
+#elif PLATFORM(MAC)
 #include <WebCore/VideoFullscreenInterfaceMac.h>
+#elif PLATFORM(GTK)
+#include <WebCore/VideoFullscreenInterfaceGTK.h>
 #endif
 
 #if PLATFORM(IOS_FAMILY)
 typedef WebCore::VideoFullscreenInterfaceAVKit PlatformVideoFullscreenInterface;
-#else
+#elif PLATFORM(MAC)
 typedef WebCore::VideoFullscreenInterfaceMac PlatformVideoFullscreenInterface;
+#elif PLATFORM(GTK)
+typedef WebCore::VideoFullscreenInterfaceGTK PlatformVideoFullscreenInterface;
 #endif
 
 namespace WebKit {
@@ -77,7 +85,7 @@ public:
     void invalidate() { m_manager = nullptr; }
 
     PlatformView *layerHostView() const { return m_layerHostView.get(); }
-    void setLayerHostView(RetainPtr<PlatformView>&& layerHostView) { m_layerHostView = WTFMove(layerHostView); }
+    void setLayerHostView(PlatformViewContainer&& layerHostView) { m_layerHostView = WTFMove(layerHostView); }
 
 private:
     VideoFullscreenModelContext(VideoFullscreenManagerProxy&, PlaybackSessionModelContext&, PlaybackSessionContextIdentifier);
@@ -100,7 +108,9 @@ private:
     void failedToEnterPictureInPicture() final;
     void willExitPictureInPicture() final;
     void didExitPictureInPicture() final;
+#if PLATFORM(IOS_FAMILY) || PLATFORM(MAC)
     void requestRouteSharingPolicyAndContextUID(CompletionHandler<void(WebCore::RouteSharingPolicy, String)>&&) final;
+#endif
 
     // VideoFullscreenChangeObserver
     void requestUpdateInlineRect() final;
@@ -116,7 +126,7 @@ private:
     VideoFullscreenManagerProxy* m_manager;
     Ref<PlaybackSessionModelContext> m_playbackSessionModel;
     PlaybackSessionContextIdentifier m_contextId;
-    RetainPtr<PlatformView> m_layerHostView;
+    PlatformViewContainer m_layerHostView;
     HashSet<WebCore::VideoFullscreenModelClient*> m_clients;
     WebCore::FloatSize m_videoDimensions;
     bool m_hasVideo { false };
@@ -144,7 +154,9 @@ public:
 
     void setMockVideoPresentationModeEnabled(bool enabled) { m_mockVideoPresentationModeEnabled = enabled; }
 
+#if PLATFORM(IOS_FAMILY) || PLATFORM(MAC)
     void requestRouteSharingPolicyAndContextUID(PlaybackSessionContextIdentifier, CompletionHandler<void(WebCore::RouteSharingPolicy, String)>&&);
+#endif
 
     bool isPlayingVideoInEnhancedFullscreen() const;
 
@@ -153,6 +165,8 @@ public:
     VideoFullscreenManagerProxyClient* client() const { return m_client.get(); }
 
     void forEachSession(Function<void(WebCore::VideoFullscreenModel&, PlatformVideoFullscreenInterface&)>&&);
+
+    void platformInvalidate();
 
 private:
     friend class VideoFullscreenModelContext;
@@ -209,6 +223,10 @@ private:
     PlaybackSessionContextIdentifier m_controlsManagerContextId;
     HashMap<PlaybackSessionContextIdentifier, int> m_clientCounts;
     WeakPtr<VideoFullscreenManagerProxyClient> m_client;
+
+#if PLATFORM(GTK)
+    GRefPtr<GtkWidget> m_renderer;
+#endif
 };
 
 } // namespace WebKit

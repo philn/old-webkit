@@ -208,6 +208,9 @@ set(WebKit_MESSAGES_IN_FILES
 
     UIProcess/UserContent/WebUserContentControllerProxy
 
+    UIProcess/PlaybackSessionManagerProxy
+    UIProcess/VideoFullscreenManagerProxy
+
     WebProcess/WebProcess
 
     WebProcess/Automation/WebAutomationSessionProxy
@@ -258,6 +261,9 @@ set(WebKit_MESSAGES_IN_FILES
     WebProcess/Storage/WebSWContextManagerConnection
 
     WebProcess/UserContent/WebUserContentController
+
+    WebProcess/PlaybackSessionManager
+    WebProcess/VideoFullscreenManager
 
     WebProcess/WebCoreSupport/WebSpeechRecognitionConnection
 

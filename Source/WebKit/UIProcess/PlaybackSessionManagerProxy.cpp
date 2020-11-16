@@ -23,15 +23,16 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import "config.h"
-#import "PlaybackSessionManagerProxy.h"
+#include "config.h"
+#include "PlaybackSessionManagerProxy.h"
 
-#if PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))
+#if PLATFORM(IOS_FAMILY) || ENABLE(VIDEO_PRESENTATION_MODE)
 
-#import "PlaybackSessionManagerMessages.h"
-#import "PlaybackSessionManagerProxyMessages.h"
-#import "WebPageProxy.h"
-#import "WebProcessProxy.h"
+#include "PlaybackSessionManagerMessages.h"
+#include "PlaybackSessionManagerProxyMessages.h"
+#include "WebPageProxy.h"
+#include "WebProcessProxy.h"
+#include <wtf/Seconds.h>
 
 namespace WebKit {
 using namespace WebCore;
@@ -173,12 +174,12 @@ void PlaybackSessionModelContext::durationChanged(double duration)
 void PlaybackSessionModelContext::currentTimeChanged(double currentTime)
 {
     m_currentTime = currentTime;
-    auto anchorTime = [[NSProcessInfo processInfo] systemUptime];
+    auto anchorTime = Seconds::uptime();
     if (m_playbackStartedTimeNeedsUpdate)
         playbackStartedTimeChanged(currentTime);
 
     for (auto* client : m_clients)
-        client->currentTimeChanged(currentTime, anchorTime);
+        client->currentTimeChanged(currentTime, anchorTime.value());
 }
 
 void PlaybackSessionModelContext::bufferedTimeChanged(double bufferedTime)
@@ -606,4 +607,4 @@ PlatformPlaybackSessionInterface* PlaybackSessionManagerProxy::controlsManagerIn
 
 } // namespace WebKit
 
-#endif // PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))
+#endif // PLATFORM(IOS_FAMILY) || ENABLE(VIDEO_PRESENTATION_MODE)

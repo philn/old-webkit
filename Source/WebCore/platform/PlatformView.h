@@ -23,8 +23,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PlatformView_h
-#define PlatformView_h
+#pragma once
 
 #if PLATFORM(COCOA)
 
@@ -36,6 +35,15 @@ OBJC_CLASS NSView;
 typedef NSView PlatformView;
 #endif
 
+#elif PLATFORM(GTK)
+#include <gtk/gtk.h>
+typedef GtkWindow PlatformView;
 #endif
 
-#endif /* PlatformView_h */
+#if PLATFORM(COCOA)
+#include <wtf/RetainPtr.h>
+using PlatformViewContainer = WTF::RetainPtr<PlatformView>;
+#else
+#include <wtf/glib/GRefPtr.h>
+using PlatformViewContainer = WTF::GRefPtr<PlatformView>;
+#endif

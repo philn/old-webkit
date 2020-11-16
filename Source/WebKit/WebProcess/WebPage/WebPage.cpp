@@ -53,6 +53,7 @@
 #include "NetworkProcessConnection.h"
 #include "NotificationPermissionRequestManager.h"
 #include "PageBanner.h"
+#include "PlaybackSessionManager.h"
 #include "PluginProcessAttributes.h"
 #include "PluginProxy.h"
 #include "PluginView.h"
@@ -65,6 +66,7 @@
 #include "ShareableBitmap.h"
 #include "SharedBufferDataReference.h"
 #include "UserMediaPermissionRequestManager.h"
+#include "VideoFullscreenManager.h"
 #include "ViewGestureGeometryCollector.h"
 #include "VisitedLinkTableController.h"
 #include "WKBundleAPICast.h"
@@ -265,12 +267,10 @@
 #if PLATFORM(COCOA)
 #include "InsertTextOptions.h"
 #include "PDFPlugin.h"
-#include "PlaybackSessionManager.h"
 #include "RemoteLayerTreeTransaction.h"
 #include "RemoteObjectRegistryMessages.h"
 #include "TextCheckingControllerProxy.h"
 #include "UserMediaCaptureManager.h"
-#include "VideoFullscreenManager.h"
 #include "WKStringCF.h"
 #include "WebRemoteObjectRegistry.h"
 #include <WebCore/LegacyWebArchive.h>
@@ -946,7 +946,7 @@ WebPage::~WebPage()
     webPageCounter.decrement();
 #endif
     
-#if ENABLE(VIDEO_PRESENTATION_MODE)
+#if ENABLE(VIDEO_PRESENTATION_MODE) && (PLATFORM(COCOA) || PLATFORM(GTK))
     if (m_playbackSessionManager)
         m_playbackSessionManager->invalidate();
 
@@ -3938,7 +3938,7 @@ void WebPage::inspectorFrontendCountChanged(unsigned count)
     send(Messages::WebPageProxy::DidChangeInspectorFrontendCount(count));
 }
 
-#if ENABLE(VIDEO_PRESENTATION_MODE)
+#if ENABLE(VIDEO_PRESENTATION_MODE) && (PLATFORM(COCOA) || PLATFORM(GTK))
 PlaybackSessionManager& WebPage::playbackSessionManager()
 {
     if (!m_playbackSessionManager)

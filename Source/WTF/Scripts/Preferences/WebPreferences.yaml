@@ -227,7 +227,7 @@ AllowsPictureInPictureMediaPlayback:
       "PLATFORM(IOS_FAMILY)": WebKit::defaultAllowsPictureInPictureMediaPlayback()
       default: false
     WebKit:
-      "PLATFORM(IOS_FAMILY)": true
+      "PLATFORM(IOS_FAMILY) || USE(GSTREAMER)": true
       default: false
     WebCore:
       default: true

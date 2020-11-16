@@ -496,7 +496,7 @@ messages -> WebPageProxy {
     MockMediaPlaybackTargetPickerDismissPopup()
 #endif
 
-#if ENABLE(VIDEO_PRESENTATION_MODE)
+#if ENABLE(VIDEO_PRESENTATION_MODE) && PLATFORM(COCOA)
     SetMockVideoPresentationModeEnabled(bool enabled)
 #endif
 

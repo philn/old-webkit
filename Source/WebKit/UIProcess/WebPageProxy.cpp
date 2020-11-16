@@ -203,13 +203,16 @@
 #include <wtf/RefCountedLeakCounter.h>
 #endif
 
+#if ENABLE(VIDEO_PRESENTATION_MODE)
+#include "VideoFullscreenManagerProxy.h"
+#include "VideoFullscreenManagerProxyMessages.h"
+#endif
+
 #if PLATFORM(COCOA)
 #include "InsertTextOptions.h"
 #include "RemoteLayerTreeDrawingAreaProxy.h"
 #include "RemoteLayerTreeScrollingPerformanceData.h"
 #include "UserMediaCaptureManagerProxy.h"
-#include "VideoFullscreenManagerProxy.h"
-#include "VideoFullscreenManagerProxyMessages.h"
 #include <WebCore/AttributedString.h>
 #include <WebCore/RunLoopObserver.h>
 #include <WebCore/SystemBattery.h>
@@ -246,7 +249,7 @@
 #include <WebCore/WebMediaSessionManager.h>
 #endif
 
-#if PLATFORM(IOS_FAMILY) || (PLATFORM(MAC) && ENABLE(VIDEO_PRESENTATION_MODE))
+#if PLATFORM(IOS_FAMILY) || ENABLE(VIDEO_PRESENTATION_MODE)
 #include "PlaybackSessionManagerProxy.h"
 #endif
 
@@ -6208,7 +6211,7 @@ void WebPageProxy::setFullscreenClient(std::unique_ptr<API::FullscreenClient>&& 
     m_fullscreenClient = WTFMove(client);
 }
 #endif
-    
+
 #if ENABLE(VIDEO_PRESENTATION_MODE)
 PlaybackSessionManagerProxy* WebPageProxy::playbackSessionManager()
 {

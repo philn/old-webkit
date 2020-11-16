@@ -30,11 +30,9 @@ list(APPEND WebCore_PRIVATE_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/platform/graphics/wayland"
     "${WEBCORE_DIR}/platform/graphics/x11"
     "${WEBCORE_DIR}/platform/mediacapabilities"
-    "${WEBCORE_DIR}/platform/mediastream/gtk"
     "${WEBCORE_DIR}/platform/mediastream/gstreamer"
     "${WEBCORE_DIR}/platform/mock/mediasource"
     "${WEBCORE_DIR}/platform/network/glib"
-    "${WEBCORE_DIR}/platform/text/gtk"
 )
 
 if (USE_ANGLE_WEBGL)
@@ -50,7 +48,19 @@ if (USE_WPE_RENDERER)
 endif ()
 
 list(APPEND WebCore_PRIVATE_FRAMEWORK_HEADERS
+    platform/PictureInPictureSupport.h
+    platform/PlatformView.h
+    platform/PlatformWindow.h
+    platform/PlaybackSessionModel.h
+    platform/PlaybackSessionModelMediaElement.h
+    platform/VideoFullscreenChangeObserver.h
+    platform/VideoFullscreenModel.h
+    platform/VideoFullscreenModelVideoElement.h
+
     platform/adwaita/ScrollbarThemeAdwaita.h
+
+    platform/graphics/nicosia/NicosiaPlatformLayerBase.h
+    platform/graphics/nicosia/NicosiaSceneIntegration.h
 
     platform/graphics/x11/PlatformDisplayX11.h
     platform/graphics/x11/XErrorTrapper.h
@@ -61,8 +71,10 @@ list(APPEND WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/gtk/GUniquePtrGtk.h
     platform/gtk/GtkUtilities.h
     platform/gtk/GtkVersioning.h
+    platform/gtk/PlaybackSessionInterfaceGTK.h
     platform/gtk/ScrollbarThemeGtk.h
     platform/gtk/SelectionData.h
+    platform/gtk/VideoFullscreenInterfaceGTK.h
 
     platform/text/enchant/TextCheckerEnchant.h
 )

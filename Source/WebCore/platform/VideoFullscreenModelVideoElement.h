@@ -23,7 +23,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #pragma once
 
 #if ENABLE(VIDEO_PRESENTATION_MODE)
@@ -37,7 +36,6 @@
 #include <wtf/Function.h>
 #include <wtf/HashSet.h>
 #include <wtf/RefPtr.h>
-#include <wtf/RetainPtr.h>
 #include <wtf/Vector.h>
 
 namespace WebCore {
@@ -55,7 +53,7 @@ public:
     WEBCORE_EXPORT virtual ~VideoFullscreenModelVideoElement();
     WEBCORE_EXPORT void setVideoElement(HTMLVideoElement*);
     HTMLVideoElement* videoElement() const { return m_videoElement.get(); }
-    WEBCORE_EXPORT RetainPtr<PlatformLayer> createVideoFullscreenLayer();
+    WEBCORE_EXPORT PlatformLayerContainer createVideoFullscreenLayer();
     WEBCORE_EXPORT void setVideoFullscreenLayer(PlatformLayer*, WTF::Function<void()>&& completionHandler = [] { });
     WEBCORE_EXPORT void willExitFullscreen();
     WEBCORE_EXPORT void waitForPreparedForInlineThen(WTF::Function<void()>&& completionHandler = [] { });
@@ -73,7 +71,9 @@ public:
     FloatSize videoDimensions() const override { return m_videoDimensions; }
     bool hasVideo() const override { return m_hasVideo; }
 
+#if PLATFORM(IOS_FAMILY) || PLATFORM(MAC)
     WEBCORE_EXPORT void requestRouteSharingPolicyAndContextUID(CompletionHandler<void(RouteSharingPolicy, String)>&&) override;
+#endif
 
 protected:
     WEBCORE_EXPORT VideoFullscreenModelVideoElement();
@@ -92,7 +92,7 @@ private:
     const WTF::AtomString& eventNameAll();
 
     RefPtr<HTMLVideoElement> m_videoElement;
-    RetainPtr<PlatformLayer> m_videoFullscreenLayer;
+    PlatformLayerContainer m_videoFullscreenLayer;
     bool m_isListening { false };
     HashSet<VideoFullscreenModelClient*> m_clients;
     bool m_hasVideo { false };
@@ -105,4 +105,3 @@ private:
 }
 
 #endif
-

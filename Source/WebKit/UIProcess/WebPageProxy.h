@@ -96,6 +96,7 @@
 #include <WebCore/PlatformScreen.h>
 #include <WebCore/PlatformSpeechSynthesisUtterance.h>
 #include <WebCore/PlatformSpeechSynthesizer.h>
+#include <WebCore/PlatformWindow.h>
 #include <WebCore/PointerID.h>
 #include <WebCore/RegistrableDomain.h>
 #include <WebCore/RunJavaScriptParameters.h>
@@ -905,12 +906,15 @@ public:
     void changeFontAttributes(WebCore::FontAttributeChanges&&);
     void changeFont(WebCore::FontChanges&&);
 
+#if PLATFORM(MAC) || PLATFORM(GTK)
+    PlatformWindow* platformWindow();
+#endif
+
 #if PLATFORM(MAC)
     void attributedSubstringForCharacterRangeAsync(const EditingRange&, Function<void(const WebCore::AttributedString&, const EditingRange&, CallbackBase::Error)>&&);
     void fontAtSelection(Function<void(const FontInfo&, double, bool, CallbackBase::Error)>&&);
 
     void startWindowDrag();
-    NSWindow *platformWindow();
     void rootViewToWindow(const WebCore::IntRect& viewRect, WebCore::IntRect& windowRect);
 
     NSView *inspectorAttachmentView();
