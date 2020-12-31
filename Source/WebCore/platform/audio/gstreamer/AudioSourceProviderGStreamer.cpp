@@ -289,8 +289,9 @@ void AudioSourceProviderGStreamer::handleNewDeinterleavePad(GstPad* pad)
     // A new pad for a planar channel was added in deinterleave. Plug
     // in an appsink so we can pull the data from each
     // channel. Pipeline looks like:
-    // ... deinterleave ! appsink.
-    GstElement* sink = gst_element_factory_make("appsink", nullptr);
+    // ... deinterleave ! queue ! appsink.
+    auto* queue = gst_element_factory_make("queue", nullptr);
+    auto* sink = gst_element_factory_make("appsink", nullptr);
 
     static GstAppSinkCallbacks callbacks = {
         nullptr,
@@ -309,9 +310,11 @@ void AudioSourceProviderGStreamer::handleNewDeinterleavePad(GstPad* pad)
         "channels", G_TYPE_INT, 1, "format", G_TYPE_STRING, GST_AUDIO_NE(F32), "layout", G_TYPE_STRING, "interleaved", nullptr));
     gst_app_sink_set_caps(GST_APP_SINK(sink), caps.get());
 
-    gst_bin_add(GST_BIN_CAST(m_audioSinkBin.get()), sink);
+    gst_bin_add_many(GST_BIN_CAST(m_audioSinkBin.get()), queue, sink, nullptr);
 
-    auto sinkPad = adoptGRef(gst_element_get_static_pad(sink, "sink"));
+    gst_element_link(queue, sink);
+
+    auto sinkPad = adoptGRef(gst_element_get_static_pad(queue, "sink"));
     gst_pad_link_full(pad, sinkPad.get(), GST_PAD_LINK_CHECK_NOTHING);
 
     GQuark quark = g_quark_from_static_string("peer");
@@ -349,9 +352,14 @@ void AudioSourceProviderGStreamer::handleRemovedDeinterleavePad(GstPad* pad)
     if (!sinkPad)
         return;
 
-    auto sink = adoptGRef(gst_pad_get_parent_element(sinkPad));
+    auto queue = adoptGRef(gst_pad_get_parent_element(sinkPad));
+    auto srcPad = adoptGRef(gst_element_get_static_pad(queue.get(), "src"));
+    auto sinkSinkPad = adoptGRef(gst_pad_get_peer(srcPad.get()));
+    auto sink = adoptGRef(gst_pad_get_parent_element(sinkSinkPad.get()));
+    gst_pad_unlink(srcPad.get(), sinkSinkPad.get());
+    gst_element_set_state(queue.get(), GST_STATE_NULL);
     gst_element_set_state(sink.get(), GST_STATE_NULL);
-    gst_bin_remove(GST_BIN_CAST(m_audioSinkBin.get()), sink.get());
+    gst_bin_remove_many(GST_BIN_CAST(m_audioSinkBin.get()), queue.get(), sink.get(), nullptr);
 }
 
 void AudioSourceProviderGStreamer::deinterleavePadsConfigured()
