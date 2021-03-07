@@ -45,7 +45,8 @@ public:
 
     void denyNextUserMediaRequest() { m_denyNextRequest = true; }
 
-    void beginMonitoringCaptureDevices();
+    using DevicesChangedCallback = Function<void()>;
+    void beginMonitoringCaptureDevices(DevicesChangedCallback&& = nullptr);
 
 private:
     enum class ShouldNotify { Yes, No };
@@ -56,6 +57,8 @@ private:
     RunLoop::Timer<UserMediaProcessManager> m_debounceTimer;
     bool m_captureEnabled { true };
     bool m_denyNextRequest { false };
+
+    DevicesChangedCallback m_devicesChangedCallback;
 };
 
 } // namespace WebKit

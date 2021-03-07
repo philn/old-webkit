@@ -209,9 +209,13 @@ void UserMediaProcessManager::setCaptureEnabled(bool enabled)
 
 void UserMediaProcessManager::captureDevicesChanged()
 {
+#if USE(GSTREAMER)
+    m_devicesChangedCallback();
+#else
     UserMediaPermissionRequestManagerProxy::forEach([](auto& proxy) {
         proxy.captureDevicesChanged();
     });
+#endif
 }
 
 void UserMediaProcessManager::updateCaptureDevices(ShouldNotify shouldNotify)
@@ -250,9 +254,11 @@ void UserMediaProcessManager::updateCaptureDevices(ShouldNotify shouldNotify)
     });
 }
 
-void UserMediaProcessManager::beginMonitoringCaptureDevices()
+void UserMediaProcessManager::beginMonitoringCaptureDevices(DevicesChangedCallback&& callback)
 {
     static std::once_flag onceFlag;
+
+    m_devicesChangedCallback = WTFMove(callback);
 
     std::call_once(onceFlag, [this] {
         updateCaptureDevices(ShouldNotify::No);

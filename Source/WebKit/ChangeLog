@@ -1,3 +1,25 @@
+2021-03-07  Philippe Normand  <pnormand@igalia.com>
+
+        [GStreamer] CaptureDevice monitor used from UIProcess
+        https://bugs.webkit.org/show_bug.cgi?id=222888
+
+        Reviewed by NOBODY (OOPS!).
+
+        GStreamer ports aim to reduce usage of the GStreamer library in the UIProcess and thus
+        should not relay capture devicechange monitoring to the UIProcess. So for these ports the
+        UserMediaPermissionRequestManager initializes the device monitor directly within the
+        WebProcess, device changes are notified through a custom function passed to the
+        UserMediaProcessManager.
+
+        * UIProcess/UserMediaProcessManager.cpp:
+        (WebKit::UserMediaProcessManager::captureDevicesChanged):
+        (WebKit::UserMediaProcessManager::beginMonitoringCaptureDevices):
+        * UIProcess/UserMediaProcessManager.h:
+        * WebProcess/MediaStream/UserMediaPermissionRequestManager.cpp:
+        (WebKit::UserMediaPermissionRequestManager::addDeviceChangeObserver):
+        * WebProcess/MediaStream/UserMediaPermissionRequestManager.h: Publicly inherit from
+        MediaCanStartListener so that we can use the weakptr factory.
+
 2021-03-13  Peng Liu  <peng.liu6@apple.com>
 
         [GPUP][MSE] MediaSource::buffered and MediaSource::activeSourceBuffers do not update in the same run loop as MediaSource::endOfStream()

@@ -34,7 +34,7 @@ namespace WebKit {
 
 class WebPage;
 
-class UserMediaPermissionRequestManager : private WebCore::MediaCanStartListener {
+class UserMediaPermissionRequestManager : public WebCore::MediaCanStartListener {
     WTF_MAKE_FAST_ALLOCATED;
 public:
     explicit UserMediaPermissionRequestManager(WebPage&);

@@ -35,6 +35,10 @@
 #include <WebCore/SecurityOrigin.h>
 #include <WebCore/SecurityOriginData.h>
 
+#if USE(GSTREAMER)
+#include "UserMediaProcessManager.h"
+#endif
+
 namespace WebKit {
 using namespace WebCore;
 
@@ -155,7 +159,15 @@ UserMediaClient::DeviceChangeObserverToken UserMediaPermissionRequestManager::ad
 
     if (!m_monitoringDeviceChange) {
         m_monitoringDeviceChange = true;
+#if USE(GSTREAMER)
+        UserMediaProcessManager::singleton().beginMonitoringCaptureDevices([weakThis = makeWeakPtr(*this)]() {
+            if (!weakThis)
+                return;
+            weakThis->captureDevicesChanged();
+        });
+#else
         m_page.send(Messages::WebPageProxy::BeginMonitoringCaptureDevices());
+#endif
     }
     return identifier;
 }
