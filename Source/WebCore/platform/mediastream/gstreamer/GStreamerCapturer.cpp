@@ -71,7 +71,7 @@ GstElement* GStreamerCapturer::createSource()
     if (m_sourceFactory) {
         m_src = makeElement(m_sourceFactory);
         if (GST_IS_APP_SRC(m_src.get()))
-            g_object_set(m_src.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
+            g_object_set(m_src.get(), "is-live", true, "format", GST_FORMAT_TIME, "do-timestamp", true, nullptr);
 
         ASSERT(m_src);
         return m_src.get();
@@ -82,6 +82,7 @@ GstElement* GStreamerCapturer::createSource()
     m_src = gst_device_create_element(m_device.get(), sourceName.get());
     ASSERT(m_src);
 
+    // g_object_set(m_src.get(), "io-mode", 2, nullptr);
     return m_src.get();
 }
 
