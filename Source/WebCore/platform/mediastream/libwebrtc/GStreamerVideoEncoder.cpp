@@ -21,9 +21,9 @@
 #include "config.h"
 #include "GStreamerVideoEncoder.h"
 
-#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
-
+#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "GStreamerCommon.h"
+
 #include <wtf/StdMap.h>
 #include <wtf/glib/WTFGType.h>
 
@@ -35,7 +35,7 @@ GST_DEBUG_CATEGORY(webrtc_venc_debug);
 #define KBIT_TO_BIT 1024
 
 static GstStaticPadTemplate sinkTemplate = GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS("video/x-raw(ANY)"));
-static GstStaticPadTemplate srcTemplate = GST_STATIC_PAD_TEMPLATE("src", GST_PAD_SRC, GST_PAD_ALWAYS, GST_STATIC_CAPS("video/x-h264"));
+static GstStaticPadTemplate srcTemplate = GST_STATIC_PAD_TEMPLATE("src", GST_PAD_SRC, GST_PAD_ALWAYS, GST_STATIC_CAPS("video/x-h264;video/x-vp8;video/x-vp9"));
 
 using SetBitrateFunc = Function<void(GObject* encoder, const char* propertyName, int bitrate)>;
 using SetupFunc = Function<void(WebKitWebrtcVideoEncoder*)>;
@@ -51,7 +51,7 @@ struct EncoderDefinition {
     const char* keyframeIntervalPropertyName;
 };
 
-enum EncoderId { None, X264, OpenH264, OmxH264 };
+enum EncoderId { None, X264, OpenH264, OmxH264, Vp8, Vp9 };
 
 class Encoders {
 public:
@@ -275,9 +275,11 @@ static void webkit_webrtc_video_encoder_class_init(WebKitWebrtcVideoEncoderClass
             g_object_set(self->priv->parser.get(), "config-interval", 1, nullptr);
         }, "target-bitrate", setBitrateBitPerSec, "interval-intraframes");
     Encoders::registerEncoder(X264, "x264enc", "h264parse", "video/x-h264",
-        "video/x-h264,alignment=au,stream-format=byte-stream,profile=baseline",
+        "video/x-h264,alignment=au,stream-format=byte-stream,profile=constrained-baseline",
         [](WebKitWebrtcVideoEncoder* self) {
             gst_util_set_object_arg(G_OBJECT(self->priv->encoder.get()), "tune", "zerolatency");
+            gst_util_set_object_arg(G_OBJECT(self->priv->encoder.get()), "speed-preset", "ultrafast");
+            g_object_set(G_OBJECT(self->priv->encoder.get()), "key-int-max", 15, NULL);
             g_object_set(self->priv->parser.get(), "config-interval", 1, nullptr);
         }, "bitrate", setBitrateKbitPerSec, "key-int-max");
     Encoders::registerEncoder(OpenH264, "openh264enc", "h264parse", "video/x-h264",
@@ -285,6 +287,18 @@ static void webkit_webrtc_video_encoder_class_init(WebKitWebrtcVideoEncoderClass
         [](WebKitWebrtcVideoEncoder* self) {
             g_object_set(self->priv->parser.get(), "config-interval", 1, nullptr);
         }, "bitrate", setBitrateBitPerSec, "gop-size");
+    Encoders::registerEncoder(
+        Vp8, "vp8enc", nullptr, "video/x-vp8", nullptr,
+        [](WebKitWebrtcVideoEncoder* self) {
+            gst_preset_load_preset(GST_PRESET(self->priv->encoder.get()), "Profile Realtime");
+        },
+        "target-bitrate", setBitrateBitPerSec, "keyframe-max-dist");
+    Encoders::registerEncoder(
+        Vp9, "vp9enc", nullptr, "video/x-vp9", nullptr,
+        [](WebKitWebrtcVideoEncoder* self) {
+            g_object_set(self->priv->encoder.get(), "threads", 12, "cpu-used", 4, "tile-rows", 2, "row-mt", true, nullptr);
+        },
+        "target-bitrate", setBitrateBitPerSec, "keyframe-max-dist");
 }
 
-#endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(GSTREAMER)

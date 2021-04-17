@@ -51,7 +51,12 @@ GStreamerAudioCapturer::GStreamerAudioCapturer()
 
 GstElement* GStreamerAudioCapturer::createConverter()
 {
-    return makeGStreamerBin("audioconvert ! audioresample", true);
+#if USE(GSTREAMER_WEBRTC) && GST_CHECK_VERSION(1, 19, 0)
+#define DSP "webrtcdsp echo-cancel=0 voice-detection=1 !"
+#else
+#define DSP
+#endif
+    return makeGStreamerBin(DSP "audioconvert ! audioresample", true);
 }
 
 bool GStreamerAudioCapturer::setSampleRate(int sampleRate)
