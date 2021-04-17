@@ -242,6 +242,8 @@ template <> WTF_EXPORT_PRIVATE GMappedFile* refGPtr(GMappedFile*);
 template <> WTF_EXPORT_PRIVATE void derefGPtr(GMappedFile*);
 template <> WTF_EXPORT_PRIVATE GDateTime* refGPtr(GDateTime* ptr);
 template <> WTF_EXPORT_PRIVATE void derefGPtr(GDateTime* ptr);
+template <> WTF_EXPORT_PRIVATE GArray* refGPtr(GArray*);
+template <> WTF_EXPORT_PRIVATE void derefGPtr(GArray*);
 
 #if HAVE(GURI)
 template <> WTF_EXPORT_PRIVATE GUri* refGPtr(GUri*);
