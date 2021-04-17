@@ -54,6 +54,7 @@
 
 #if ENABLE(MEDIA_STREAM)
 #include "GStreamerMediaStreamSource.h"
+#include "GStreamerVideoEncoder.h"
 #endif
 
 #if ENABLE(ENCRYPTED_MEDIA)
@@ -186,6 +187,9 @@ const char* capsMediaType(const GstCaps* caps)
     if (gst_structure_has_name(structure, "application/x-cenc") || gst_structure_has_name(structure, "application/x-cbcs") || gst_structure_has_name(structure, "application/x-webm-enc"))
         return gst_structure_get_string(structure, "original-media-type");
 #endif
+    if (gst_structure_has_name(structure, "application/x-rtp"))
+        return gst_structure_get_string(structure, "media");
+
     return gst_structure_get_name(structure);
 }
 
@@ -315,6 +319,7 @@ void registerWebKitGStreamerElements()
 
 #if ENABLE(MEDIA_STREAM)
         gst_element_register(nullptr, "mediastreamsrc", GST_RANK_PRIMARY, WEBKIT_TYPE_MEDIA_STREAM_SRC);
+        gst_element_register(nullptr, "webrtcvideoencoder", GST_RANK_NONE, WEBKIT_TYPE_WEBRTC_VIDEO_ENCODER);
 #endif
 
 #if ENABLE(MEDIA_SOURCE)

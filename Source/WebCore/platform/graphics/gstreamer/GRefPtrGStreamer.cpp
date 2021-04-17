@@ -27,6 +27,12 @@
 #include <gst/gl/egl/gsteglimage.h>
 #endif
 
+#if USE(GSTREAMER_WEBRTC)
+#define GST_USE_UNSTABLE_API
+#include <gst/webrtc/webrtc.h>
+#undef GST_USE_UNSTABLE_API
+#endif
+
 namespace WTF {
 
 template <> GRefPtr<GstElement> adoptGRef(GstElement* ptr)
@@ -549,6 +555,86 @@ template <> void derefGPtr<GstEGLImage>(GstEGLImage* ptr)
 }
 
 #endif // USE(GSTREAMER_GL)
+
+#if USE(GSTREAMER_WEBRTC)
+
+template <> GRefPtr<GstWebRTCRTPReceiver> adoptGRef(GstWebRTCRTPReceiver* ptr)
+{
+    return GRefPtr<GstWebRTCRTPReceiver>(ptr, GRefPtrAdopt);
+}
+
+template <> GstWebRTCRTPReceiver* refGPtr<GstWebRTCRTPReceiver>(GstWebRTCRTPReceiver* ptr)
+{
+    if (ptr)
+        gst_object_ref(GST_OBJECT(ptr));
+
+    return ptr;
+}
+
+template <> void derefGPtr<GstWebRTCRTPReceiver>(GstWebRTCRTPReceiver* ptr)
+{
+    if (ptr)
+        gst_object_unref(ptr);
+}
+
+template <> GRefPtr<GstWebRTCRTPSender> adoptGRef(GstWebRTCRTPSender* ptr)
+{
+    return GRefPtr<GstWebRTCRTPSender>(ptr, GRefPtrAdopt);
+}
+
+template <> GstWebRTCRTPSender* refGPtr<GstWebRTCRTPSender>(GstWebRTCRTPSender* ptr)
+{
+    if (ptr)
+        gst_object_ref(GST_OBJECT(ptr));
+
+    return ptr;
+}
+
+template <> void derefGPtr<GstWebRTCRTPSender>(GstWebRTCRTPSender* ptr)
+{
+    if (ptr)
+        gst_object_unref(ptr);
+}
+
+template <> GRefPtr<GstWebRTCRTPTransceiver> adoptGRef(GstWebRTCRTPTransceiver* ptr)
+{
+    return GRefPtr<GstWebRTCRTPTransceiver>(ptr, GRefPtrAdopt);
+}
+
+template <> GstWebRTCRTPTransceiver* refGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver* ptr)
+{
+    if (ptr)
+        gst_object_ref(GST_OBJECT(ptr));
+
+    return ptr;
+}
+
+template <> void derefGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver* ptr)
+{
+    if (ptr)
+        gst_object_unref(ptr);
+}
+
+template <> GRefPtr<GstWebRTCDataChannel> adoptGRef(GstWebRTCDataChannel* ptr)
+{
+    return GRefPtr<GstWebRTCDataChannel>(ptr, GRefPtrAdopt);
+}
+
+template <> GstWebRTCDataChannel* refGPtr<GstWebRTCDataChannel>(GstWebRTCDataChannel* ptr)
+{
+    if (ptr)
+        g_object_ref(G_OBJECT(ptr));
+
+    return ptr;
+}
+
+template <> void derefGPtr<GstWebRTCDataChannel>(GstWebRTCDataChannel* ptr)
+{
+    if (ptr)
+        g_object_unref(ptr);
+}
+
+#endif // USE(GSTREAMER_WEBRTC)
 
 } // namespace WTF
 

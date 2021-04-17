@@ -51,11 +51,16 @@
 #include <wtf/text/StringBuilder.h>
 #include <wtf/text/StringConcatenateNumbers.h>
 
+#if USE(GSTREAMER_WEBRTC)
+#include "GStreamerWebRTCUtils.h"
+#include "JSRTCCertificate.h"
+#endif
+
 namespace WebCore {
 
 using namespace PAL;
 
-#if !USE(LIBWEBRTC)
+#if !USE(LIBWEBRTC) && !USE(GSTREAMER_WEBRTC)
 static std::unique_ptr<PeerConnectionBackend> createNoPeerConnectionBackend(RTCPeerConnection&)
 {
     return nullptr;
@@ -259,22 +264,9 @@ void PeerConnectionBackend::setRemoteDescriptionSucceeded()
     ALWAYS_LOG(LOGIDENTIFIER, "Set remote description succeeded");
     ASSERT(m_setDescriptionPromise);
 
-    auto promise = WTFMove(m_setDescriptionPromise);
-    auto events = WTFMove(m_pendingTrackEvents);
-    for (auto& event : events) {
-        auto& track = event.track.get();
+    firePendingTrackEvents();
 
-        m_peerConnection.dispatchEventWhenFeasible(RTCTrackEvent::create(eventNames().trackEvent, Event::CanBubble::No, Event::IsCancelable::No, WTFMove(event.receiver), WTFMove(event.track), WTFMove(event.streams), WTFMove(event.transceiver)));
-        ALWAYS_LOG(LOGIDENTIFIER, "Dispatched if feasible track of type ", track.source().type());
-
-        if (m_peerConnection.isClosed())
-            return;
-
-        // FIXME: As per spec, we should set muted to 'false' when starting to receive the content from network.
-        track.source().setMuted(false);
-    }
-
-    m_peerConnection.doTask([this, promise = WTFMove(promise)]() mutable {
+    m_peerConnection.doTask([this, promise = WTFMove(m_setDescriptionPromise)]() mutable {
         if (m_peerConnection.isClosed())
             return;
 
@@ -326,6 +318,17 @@ static inline bool shouldIgnoreIceCandidate(const RTCIceCandidate& iceCandidate)
         return true;
     }
     return false;
+}
+
+void PeerConnectionBackend::firePendingTrackEvents()
+{
+    auto events = WTFMove(m_pendingTrackEvents);
+    for (auto& event : events) {
+        auto& track = event.track.get();
+
+        m_peerConnection.dispatchEventWhenFeasible(RTCTrackEvent::create(eventNames().trackEvent, Event::CanBubble::No, Event::IsCancelable::No, WTFMove(event.receiver), WTFMove(event.track), WTFMove(event.streams), WTFMove(event.transceiver)));
+        ALWAYS_LOG(LOGIDENTIFIER, "Dispatched if feasible track of type ", track.source().type());
+    }
 }
 
 void PeerConnectionBackend::addIceCandidate(RTCIceCandidate* iceCandidate, DOMPromiseDeferred<void>&& promise)
@@ -607,10 +610,15 @@ void PeerConnectionBackend::generateCertificate(Document& document, const Certif
 {
 #if USE(LIBWEBRTC)
     LibWebRTCCertificateGenerator::generateCertificate(document.securityOrigin(), document.page()->libWebRTCProvider(), info, WTFMove(promise));
+#elif USE(GSTREAMER_WEBRTC)
+    auto certificate = ::WebCore::generateCertificate(document.securityOrigin(), info);
+    if (certificate.hasValue())
+        promise.resolve(*certificate);
+    else
+        promise.reject(NotSupportedError);
 #else
     UNUSED_PARAM(document);
-    UNUSED_PARAM(expires);
-    UNUSED_PARAM(type);
+    UNUSED_PARAM(info);
     promise.reject(NotSupportedError);
 #endif
 }

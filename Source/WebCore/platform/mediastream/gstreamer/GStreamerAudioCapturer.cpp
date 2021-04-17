@@ -51,7 +51,12 @@ GStreamerAudioCapturer::GStreamerAudioCapturer()
 
 GstElement* GStreamerAudioCapturer::createConverter()
 {
-    auto converter = gst_parse_bin_from_description("audioconvert ! audioresample", TRUE, nullptr);
+#if USE(GSTREAMER_WEBRTC) && GST_CHECK_VERSION(1, 19, 0)
+#define LEVEL "level audio-level-meta=1 ! webrtcdsp echo-cancel=0 voice-detection=1 !"
+#else
+#define LEVEL
+#endif
+    auto converter = gst_parse_bin_from_description(LEVEL "audioconvert ! audioresample", TRUE, nullptr);
 
     ASSERT(converter);
 
