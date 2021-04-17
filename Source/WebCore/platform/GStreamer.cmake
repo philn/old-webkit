@@ -61,13 +61,36 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         platform/mediastream/gstreamer/GStreamerCaptureDeviceManager.cpp
         platform/mediastream/gstreamer/GStreamerCapturer.cpp
         platform/mediastream/gstreamer/GStreamerDisplayCaptureDeviceManager.cpp
+        platform/mediastream/gstreamer/GStreamerDTMFSenderBackend.cpp
+        platform/mediastream/gstreamer/GStreamerDataChannelHandler.cpp
+        platform/mediastream/gstreamer/GStreamerDtlsTransportBackend.cpp
+        platform/mediastream/gstreamer/GStreamerIceTransportBackend.cpp
+        platform/mediastream/gstreamer/GStreamerMediaEndpoint.cpp
         platform/mediastream/gstreamer/GStreamerMediaStreamSource.cpp
+        platform/mediastream/gstreamer/GStreamerPeerConnectionBackend.cpp
+        platform/mediastream/gstreamer/GStreamerRtpReceiverBackend.cpp
+        platform/mediastream/gstreamer/GStreamerRtpReceiverTransformBackend.cpp
+        platform/mediastream/gstreamer/GStreamerRtpSenderBackend.cpp
+        platform/mediastream/gstreamer/GStreamerRtpSenderTransformBackend.cpp
+        platform/mediastream/gstreamer/GStreamerRtpTransceiverBackend.cpp
+        platform/mediastream/gstreamer/GStreamerRtpTransformBackend.cpp
+        platform/mediastream/gstreamer/GStreamerSctpTransportBackend.cpp
+        platform/mediastream/gstreamer/GStreamerStatsCollector.cpp
         platform/mediastream/gstreamer/GStreamerVideoCaptureSource.cpp
         platform/mediastream/gstreamer/GStreamerVideoCapturer.cpp
         platform/mediastream/gstreamer/GStreamerVideoEncoder.cpp
+        platform/mediastream/gstreamer/GStreamerWebRTCUtils.cpp
+        platform/mediastream/gstreamer/MockRealtimeAudioSourceGStreamer.cpp
         platform/mediastream/gstreamer/MockRealtimeAudioSourceGStreamer.cpp
         platform/mediastream/gstreamer/MockRealtimeVideoSourceGStreamer.cpp
+        platform/mediastream/gstreamer/MockRealtimeVideoSourceGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeIncomingAudioSourceGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeIncomingSourceGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeIncomingVideoSourceGStreamer.cpp
         platform/mediastream/gstreamer/RealtimeMediaSourceCenterGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeOutgoingAudioSourceGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeOutgoingMediaSourceGStreamer.cpp
+        platform/mediastream/gstreamer/RealtimeOutgoingVideoSourceGStreamer.cpp
     )
 
     list(APPEND WebCore_PRIVATE_FRAMEWORK_HEADERS
@@ -146,7 +169,11 @@ if (ENABLE_VIDEO)
         )
     endif ()
 
-    if (ENABLE_MEDIA_STREAM OR ENABLE_WEB_RTC)
+    if (ENABLE_MEDIA_STREAM AND USE_PIPEWIRE)
+      list(APPEND WebCore_LIBRARIES LIBPORTAL::LIBPORTAL)
+    endif ()
+
+    if (USE_LIBWEBRTC)
         list(APPEND WebCore_SYSTEM_INCLUDE_DIRECTORIES
             ${GSTREAMER_CODECPARSERS_INCLUDE_DIRS}
         )
@@ -155,6 +182,21 @@ if (ENABLE_VIDEO)
                 ${GSTREAMER_CODECPARSERS_LIBRARIES}
             )
         endif ()
+    elseif (USE_GSTREAMER_WEBRTC)
+        list(APPEND WebCore_SYSTEM_INCLUDE_DIRECTORIES
+            ${GSTREAMER_RTP_INCLUDE_DIRS}
+            ${GSTREAMER_SDP_INCLUDE_DIRS}
+            ${GSTREAMER_WEBRTC_INCLUDE_DIRS}
+        )
+        if (NOT USE_GSTREAMER_FULL)
+            list(APPEND WebCore_LIBRARIES
+                ${GSTREAMER_RTP_LIBRARIES}
+                ${GSTREAMER_SDP_LIBRARIES}
+                ${GSTREAMER_WEBRTC_LIBRARIES}
+            )
+        endif ()
+
+        list(APPEND WebCore_LIBRARIES OpenSSL::Crypto)
     endif ()
 endif ()
 

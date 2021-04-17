@@ -53,9 +53,15 @@
 #include <wtf/text/StringBuilder.h>
 #include <wtf/text/StringConcatenateNumbers.h>
 
+#if USE(GSTREAMER_WEBRTC)
+#include "GStreamerWebRTCUtils.h"
+#include "JSRTCCertificate.h"
+#endif
+
 namespace WebCore {
 
-#if !USE(LIBWEBRTC)
+#if !USE(LIBWEBRTC) && !USE(GSTREAMER_WEBRTC)
+
 static std::unique_ptr<PeerConnectionBackend> createNoPeerConnectionBackend(RTCPeerConnection&)
 {
     return nullptr;
@@ -437,13 +443,19 @@ void PeerConnectionBackend::generateCertificate(Document& document, const Certif
         promise.reject(InvalidStateError);
         return;
     }
+
     LibWebRTCCertificateGenerator::generateCertificate(document.securityOrigin(), page->libWebRTCProvider(), info, [promise = WTFMove(promise)](auto&& result) mutable {
         promise.settle(WTFMove(result));
     });
+#elif USE(GSTREAMER_WEBRTC)
+    auto certificate = ::WebCore::generateCertificate(document.securityOrigin(), info);
+    if (certificate.has_value())
+        promise.resolve(*certificate);
+    else
+        promise.reject(NotSupportedError);
 #else
     UNUSED_PARAM(document);
-    UNUSED_PARAM(expires);
-    UNUSED_PARAM(type);
+    UNUSED_PARAM(info);
     promise.reject(NotSupportedError);
 #endif
 }

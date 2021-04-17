@@ -806,6 +806,7 @@ class WebkitFlatpak:
             "MESA",
             "LIBGL",
             "PIPEWIRE",
+            "NICE",
             "RUST",
             "SCCACHE",
             "SPA",
