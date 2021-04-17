@@ -594,6 +594,8 @@ void Internals::resetToConsistentState(Page& page)
     rtcProvider.setH265Support(true);
     rtcProvider.setVP9Support(true, true);
     rtcProvider.clearFactory();
+#elif USE(GSTREAMER_WEBRTC)
+    page.settings().setWebRTCEncryptionEnabled(true);
 #endif
 
     page.setFullscreenAutoHideDuration(0_s);
