@@ -97,7 +97,7 @@ GstElement* GStreamerCapturer::createSource()
         m_src = makeElement(m_sourceFactory);
         ASSERT(m_src);
         if (GST_IS_APP_SRC(m_src.get()))
-            g_object_set(m_src.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
+            g_object_set(m_src.get(), "is-live", true, "format", GST_FORMAT_TIME, "do-timestamp", true, nullptr);
 
         if (m_deviceType == CaptureDevice::DeviceType::Screen) {
             auto pad = adoptGRef(gst_element_get_static_pad(m_src.get(), "src"));
@@ -124,6 +124,7 @@ GstElement* GStreamerCapturer::createSource()
     m_src = gst_device_create_element(m_device.get(), sourceName.get());
     ASSERT(m_src);
 
+    // g_object_set(m_src.get(), "io-mode", 2, nullptr);
     return m_src.get();
 }
 
