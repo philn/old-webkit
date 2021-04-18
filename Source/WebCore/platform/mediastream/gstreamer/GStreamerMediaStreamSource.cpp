@@ -133,13 +133,18 @@ public:
         , m_track(track)
         , m_padName(padName)
     {
-        if (track.type() == RealtimeMediaSource::Type::Audio)
+        const char* elementName = nullptr;
+        if (track.type() == RealtimeMediaSource::Type::Audio) {
             m_audioTrack = AudioTrackPrivateMediaStream::create(track);
-        else if (track.type() == RealtimeMediaSource::Type::Video)
+            elementName = "audiosrc";
+        } else if (track.type() == RealtimeMediaSource::Type::Video) {
             m_videoTrack = VideoTrackPrivateMediaStream::create(track);
+            elementName = "videosrc";
+        } else
+            ASSERT_NOT_REACHED();
 
         bool isCaptureTrack = track.isCaptureTrack();
-        m_src = gst_element_factory_make("appsrc", nullptr);
+        m_src = gst_element_factory_make("appsrc", elementName);
         RELEASE_ASSERT_WITH_MESSAGE(GST_IS_APP_SRC(m_src.get()), "GStreamer appsrc element not found. Please make sure to install gst-plugins-base");
 
         g_object_set(m_src.get(), "is-live", TRUE, "format", GST_FORMAT_TIME, "emit-signals", TRUE, "min-percent", 100,
@@ -169,6 +174,7 @@ public:
         if (m_isObserving)
             return;
 
+        GST_DEBUG_OBJECT(m_src.get(), "Starting track/source observation");
         m_track.addObserver(*this);
         switch (m_track.type()) {
         case RealtimeMediaSource::Type::Audio:
@@ -188,6 +194,7 @@ public:
         if (!m_isObserving)
             return;
 
+        GST_DEBUG_OBJECT(m_src.get(), "Stopping track/source observation");
         m_isObserving = false;
         switch (m_track.type()) {
         case RealtimeMediaSource::Type::Audio:
