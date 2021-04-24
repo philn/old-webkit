@@ -66,14 +66,11 @@ void RealtimeOutgoingVideoSourceGStreamer::setPayloadType(GRefPtr<GstCaps>& caps
         encoderCaps = adoptGRef(gst_caps_new_empty_simple("video/x-h264"));
         m_payloader = gst_element_factory_make("rtph264pay", nullptr);
         gst_util_set_object_arg(G_OBJECT(m_payloader.get()), "aggregate-mode", "zero-latency");
-        g_object_set(m_payloader.get(), "config-interval", -1, nullptr);
+        //g_object_set(m_payloader.get(), "config-interval", -1, nullptr);
     } else {
         GST_ERROR_OBJECT(m_bin.get(), "Unsupported outgoing video encoding: %s", encodingName.get());
         return;
     }
-
-    // FIXME: Re-enable this. Currently triggers caps negotiation error.
-    g_object_set(m_payloader.get(), "auto-header-extension", FALSE, nullptr);
 
     g_object_set(m_payloader.get(), "pt", payloadType, nullptr);
     g_object_set(m_capsFilter.get(), "caps", caps.get(), nullptr);

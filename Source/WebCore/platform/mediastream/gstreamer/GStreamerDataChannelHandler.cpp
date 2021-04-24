@@ -24,6 +24,7 @@
 #include "EventNames.h"
 #include "RTCDataChannel.h"
 #include "RTCDataChannelEvent.h"
+#include "RTCPriorityType.h"
 
 #include <gst/gst.h>
 #define GST_USE_UNSTABLE_API
@@ -47,6 +48,23 @@ GUniquePtr<GstStructure> GStreamerDataChannelHandler::fromRTCDataChannelInit(con
         gst_structure_set(init.get(), "negotiated", G_TYPE_BOOLEAN, *options.negotiated, nullptr);
     if (options.id)
         gst_structure_set(init.get(), "id", G_TYPE_INT, *options.id, nullptr);
+
+    GstWebRTCPriorityType priorityType;
+    switch (options.priority) {
+    case RTCPriorityType::VeryLow:
+        priorityType = GST_WEBRTC_PRIORITY_TYPE_VERY_LOW;
+        break;
+    case RTCPriorityType::Low:
+        priorityType = GST_WEBRTC_PRIORITY_TYPE_LOW;
+        break;
+    case RTCPriorityType::Medium:
+        priorityType = GST_WEBRTC_PRIORITY_TYPE_MEDIUM;
+        break;
+    case RTCPriorityType::High:
+        priorityType = GST_WEBRTC_PRIORITY_TYPE_HIGH;
+        break;
+    }
+    gst_structure_set(init.get(), "priority", GST_TYPE_WEBRTC_PRIORITY_TYPE, priorityType, nullptr);
 
     return init;
 }
