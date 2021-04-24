@@ -897,9 +897,9 @@ std::unique_ptr<RTCDataChannelHandler> GStreamerMediaEndpoint::createDataChannel
     if (!m_webrtcBin)
         return nullptr;
 
-    GRefPtr<GstWebRTCDataChannel> channel;
     auto init = GStreamerDataChannelHandler::fromRTCDataChannelInit(options);
-    GST_DEBUG_OBJECT(m_pipeline.get(), "Creating data channel");
+    GST_DEBUG_OBJECT(m_pipeline.get(), "Creating data channel for init options %" GST_PTR_FORMAT, init.get());
+    GRefPtr<GstWebRTCDataChannel> channel;
     g_signal_emit_by_name(m_webrtcBin.get(), "create-data-channel", label.utf8().data(), init.get(), &channel.outPtr());
     return channel ? std::make_unique<GStreamerDataChannelHandler>(WTFMove(channel)) : nullptr;
 }
@@ -918,6 +918,8 @@ void GStreamerMediaEndpoint::onDataChannel(GstWebRTCDataChannel* dataChannel)
 
 void GStreamerMediaEndpoint::close()
 {
+    // https://gitlab.freedesktop.org/gstreamer/gst-plugins-bad/-/issues/1181
+    GST_DEBUG_OBJECT(m_pipeline.get(), "Closing");
     if (m_pipeline)
         gst_element_set_state(m_pipeline.get(), GST_STATE_READY);
 
