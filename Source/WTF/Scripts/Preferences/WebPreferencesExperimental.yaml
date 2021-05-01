@@ -877,7 +877,7 @@ ScreenCaptureEnabled:
     WebKitLegacy:
       default: false
     WebKit:
-      "PLATFORM(MAC)": true
+      "PLATFORM(MAC) || USE(GSTREAMER_WEBRTC)": true
       default: false
     WebCore:
       default: false
