@@ -179,5 +179,8 @@ static inline GstWebRTCICETransportPolicy iceTransportPolicyFromConfiguration(Me
 }
 
 Optional<Ref<RTCCertificate>> generateCertificate(Ref<SecurityOrigin>&&, const PeerConnectionBackend::CertificateInformation&);
+
+bool sdpMediaHasAttributeKey(const GstSDPMedia*, const char* key);
+
 }
 #endif

@@ -29,36 +29,12 @@
 #include <gst/webrtc/webrtc.h>
 #undef GST_USE_UNSTABLE_API
 #include <wtf/MainThread.h>
+#include <wtf/Scope.h>
 
 GST_DEBUG_CATEGORY_EXTERN(webkit_webrtc_endpoint_debug);
 #define GST_CAT_DEFAULT webkit_webrtc_endpoint_debug
 
 namespace WebCore {
-
-static void statsPromiseChanged(GstPromise* promise, gpointer userData)
-{
-    GstPromiseResult result = gst_promise_wait(promise);
-    if (result != GST_PROMISE_RESULT_REPLIED) {
-        gst_promise_unref(promise);
-        return;
-    }
-
-    GStreamerStatsCollector* collector = reinterpret_cast<GStreamerStatsCollector*>(userData);
-    collector->processStats(gst_promise_get_reply(promise));
-    gst_promise_unref(promise);
-}
-
-void GStreamerStatsCollector::getStats(CollectorCallback&& callback, GstPad* pad)
-{
-    if (!m_webrtcBin) {
-        callback(nullptr);
-        return;
-    }
-
-    m_callback = WTFMove(callback);
-    GstPromise* gstPromise = gst_promise_new_with_change_func(statsPromiseChanged, this, nullptr);
-    g_signal_emit_by_name(m_webrtcBin.get(), "get-stats", pad, gstPromise);
-}
 
 static inline void fillRTCStats(RTCStatsReport::Stats& stats, const GstStructure* structure)
 {
@@ -246,15 +222,39 @@ static gboolean fillReportCallback(GQuark, const GValue* value, gpointer userDat
     return TRUE;
 }
 
-void GStreamerStatsCollector::processStats(const GstStructure* stats)
+struct CallbackHolder {
+    CallbackHolder(GStreamerStatsCollector::CollectorCallback&& collectorCallback)
+        : callback(WTFMove(collectorCallback))
+    {
+    }
+    GStreamerStatsCollector::CollectorCallback callback;
+};
+
+void GStreamerStatsCollector::getStats(CollectorCallback&& callback, GstPad* pad)
 {
-    GUniquePtr<GstStructure> statsCopy(gst_structure_copy(stats));
-    callOnMainThread([stats = statsCopy.release(), protectedThis = makeRef(*this)]() {
-        protectedThis->m_callback(RTCStatsReport::create([stats](auto& mapAdapter) {
-            if (stats)
-                gst_structure_foreach(stats, fillReportCallback, &mapAdapter);
-        }));
-    });
+    if (!m_webrtcBin) {
+        callback(nullptr);
+        return;
+    }
+
+    auto holder = std::make_unique<CallbackHolder>(WTFMove(callback));
+    auto* promise = gst_promise_new_with_change_func([](GstPromise* promise, gpointer userData) {
+        auto scopeExit = makeScopeExit([&] {
+            gst_promise_unref(promise);
+        });
+
+        if (gst_promise_wait(promise) != GST_PROMISE_RESULT_REPLIED)
+            return;
+
+        std::unique_ptr<CallbackHolder> holder(reinterpret_cast<CallbackHolder*>(userData));
+        callOnMainThreadAndWait([stats = gst_promise_get_reply(promise), holder = holder.get()]() {
+            holder->callback(RTCStatsReport::create([stats](auto& mapAdapter) {
+                if (stats)
+                    gst_structure_foreach(stats, fillReportCallback, &mapAdapter);
+            }));
+        });
+    }, holder.release(), nullptr);
+    g_signal_emit_by_name(m_webrtcBin.get(), "get-stats", pad, promise);
 }
 
 }; // namespace WebCore

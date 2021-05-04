@@ -81,7 +81,7 @@ gboolean messageCallback(GstBus*, GstMessage* message, GStreamerMediaEndpoint* e
 void GStreamerMediaEndpoint::initializePipeline()
 {
     static int nPipeline = 0;
-    auto pipelineName = makeString("MediaEndPoint-", nPipeline++);
+    auto pipelineName = makeString("MediaEndPoint-", nPipeline);
     m_pipeline = gst_pipeline_new(pipelineName.ascii().data());
 
     auto bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(m_pipeline.get())));
@@ -89,7 +89,7 @@ void GStreamerMediaEndpoint::initializePipeline()
     gst_bus_add_signal_watch_full(bus.get(), RunLoopSourcePriority::RunLoopDispatcher);
     g_signal_connect(bus.get(), "message", G_CALLBACK(messageCallback), this);
 
-    auto binName = makeString("webkit-webrtcbin-", nPipeline);
+    auto binName = makeString("webkit-webrtcbin-", nPipeline++);
     m_webrtcBin = gst_element_factory_make("webrtcbin", binName.ascii().data());
     m_statsCollector->setElement(m_webrtcBin.get());
     g_signal_connect_swapped(m_webrtcBin.get(), "notify::signaling-state", G_CALLBACK(+[](GStreamerMediaEndpoint* endPoint) {
@@ -425,8 +425,26 @@ void GStreamerMediaEndpoint::storeRemoteMLineInfo(GstSDPMessage* message)
         if (!g_str_equal(typ, "audio") && !g_str_equal(typ, "video"))
             continue;
 
+#ifndef GST_DISABLE_GST_DEBUG
+        GUniquePtr<char> mediaRepresentation(gst_sdp_media_as_text(media));
+        GST_LOG_OBJECT(m_pipeline.get(), "Processing media:\n%s", mediaRepresentation.get());
+#endif
         const char* mid = gst_sdp_media_get_attribute_val(media, "mid");
+        if (!mid)
+            continue;
+
         m_mediaForMid.set(String(mid), g_str_equal(typ, "audio") ? RealtimeMediaSource::Type::Audio : RealtimeMediaSource::Type::Video);
+
+        // https://gitlab.freedesktop.org/gstreamer/gst-plugins-bad/-/merge_requests/1907
+        if (sdpMediaHasAttributeKey(media, "ice-lite")) {
+            GRefPtr<GObject> ice;
+            g_object_get(m_webrtcBin.get(), "ice-agent", &ice.outPtr(), nullptr);
+
+            // gboolean iceTCP;
+            // g_object_get(ice, "ice-tcp", &iceTCP, nullptr);
+            // gst_printerrln("ice-tcp: %d", iceTCP);
+            g_object_set(ice.get(), "ice-lite", TRUE, nullptr);
+        }
 
         auto caps = adoptGRef(gst_caps_new_empty());
         Vector<int> payloadTypes;
@@ -514,6 +532,8 @@ void GStreamerMediaEndpoint::configureAndLinkSource(RealtimeOutgoingMediaSourceG
     GST_DEBUG_OBJECT(m_pipeline.get(), "Linking outgoing source to new request-pad %s", padId.utf8().data());
     GstPadTemplate* padTemplate = gst_element_get_pad_template(m_webrtcBin.get(), "sink_%u");
     auto sinkPad = adoptGRef(gst_element_request_pad(m_webrtcBin.get(), padTemplate, padId.utf8().data(), nullptr));
+    if (!sinkPad)
+        return;
     m_requestPadCounter++;
     RELEASE_ASSERT(!gst_pad_is_linked(sinkPad.get()));
     auto sourceBin = source.bin();
