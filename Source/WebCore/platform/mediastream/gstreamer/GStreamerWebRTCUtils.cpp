@@ -297,11 +297,23 @@ Optional<Ref<RTCCertificate>> generateCertificate(Ref<SecurityOrigin>&& origin, 
     }
 
     auto pem = x509Serialize(x509);
+    GST_DEBUG("Generated certificate PEM: %s", pem.ascii().data());
     auto serializedPrivateKey = privateKeySerialize(privateKey);
     Vector<RTCCertificate::DtlsFingerprint> fingerprints;
     // FIXME: Fill fingerprints.
     auto expirationTime = WTF::WallTime::now().secondsSinceEpoch() + WTF::Seconds(expires);
     return RTCCertificate::create(WTFMove(origin), expirationTime.milliseconds(), WTFMove(fingerprints), WTFMove(pem), WTFMove(serializedPrivateKey));
+}
+
+bool sdpMediaHasAttributeKey(const GstSDPMedia* media, const char* key)
+{
+    for (unsigned i = 0; i < gst_sdp_media_attributes_len(media); i++) {
+        const auto* attribute = gst_sdp_media_get_attribute(media, i);
+        if (!g_strcmp0(attribute->key, key))
+            return true;
+    }
+
+    return false;
 }
 
 } // namespace WebCore

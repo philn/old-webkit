@@ -37,11 +37,9 @@ public:
 
     void setElement(GstElement* element) { m_webrtcBin = element; }
     void getStats(CollectorCallback&&, GstPad*);
-    void processStats(const GstStructure*);
 
  private:
     GRefPtr<GstElement> m_webrtcBin;
-    CollectorCallback m_callback;
 };
 
 } // namespace WebCore
