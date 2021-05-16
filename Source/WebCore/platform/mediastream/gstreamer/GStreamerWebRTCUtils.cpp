@@ -33,8 +33,8 @@
 #include <wtf/text/Base64.h>
 #include <wtf/text/StringToIntegerConversion.h>
 
-GST_DEBUG_CATEGORY_EXTERN(webkit_webrtc_endpoint_debug);
-#define GST_CAT_DEFAULT webkit_webrtc_endpoint_debug
+GST_DEBUG_CATEGORY_STATIC(webkit_webrtc_utils_debug);
+#define GST_CAT_DEFAULT webkit_webrtc_utils_debug
 
 namespace WebCore {
 
@@ -79,8 +79,17 @@ static inline Optional<RTCIceCandidateType> toRTCIceCandidateType(const String& 
     return RTCIceCandidateType::Relay;
 }
 
+static void ensureDebugCategoryInitialized()
+{
+    static std::once_flag onceFlag;
+    std::call_once(onceFlag, [] {
+        GST_DEBUG_CATEGORY_INIT(webkit_webrtc_utils_debug, "webkitwebrtcutils", 0, "WebKit WebRTC utilities");
+    });
+}
+
 Optional<RTCIceCandidate::Fields> parseIceCandidateSDP(const String& sdp)
 {
+    ensureDebugCategoryInitialized();
     GST_DEBUG("Parsing ICE Candidate: %s", sdp.utf8().data());
     if (!sdp.startsWith("candidate:"))
         return { };
@@ -216,6 +225,7 @@ static String privateKeySerialize(EVP_PKEY* privateKey)
 
 Optional<Ref<RTCCertificate>> generateCertificate(Ref<SecurityOrigin>&& origin, const PeerConnectionBackend::CertificateInformation& info)
 {
+    ensureDebugCategoryInitialized();
     EVP_PKEY* privateKey = EVP_PKEY_new();
     if (!privateKey) {
         GST_WARNING("Failed to create private key");

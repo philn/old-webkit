@@ -444,7 +444,8 @@ void GStreamerMediaEndpoint::storeRemoteMLineInfo(GstSDPMessage* message)
             // gboolean iceTCP;
             // g_object_get(ice, "ice-tcp", &iceTCP, nullptr);
             // gst_printerrln("ice-tcp: %d", iceTCP);
-            g_object_set(ice.get(), "ice-lite", TRUE, nullptr);
+            if (ice)
+                g_object_set(ice.get(), "ice-lite", TRUE, nullptr);
         }
 
         auto caps = adoptGRef(gst_caps_new_empty());
