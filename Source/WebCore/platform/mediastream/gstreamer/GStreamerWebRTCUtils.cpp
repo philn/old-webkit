@@ -28,9 +28,10 @@
 #include <openssl/rsa.h>
 #include <openssl/ssl.h>
 #include <wtf/CryptographicallyRandomNumber.h>
-#include <wtf/text/Base64.h>
 #include <wtf/Scope.h>
 #include <wtf/WallTime.h>
+#include <wtf/text/Base64.h>
+#include <wtf/text/StringToIntegerConversion.h>
 
 GST_DEBUG_CATEGORY_EXTERN(webkit_webrtc_endpoint_debug);
 #define GST_CAT_DEFAULT webkit_webrtc_endpoint_debug
@@ -95,7 +96,6 @@ Optional<RTCIceCandidate::Fields> parseIceCandidateSDP(const String& sdp)
     String relatedAddress;
     guint16 relatedPort = 0;
     String usernameFragment;
-    bool ok;
     auto tokens = sdp.convertToASCIILowercase().substring(10).split(' ');
 
     for (auto it = tokens.begin(); it != tokens.end(); ++it) {
@@ -106,25 +106,28 @@ Optional<RTCIceCandidate::Fields> parseIceCandidateSDP(const String& sdp)
             foundation = token;
             break;
         case 1:
-            componentId = token.toUIntStrict(&ok);
-            if (!ok)
+            if (auto value = parseInteger<unsigned>(token))
+                componentId = *value;
+            else
                 return { };
             break;
         case 2:
             transport = token;
             break;
         case 3:
-            priority = token.toUIntStrict(&ok);
-            if (!ok)
-                return {};
+            if (auto value = parseInteger<unsigned>(token))
+                priority = *value;
+            else
+                return { };
             break;
         case 4:
             address = token;
             break;
         case 5:
-            port = token.toUIntStrict(&ok);
-            if (!ok)
-                return {};
+            if (auto value = parseInteger<unsigned>(token))
+                port = *value;
+            else
+                return { };
             break;
         default:
             if (it + 1 == tokens.end())
@@ -136,7 +139,7 @@ Optional<RTCIceCandidate::Fields> parseIceCandidateSDP(const String& sdp)
             else if (token == "raddr")
                 relatedAddress = *it;
             else if (token == "rport")
-                relatedPort = (*it).toUIntStrict(&ok);
+                relatedPort = parseInteger<unsigned>(*it).valueOr(0);
             else if (token == "tcptype")
                 tcptype = *it;
             else if (token == "ufrag")

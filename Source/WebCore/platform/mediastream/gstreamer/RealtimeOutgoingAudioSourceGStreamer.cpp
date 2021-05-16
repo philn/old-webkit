@@ -22,6 +22,7 @@
 #if USE(GSTREAMER_WEBRTC)
 
 #include "GStreamerAudioCaptureSource.h"
+#include <wtf/text/StringToIntegerConversion.h>
 
 GST_DEBUG_CATEGORY_EXTERN(webkit_webrtc_endpoint_debug);
 #define GST_CAT_DEFAULT webkit_webrtc_endpoint_debug
@@ -71,7 +72,8 @@ void RealtimeOutgoingAudioSourceGStreamer::setPayloadType(GRefPtr<GstCaps>& caps
 
     if (const char* minPTime = gst_structure_get_string(structure, "minptime")) {
         String time(minPTime);
-        g_object_set(m_payloader.get(), "min-ptime", time.toInt64() * GST_MSECOND, nullptr);
+        if (auto value = parseIntegerAllowingTrailingJunk<int64_t>(time))
+            g_object_set(m_payloader.get(), "min-ptime", *value * GST_MSECOND, nullptr);
     }
 
     g_object_set(m_payloader.get(), "pt", payloadType, nullptr);

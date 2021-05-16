@@ -47,9 +47,10 @@
 
 #include <gst/sdp/sdp.h>
 #include <wtf/MainThread.h>
-#include <wtf/glib/RunLoopSourcePriority.h>
-#include <wtf/glib/GLibUtilities.h>
 #include <wtf/Scope.h>
+#include <wtf/glib/GLibUtilities.h>
+#include <wtf/glib/RunLoopSourcePriority.h>
+#include <wtf/text/StringToIntegerConversion.h>
 
 GST_DEBUG_CATEGORY(webkit_webrtc_endpoint_debug);
 #define GST_CAT_DEFAULT webkit_webrtc_endpoint_debug
@@ -452,15 +453,14 @@ void GStreamerMediaEndpoint::storeRemoteMLineInfo(GstSDPMessage* message)
         GST_DEBUG_OBJECT(m_pipeline.get(), "Media %s has %u formats", typ, totalFormats);
         for (unsigned j = 0; j < totalFormats; j++) {
             auto format = String(gst_sdp_media_get_format(media, j));
-            bool ok = false;
-            int payloadType = format.toInt(&ok);
-            if (!ok) {
+            auto payloadType = parseInteger<int>(format);
+            if (!payloadType) {
                 GST_WARNING_OBJECT(m_pipeline.get(), "Invalid payload type: %s", format.utf8().data());
                 continue;
             }
-            auto formatCaps = adoptGRef(gst_sdp_media_get_caps_from_media(media, payloadType));
+            auto formatCaps = adoptGRef(gst_sdp_media_get_caps_from_media(media, *payloadType));
             if (!formatCaps) {
-                GST_WARNING_OBJECT(m_pipeline.get(), "No caps found for payload type %d", payloadType);
+                GST_WARNING_OBJECT(m_pipeline.get(), "No caps found for payload type %d", *payloadType);
                 continue;
             }
 
@@ -469,8 +469,8 @@ void GStreamerMediaEndpoint::storeRemoteMLineInfo(GstSDPMessage* message)
             gst_sdp_media_attributes_to_caps(media, formatCaps.get());
 
             gst_caps_append(caps.get(), formatCaps.leakRef());
-            m_ptCounter = MAX(m_ptCounter, payloadType + 1);
-            payloadTypes.append(payloadType);
+            m_ptCounter = MAX(m_ptCounter, *payloadType + 1);
+            payloadTypes.append(*payloadType);
         }
 
         unsigned totalCaps = gst_caps_get_size(caps.get());
