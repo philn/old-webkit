@@ -222,11 +222,11 @@ void GStreamerPeerConnectionBackend::doAddIceCandidate(RTCIceCandidate& candidat
     addIceCandidateSucceeded();
 }
 
-Ref<RTCRtpReceiver> GStreamerPeerConnectionBackend::createReceiver(std::unique_ptr<GStreamerRtpReceiverBackend>&& backend, const String& trackKind)
+Ref<RTCRtpReceiver> GStreamerPeerConnectionBackend::createReceiver(std::unique_ptr<GStreamerRtpReceiverBackend>&& backend, const String& trackKind, const String& trackId)
 {
     auto& document = downcast<Document>(*m_peerConnection.scriptExecutionContext());
 
-    auto source = backend->createSource(trackKind);
+    auto source = backend->createSource(trackKind, trackId);
     // Remote source is initially muted and will be unmuted when receiving the first packet.
     source->setMuted(true);
     auto trackID = source->persistentID();
@@ -308,7 +308,7 @@ ExceptionOr<Ref<RTCRtpSender>> GStreamerPeerConnectionBackend::addTrack(MediaStr
 
     auto sender = RTCRtpSender::create(m_peerConnection, makeRef(track), WTFMove(senderBackend));
     sender->setMediaStreamIds(WTFMove(mediaStreamIds));
-    auto receiver = createReceiver(transceiverBackend->createReceiverBackend(), track.kind());
+    auto receiver = createReceiver(transceiverBackend->createReceiverBackend(), track.kind(), track.id());
     auto transceiver = RTCRtpTransceiver::create(sender.copyRef(), WTFMove(receiver), WTFMove(transceiverBackend));
     m_peerConnection.addInternalTransceiver(WTFMove(transceiver));
     return sender;
@@ -322,7 +322,7 @@ ExceptionOr<Ref<RTCRtpTransceiver>> GStreamerPeerConnectionBackend::addTransceiv
         return Exception { InvalidAccessError, "Unable to add transceiver"_s };
 
     auto sender = RTCRtpSender::create(m_peerConnection, WTFMove(trackOrKind), WTFMove(backends->senderBackend));
-    auto receiver = createReceiver(WTFMove(backends->receiverBackend), sender->trackKind());
+    auto receiver = createReceiver(WTFMove(backends->receiverBackend), sender->trackKind(), sender->trackId());
     auto transceiver = RTCRtpTransceiver::create(WTFMove(sender), WTFMove(receiver), WTFMove(backends->transceiverBackend));
     m_peerConnection.addInternalTransceiver(transceiver.copyRef());
     return transceiver;
@@ -361,7 +361,7 @@ RTCRtpTransceiver& GStreamerPeerConnectionBackend::newRemoteTransceiver(std::uni
 {
     auto trackKind = type == RealtimeMediaSource::Type::Audio ? "audio"_s : "video"_s;
     auto sender = RTCRtpSender::create(m_peerConnection, trackKind, transceiverBackend->createSenderBackend(*this, nullptr));
-    auto receiver = createReceiver(transceiverBackend->createReceiverBackend(), trackKind);
+    auto receiver = createReceiver(transceiverBackend->createReceiverBackend(), trackKind, sender->trackId());
     auto transceiver = RTCRtpTransceiver::create(WTFMove(sender), WTFMove(receiver), WTFMove(transceiverBackend));
     m_peerConnection.addInternalTransceiver(transceiver.copyRef());
     return transceiver.get();

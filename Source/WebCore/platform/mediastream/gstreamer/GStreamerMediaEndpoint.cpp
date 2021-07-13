@@ -558,7 +558,7 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
             GRefPtr<GstWebRTCRTPTransceiver> transceiver;
             g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV, audioSource->allowedCaps().get(), &transceiver.outPtr());
             g_object_get(transceiver.get(), "sender", &rtcSender.outPtr(), nullptr);
-            transceiver->mline = m_mlineIndex;
+            g_object_set(transceiver.get(), "mlineindex", m_mlineIndex, nullptr);
             m_mlineIndex++;
             // g_object_set(transceiver, "fec-type", GST_WEBRTC_FEC_TYPE_ULP_RED, "fec-percentage", 100, nullptr);
             // g_object_set(transceiver, "do-nack", true, nullptr);
@@ -579,7 +579,8 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
             GRefPtr<GstWebRTCRTPTransceiver> transceiver;
             g_signal_emit_by_name(m_webrtcBin.get(), "add-transceiver", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV, videoSource->allowedCaps().get(), &transceiver.outPtr());
             g_object_get(transceiver.get(), "sender", &rtcSender.outPtr(), nullptr);
-            transceiver->mline = m_mlineIndex;
+            g_object_set(transceiver.get(), "mlineindex", m_mlineIndex, nullptr);
+
             m_mlineIndex++;
 
             // g_object_set(transceiver, "fec-type", GST_WEBRTC_FEC_TYPE_ULP_RED, "fec-percentage", 100, nullptr);
@@ -743,7 +744,9 @@ void GStreamerMediaEndpoint::addRemoteStream(GstPad* pad)
     GUniqueOutPtr<GstWebRTCSessionDescription> description;
     g_object_get(m_webrtcBin.get(), "current-remote-description", &description.outPtr(), nullptr);
 
-    const auto* media = gst_sdp_message_get_media(description->sdp, rtcTransceiver->mline);
+    unsigned mLineIndex;
+    g_object_get(rtcTransceiver.get(), "mlineindex", &mLineIndex, nullptr);
+    const auto* media = gst_sdp_message_get_media(description->sdp, mLineIndex);
     String sdpString = gst_sdp_media_as_text(media);
 
     auto* structure = gst_caps_get_structure(caps.get(), 0);
@@ -1085,13 +1088,17 @@ void GStreamerMediaEndpoint::collectTransceivers()
         if (existingTransceiver)
             continue;
 
-        if (!current->receiver)
+        GRefPtr<GstWebRTCRTPReceiver> receiver;
+        GUniqueOutPtr<char> mid;
+        g_object_get(current, "receiver", &receiver.outPtr(), "mid", &mid.outPtr(), nullptr);
+
+        if (!receiver)
             continue;
 
-        if (!current->mid)
+        if (!mid)
             continue;
 
-        m_peerConnectionBackend.newRemoteTransceiver(std::make_unique<GStreamerRtpTransceiverBackend>(WTFMove(current)), m_mediaForMid.get(current->mid));
+        m_peerConnectionBackend.newRemoteTransceiver(std::make_unique<GStreamerRtpTransceiverBackend>(WTFMove(current)), m_mediaForMid.get(mid.get()));
     }
 }
 
