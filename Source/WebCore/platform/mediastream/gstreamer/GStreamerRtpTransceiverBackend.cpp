@@ -21,12 +21,13 @@
 
 #if ENABLE(WEB_RTC) && USE(GSTREAMER_WEBRTC)
 
-#include "JSDOMPromiseDeferred.h"
 #include "GStreamerRtpReceiverBackend.h"
 #include "GStreamerRtpSenderBackend.h"
 #include "GStreamerWebRTCUtils.h"
+#include "JSDOMPromiseDeferred.h"
 #include "NotImplemented.h"
 #include "RTCRtpCodecCapability.h"
+#include <wtf/glib/GUniquePtr.h>
 
 GST_DEBUG_CATEGORY_EXTERN(webkit_webrtc_endpoint_debug);
 #define GST_CAT_DEFAULT webkit_webrtc_endpoint_debug
@@ -56,11 +57,11 @@ RTCRtpTransceiverDirection GStreamerRtpTransceiverBackend::direction() const
 
 std::optional<RTCRtpTransceiverDirection> GStreamerRtpTransceiverBackend::currentDirection() const
 {
-    // FIXME: Why no current-direction GObject property in GstWebRTCRTPTransceiver?
-    GstWebRTCRTPTransceiverDirection value = m_rtcTransceiver->current_direction;
-    if (!value)
+    GstWebRTCRTPTransceiverDirection gstDirection;
+    g_object_get(m_rtcTransceiver.get(), "current-direction", &gstDirection, nullptr);
+    if (!gstDirection)
         return std::nullopt;
-    return toRTCRtpTransceiverDirection(value);
+    return toRTCRtpTransceiverDirection(gstDirection);
 }
 
 void GStreamerRtpTransceiverBackend::setDirection(RTCRtpTransceiverDirection direction)
@@ -70,10 +71,9 @@ void GStreamerRtpTransceiverBackend::setDirection(RTCRtpTransceiverDirection dir
 
 String GStreamerRtpTransceiverBackend::mid()
 {
-    // FIXME: Why no mid GObject property in GstWebRTCRTPTransceiver?
-    if (char* mid = m_rtcTransceiver->mid)
-        return mid;
-    return String { };
+    GUniqueOutPtr<char> mid;
+    g_object_get(m_rtcTransceiver.get(), "mid", &mid.outPtr(), nullptr);
+    return String { mid.get() };
 }
 
 void GStreamerRtpTransceiverBackend::stop()
@@ -83,8 +83,11 @@ void GStreamerRtpTransceiverBackend::stop()
 
 bool GStreamerRtpTransceiverBackend::stopped() const
 {
-    // FIXME: Why no stopped GObject property in GstWebRTCRTPTransceiver?
-    return m_rtcTransceiver->stopped;
+    // gboolean isStopped;
+    // g_object_get(m_rtcTransceiver.get(), "stopped", &isStopped, nullptr);
+    // return isStopped;
+    // FIXME: webrtcbin transceivers can't be stopped yet.
+    return false;
 }
 
 static inline ExceptionOr<GstCaps*> toRtpCodecCapability(const RTCRtpCodecCapability& codec)
@@ -104,14 +107,14 @@ static inline ExceptionOr<GstCaps*> toRtpCodecCapability(const RTCRtpCodecCapabi
 
 ExceptionOr<void> GStreamerRtpTransceiverBackend::setCodecPreferences(const Vector<RTCRtpCodecCapability>& codecs)
 {
-    GstCaps* gstCodecs = gst_caps_new_empty();
+    auto gstCodecs = adoptGRef(gst_caps_new_empty());
     for (auto& codec : codecs) {
         auto result = toRtpCodecCapability(codec);
         if (result.hasException())
             return result.releaseException();
-        gst_caps_append(gstCodecs, result.releaseReturnValue());
+        gst_caps_append(gstCodecs.get(), result.releaseReturnValue());
     }
-    gst_caps_replace(&m_rtcTransceiver->codec_preferences, gstCodecs);
+    g_object_set(m_rtcTransceiver.get(), "codec-preferences", gstCodecs.get(), nullptr);
     return { };
 }
 

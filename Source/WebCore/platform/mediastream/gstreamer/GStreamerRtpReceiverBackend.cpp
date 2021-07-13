@@ -50,19 +50,13 @@ Vector<RTCRtpSynchronizationSource> GStreamerRtpReceiverBackend::getSynchronizat
     return sources;
 }
 
-Ref<RealtimeMediaSource> GStreamerRtpReceiverBackend::createSource(const String& trackKind)
+Ref<RealtimeMediaSource> GStreamerRtpReceiverBackend::createSource(const String& trackKind, const String& trackId)
 {
-    auto* transport = m_rtcReceiver->transport;
-    GUniqueOutPtr<char> connectionId;
-
-    if (transport && transport->dtlssrtpenc)
-        g_object_get(transport->dtlssrtpenc, "connection-id", &connectionId.outPtr(), nullptr);
-
     if (trackKind == "video"_s)
-        return RealtimeIncomingVideoSourceGStreamer::create(connectionId.get());
+        return RealtimeIncomingVideoSourceGStreamer::create(trackId.isolatedCopy());
 
     RELEASE_ASSERT(trackKind == "audio"_s);
-    return RealtimeIncomingAudioSourceGStreamer::create(connectionId.get());
+    return RealtimeIncomingAudioSourceGStreamer::create(trackId.isolatedCopy());
 }
 
 Ref<RTCRtpTransformBackend> GStreamerRtpReceiverBackend::rtcRtpTransformBackend()
