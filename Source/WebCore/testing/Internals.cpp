@@ -589,6 +589,7 @@ void Internals::resetToConsistentState(Page& page)
     page.settings().setWebRTCEncryptionEnabled(true);
 #elif USE(GSTREAMER_WEBRTC)
     page.settings().setWebRTCEncryptionEnabled(true);
+    page.settings().setPeerConnectionEnabled(true);
 #endif
 
     page.setFullscreenAutoHideDuration(0_s);
