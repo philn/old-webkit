@@ -153,7 +153,12 @@ void MediaDevices::getDisplayMedia(const DisplayMediaStreamConstraints& constrai
         return;
     }
 
-    auto request = UserMediaRequest::create(*document, { MediaStreamRequest::Type::DisplayMedia, { }, createMediaConstraints(constraints.video), isUserGesturePriviledged }, WTFMove(promise));
+    MediaConstraints audioConstraints;
+#if USE(GSTREAMER)
+    audioConstraints = createMediaConstraints(constraints.audio);
+#endif
+
+    auto request = UserMediaRequest::create(*document, { MediaStreamRequest::Type::DisplayMedia, audioConstraints, createMediaConstraints(constraints.video), isUserGesturePriviledged }, WTFMove(promise));
     request->start();
 }
 

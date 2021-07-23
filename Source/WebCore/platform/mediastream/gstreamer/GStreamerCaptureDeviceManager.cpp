@@ -57,10 +57,24 @@ GStreamerAudioCaptureDeviceManager& GStreamerAudioCaptureDeviceManager::singleto
     return manager;
 }
 
+GStreamerAudioCaptureDeviceManager::GStreamerAudioCaptureDeviceManager()
+{
+    refreshCaptureDevices();
+}
+
 GStreamerVideoCaptureDeviceManager& GStreamerVideoCaptureDeviceManager::singleton()
 {
     static NeverDestroyed<GStreamerVideoCaptureDeviceManager> manager;
     return manager;
+}
+
+GStreamerCaptureDeviceManager::GStreamerCaptureDeviceManager()
+{
+    ensureGStreamerInitialized();
+    static std::once_flag onceFlag;
+    std::call_once(onceFlag, [] {
+        GST_DEBUG_CATEGORY_INIT(webkitGStreamerCaptureDeviceManagerDebugCategory, "webkitcapturedevicemanager", 0, "WebKit Capture Device Manager");
+    });
 }
 
 GStreamerCaptureDeviceManager::~GStreamerCaptureDeviceManager()
@@ -80,33 +94,23 @@ std::optional<GStreamerCaptureDevice> GStreamerCaptureDeviceManager::gstreamerDe
     return std::nullopt;
 }
 
-const Vector<CaptureDevice>& GStreamerCaptureDeviceManager::captureDevices()
-{
-    ensureGStreamerInitialized();
-    static std::once_flag onceFlag;
-    std::call_once(onceFlag, [] {
-        GST_DEBUG_CATEGORY_INIT(webkitGStreamerCaptureDeviceManagerDebugCategory, "webkitcapturedevicemanager", 0, "WebKit Capture Device Manager");
-    });
-    if (m_devices.isEmpty())
-        refreshCaptureDevices();
-
-    return m_devices;
-}
-
 void GStreamerCaptureDeviceManager::addDevice(GRefPtr<GstDevice>&& device)
 {
     GUniquePtr<GstStructure> properties(gst_device_get_properties(device.get()));
-    const char* klass = gst_structure_get_string(properties.get(), "device.class");
-
-    if (klass && !g_strcmp0(klass, "monitor"))
-        return;
-
-    CaptureDevice::DeviceType type = deviceType();
+    auto types = deviceTypes();
     GUniquePtr<char> deviceClassChar(gst_device_get_device_class(device.get()));
     String deviceClass(String(deviceClassChar.get()));
-    if (type == CaptureDevice::DeviceType::Microphone && !deviceClass.startsWith("Audio"))
-        return;
-    if (type == CaptureDevice::DeviceType::Camera && !deviceClass.startsWith("Video"))
+    CaptureDevice::DeviceType type;
+    if (deviceClass.startsWith("Audio")) {
+        if (types.contains(CaptureDevice::DeviceType::Microphone) && deviceClass.endsWith("Source"_s))
+            type = CaptureDevice::DeviceType::Microphone;
+        else if (types.contains(CaptureDevice::DeviceType::Speaker) && deviceClass.endsWith("Sink"_s))
+            type = CaptureDevice::DeviceType::Speaker;
+        else
+            return;
+    } else if (types.contains(CaptureDevice::DeviceType::Camera) && deviceClass.startsWith("Video"_s))
+        type = CaptureDevice::DeviceType::Camera;
+    else
         return;
 
     // This isn't really a UID but should be good enough (libwebrtc
@@ -121,10 +125,15 @@ void GStreamerCaptureDeviceManager::addDevice(GRefPtr<GstDevice>&& device)
     auto gstCaptureDevice = GStreamerCaptureDevice(WTFMove(device), identifier, type, identifier);
     gstCaptureDevice.setEnabled(true);
     m_gstreamerDevices.append(WTFMove(gstCaptureDevice));
+
     // FIXME: We need a CaptureDevice copy in other vector just for captureDevices API.
     auto captureDevice = CaptureDevice(identifier, type, identifier);
     captureDevice.setEnabled(true);
-    m_devices.append(WTFMove(captureDevice));
+
+    if (captureDevice.type() == CaptureDevice::DeviceType::Speaker)
+        m_speakerDevices.append(WTFMove(captureDevice));
+    else
+        m_devices.append(WTFMove(captureDevice));
 }
 
 void GStreamerCaptureDeviceManager::refreshCaptureDevices()
@@ -133,24 +142,18 @@ void GStreamerCaptureDeviceManager::refreshCaptureDevices()
     if (!m_deviceMonitor) {
         m_deviceMonitor = adoptGRef(gst_device_monitor_new());
 
-        switch (deviceType()) {
-        case CaptureDevice::DeviceType::Camera: {
+        auto types = deviceTypes();
+        if (types.contains(CaptureDevice::DeviceType::Camera)) {
             auto caps = adoptGRef(gst_caps_new_empty_simple("video/x-raw"));
             gst_device_monitor_add_filter(m_deviceMonitor.get(), "Video/Source", caps.get());
-            break;
         }
-        case CaptureDevice::DeviceType::Microphone: {
+        if (types.contains(CaptureDevice::DeviceType::Microphone)) {
             auto caps = adoptGRef(gst_caps_new_empty_simple("audio/x-raw"));
             gst_device_monitor_add_filter(m_deviceMonitor.get(), "Audio/Source", caps.get());
-            break;
         }
-        case CaptureDevice::DeviceType::Speaker:
-            // FIXME: Add Audio/Sink filter. See https://bugs.webkit.org/show_bug.cgi?id=216880
-        case CaptureDevice::DeviceType::Screen:
-        case CaptureDevice::DeviceType::Window:
-            break;
-        case CaptureDevice::DeviceType::Unknown:
-            return;
+        if (types.contains(CaptureDevice::DeviceType::Speaker)) {
+            auto caps = adoptGRef(gst_caps_new_empty_simple("audio/x-raw"));
+            gst_device_monitor_add_filter(m_deviceMonitor.get(), "Audio/Sink", caps.get());
         }
 
         auto bus = adoptGRef(gst_device_monitor_get_bus(m_deviceMonitor.get()));

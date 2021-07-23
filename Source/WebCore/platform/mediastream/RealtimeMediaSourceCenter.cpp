@@ -194,7 +194,7 @@ void RealtimeMediaSourceCenter::triggerDevicesChangedObservers()
     });
 }
 
-void RealtimeMediaSourceCenter::getDisplayMediaDevices(const MediaStreamRequest& request, Vector<DeviceInfo>& diaplayDeviceInfo, String& firstInvalidConstraint)
+void RealtimeMediaSourceCenter::getDisplayMediaDevices(const MediaStreamRequest& request, Vector<DeviceInfo>& audioDeviceInfo, Vector<DeviceInfo>& displayDeviceInfo, String& firstInvalidConstraint)
 {
     if (!request.videoConstraints.isValid)
         return;
@@ -206,10 +206,24 @@ void RealtimeMediaSourceCenter::getDisplayMediaDevices(const MediaStreamRequest&
 
         auto sourceOrError = displayCaptureFactory().createDisplayCaptureSource(device, { });
         if (sourceOrError && sourceOrError.captureSource->supportsConstraints(request.videoConstraints, invalidConstraint))
-            diaplayDeviceInfo.append({sourceOrError.captureSource->fitnessScore(), device});
+            displayDeviceInfo.append({sourceOrError.captureSource->fitnessScore(), device});
 
         if (!invalidConstraint.isEmpty() && firstInvalidConstraint.isEmpty())
             firstInvalidConstraint = invalidConstraint;
+    }
+
+    if (request.audioConstraints.isValid) {
+        for (auto& device : audioCaptureFactory().speakerDevices()) {
+            if (!device.enabled())
+                continue;
+
+            auto sourceOrError = audioCaptureFactory().createAudioCaptureSource(device, { }, { });
+            if (sourceOrError && sourceOrError.captureSource->supportsConstraints(request.audioConstraints, invalidConstraint))
+                audioDeviceInfo.append({ sourceOrError.captureSource->fitnessScore(), device });
+
+            if (!invalidConstraint.isEmpty() && firstInvalidConstraint.isEmpty())
+                firstInvalidConstraint = invalidConstraint;
+        }
     }
 }
 
@@ -283,7 +297,7 @@ void RealtimeMediaSourceCenter::validateRequestConstraintsAfterEnumeration(Valid
     String firstInvalidConstraint;
 
     if (request.type == MediaStreamRequest::Type::DisplayMedia)
-        getDisplayMediaDevices(request, videoDeviceInfo, firstInvalidConstraint);
+        getDisplayMediaDevices(request, audioDeviceInfo, videoDeviceInfo, firstInvalidConstraint);
     else
         getUserMediaDevices(request, String { deviceIdentifierHashSalt }, audioDeviceInfo, videoDeviceInfo, firstInvalidConstraint);
 

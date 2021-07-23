@@ -26,8 +26,6 @@
 #include "CaptureDevice.h"
 #include "GStreamerCommon.h"
 
-#include <gst/gst.h>
-
 namespace WebCore {
 
 class GStreamerCaptureDevice : public CaptureDevice {

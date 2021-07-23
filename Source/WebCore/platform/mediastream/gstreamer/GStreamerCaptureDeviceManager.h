@@ -27,20 +27,26 @@
 #include "GRefPtrGStreamer.h"
 #include "GStreamerCaptureDevice.h"
 #include "RealtimeMediaSourceFactory.h"
+#include <wtf/Forward.h>
 
 namespace WebCore {
 
 class GStreamerCaptureDeviceManager : public CaptureDeviceManager {
 public:
+    GStreamerCaptureDeviceManager();
     ~GStreamerCaptureDeviceManager();
     std::optional<GStreamerCaptureDevice> gstreamerDeviceWithUID(const String&);
 
-    const Vector<CaptureDevice>& captureDevices() final;
-    virtual CaptureDevice::DeviceType deviceType() = 0;
+    const Vector<CaptureDevice>& speakerDevices() const { return m_speakerDevices; }
+    const Vector<CaptureDevice>& captureDevices() final { return m_devices; }
+    virtual OptionSet<CaptureDevice::DeviceType> deviceTypes() = 0;
+
+protected:
+    void refreshCaptureDevices();
+    Vector<CaptureDevice> m_speakerDevices;
 
 private:
     void addDevice(GRefPtr<GstDevice>&&);
-    void refreshCaptureDevices();
 
     GRefPtr<GstDeviceMonitor> m_deviceMonitor;
     Vector<GStreamerCaptureDevice> m_gstreamerDevices;
@@ -51,9 +57,8 @@ class GStreamerAudioCaptureDeviceManager final : public GStreamerCaptureDeviceMa
     friend class NeverDestroyed<GStreamerAudioCaptureDeviceManager>;
 public:
     static GStreamerAudioCaptureDeviceManager& singleton();
-    CaptureDevice::DeviceType deviceType() final { return CaptureDevice::DeviceType::Microphone; }
-private:
-    GStreamerAudioCaptureDeviceManager() = default;
+    GStreamerAudioCaptureDeviceManager();
+    OptionSet<CaptureDevice::DeviceType> deviceTypes() final { return { CaptureDevice::DeviceType::Microphone, CaptureDevice::DeviceType::Speaker }; }
 };
 
 class GStreamerVideoCaptureDeviceManager final : public GStreamerCaptureDeviceManager {
@@ -61,7 +66,8 @@ class GStreamerVideoCaptureDeviceManager final : public GStreamerCaptureDeviceMa
 public:
     static GStreamerVideoCaptureDeviceManager& singleton();
     static VideoCaptureFactory& videoFactory();
-    CaptureDevice::DeviceType deviceType() final { return CaptureDevice::DeviceType::Camera; }
+    OptionSet<CaptureDevice::DeviceType> deviceTypes() final { return { CaptureDevice::DeviceType::Camera }; }
+
 private:
     GStreamerVideoCaptureDeviceManager() = default;
 };
