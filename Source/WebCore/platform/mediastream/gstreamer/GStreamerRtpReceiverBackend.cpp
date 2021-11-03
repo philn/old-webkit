@@ -21,6 +21,7 @@
 
 #if ENABLE(WEB_RTC) && USE(GSTREAMER_WEBRTC)
 
+#include "GStreamerDtlsTransportBackend.h"
 #include "GStreamerRtpReceiverTransformBackend.h"
 #include "GStreamerWebRTCUtils.h"
 #include "NotImplemented.h"
@@ -62,6 +63,13 @@ Ref<RealtimeMediaSource> GStreamerRtpReceiverBackend::createSource(const String&
 Ref<RTCRtpTransformBackend> GStreamerRtpReceiverBackend::rtcRtpTransformBackend()
 {
     return GStreamerRtpReceiverTransformBackend::create(m_rtcReceiver);
+}
+
+std::unique_ptr<RTCDtlsTransportBackend> GStreamerRtpReceiverBackend::dtlsTransportBackend()
+{
+    GRefPtr<GstWebRTCDTLSTransport> transport;
+    g_object_get(m_rtcReceiver.get(), "transport", &transport.outPtr(), nullptr);
+    return transport ? makeUnique<GStreamerDtlsTransportBackend>(WTFMove(transport)) : nullptr;
 }
 
 } // namespace WebCore

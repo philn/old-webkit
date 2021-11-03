@@ -61,7 +61,7 @@ public:
     std::unique_ptr<RTCDataChannelHandler> createDataChannel(const String&, const RTCDataChannelInit&);
     void onDataChannel(GstWebRTCDataChannel*);
 
-    void addIceCandidate(GStreamerIceCandidate&);
+    void addIceCandidate(GStreamerIceCandidate&, PeerConnectionBackend::AddIceCandidateCallback&&);
 
     void close();
     void stop();
@@ -70,13 +70,8 @@ public:
     void suspend();
     void resume();
 
-    RefPtr<RTCSessionDescription> fetchDescription(const char* name) const;
-    RefPtr<RTCSessionDescription> localDescription() const;
-    RefPtr<RTCSessionDescription> remoteDescription() const;
-    RefPtr<RTCSessionDescription> currentLocalDescription() const;
-    RefPtr<RTCSessionDescription> currentRemoteDescription() const;
-    RefPtr<RTCSessionDescription> pendingLocalDescription() const;
-    RefPtr<RTCSessionDescription> pendingRemoteDescription() const;
+    void gatherDecoderImplementationName(Function<void(String&&)>&&);
+    bool isNegotiationNeeded() const { return m_isNegotiationNeeded; }
 
     void configureAndLinkSource(RealtimeOutgoingMediaSourceGStreamer&);
 
@@ -123,7 +118,6 @@ private:
     void setDescription(const RTCSessionDescription&, bool isLocal, Function<void()>&& successCallback, Function<void()>&& failureCallback);
     void initiate(bool isInitiator, GUniquePtr<GstStructure>&&);
 
-    void onSignalingStateChange();
     void onNegotiationNeeded();
     void onIceConnectionChange();
     void onIceGatheringChange();
@@ -186,6 +180,7 @@ private:
     unsigned m_pendingIncomingStreams { 0 };
 
     bool m_isInitiator { false };
+    bool m_isNegotiationNeeded { false };
 
 #if !RELEASE_LOG_DISABLED
     Timer m_statsLogTimer;

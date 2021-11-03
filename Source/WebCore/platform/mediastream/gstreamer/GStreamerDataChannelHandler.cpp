@@ -166,8 +166,8 @@ void GStreamerDataChannelHandler::checkState()
         state = RTCDataChannelState::Closed;
         break;
     }
-    callOnMainThread([protectedClient = makeRef(*m_client), state] {
-        protectedClient->didChangeReadyState(state);
+    callOnMainThread([client = m_client, state] {
+        client->didChangeReadyState(state);
     });
 }
 
@@ -186,8 +186,8 @@ void GStreamerDataChannelHandler::onMessageData(GBytes* bytes)
 
     gsize size = 0;
     const auto* data = reinterpret_cast<const uint8_t*>(g_bytes_get_data(bytes, &size));
-    callOnMainThread([protectedClient = makeRef(*m_client), data, size] {
-        protectedClient->didReceiveRawData(data, size);
+    callOnMainThread([client = m_client, data, size] {
+        client->didReceiveRawData(data, size);
     });
 }
 
@@ -197,8 +197,8 @@ void GStreamerDataChannelHandler::onMessageString(char* string)
         return;
 
     CString buffer(string, strlen(string));
-    callOnMainThread([protectedClient = makeRef(*m_client), buffer = WTFMove(buffer)] {
-        protectedClient->didReceiveStringData(String::fromUTF8(buffer));
+    callOnMainThread([client = m_client, buffer = WTFMove(buffer)] {
+        client->didReceiveStringData(String::fromUTF8(buffer));
     });
 }
 
@@ -212,9 +212,9 @@ void GStreamerDataChannelHandler::onBufferedAmountLow()
     // if (previousAmount <= m_channel->buffered_amount())
     //     return;
 
-    callOnMainThread([protectedClient = makeRef(*m_client), bufferedAmount] {
+    callOnMainThread([client = m_client, bufferedAmount] {
         // FIXME: This might wrap around.
-        protectedClient->bufferedAmountIsDecreasing(static_cast<size_t>(bufferedAmount));
+        client->bufferedAmountIsDecreasing(static_cast<size_t>(bufferedAmount));
     });
 }
 

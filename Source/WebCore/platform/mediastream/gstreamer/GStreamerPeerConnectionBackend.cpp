@@ -214,12 +214,11 @@ void GStreamerPeerConnectionBackend::doStop()
     m_pendingReceivers.clear();
 }
 
-void GStreamerPeerConnectionBackend::doAddIceCandidate(RTCIceCandidate& candidate)
+void GStreamerPeerConnectionBackend::doAddIceCandidate(RTCIceCandidate& candidate, AddIceCandidateCallback&& callback)
 {
     unsigned sdpMLineIndex = candidate.sdpMLineIndex() ? candidate.sdpMLineIndex().value() : 0;
     auto rtcCandidate = std::make_unique<GStreamerIceCandidate>(*new GStreamerIceCandidate { sdpMLineIndex, candidate.candidate() });
-    m_endpoint->addIceCandidate(*rtcCandidate);
-    addIceCandidateSucceeded();
+    m_endpoint->addIceCandidate(*rtcCandidate, WTFMove(callback));
 }
 
 Ref<RTCRtpReceiver> GStreamerPeerConnectionBackend::createReceiver(std::unique_ptr<GStreamerRtpReceiverBackend>&& backend, const String& trackKind, const String& trackId)
@@ -241,52 +240,13 @@ std::unique_ptr<RTCDataChannelHandler> GStreamerPeerConnectionBackend::createDat
     return m_endpoint->createDataChannel(label, options);
 }
 
-RefPtr<RTCSessionDescription> GStreamerPeerConnectionBackend::currentLocalDescription() const
-{
-    auto description = m_endpoint->currentLocalDescription();
-    if (description)
-        description->setSdp(filterSDP(String(description->sdp())));
-    return description;
-}
-
-RefPtr<RTCSessionDescription> GStreamerPeerConnectionBackend::currentRemoteDescription() const
-{
-    return m_endpoint->currentRemoteDescription();
-}
-
-RefPtr<RTCSessionDescription> GStreamerPeerConnectionBackend::pendingLocalDescription() const
-{
-    auto description = m_endpoint->pendingLocalDescription();
-    if (description)
-        description->setSdp(filterSDP(String(description->sdp())));
-    return description;
-}
-
-RefPtr<RTCSessionDescription> GStreamerPeerConnectionBackend::pendingRemoteDescription() const
-{
-    return m_endpoint->pendingRemoteDescription();
-}
-
-RefPtr<RTCSessionDescription> GStreamerPeerConnectionBackend::localDescription() const
-{
-    auto description = m_endpoint->localDescription();
-    if (description)
-        description->setSdp(filterSDP(String(description->sdp())));
-    return description;
-}
-
-RefPtr<RTCSessionDescription> GStreamerPeerConnectionBackend::remoteDescription() const
-{
-    return m_endpoint->remoteDescription();
-}
-
 static inline RefPtr<RTCRtpSender> findExistingSender(const Vector<RefPtr<RTCRtpTransceiver>>& transceivers, GStreamerRtpSenderBackend& senderBackend)
 {
     ASSERT(senderBackend.rtcSender());
     for (auto& transceiver : transceivers) {
         auto& sender = transceiver->sender();
         if (!sender.isStopped() && senderBackend.rtcSender() == backendFromRTPSender(sender).rtcSender())
-            return makeRef(sender);
+            return Ref(sender);
     }
     return nullptr;
 }
@@ -299,14 +259,14 @@ ExceptionOr<Ref<RTCRtpSender>> GStreamerPeerConnectionBackend::addTrack(MediaStr
 
     if (auto sender = findExistingSender(m_peerConnection.currentTransceivers(), *senderBackend)) {
         backendFromRTPSender(*sender).takeSource(*senderBackend);
-        sender->setTrack(makeRef(track));
+        sender->setTrack(Ref(track));
         sender->setMediaStreamIds(WTFMove(mediaStreamIds));
         return sender.releaseNonNull();
     }
 
     auto transceiverBackend = m_endpoint->transceiverBackendFromSender(*senderBackend);
 
-    auto sender = RTCRtpSender::create(m_peerConnection, makeRef(track), WTFMove(senderBackend));
+    auto sender = RTCRtpSender::create(m_peerConnection, Ref(track), WTFMove(senderBackend));
     sender->setMediaStreamIds(WTFMove(mediaStreamIds));
     auto receiver = createReceiver(transceiverBackend->createReceiverBackend(), track.kind(), track.id());
     auto transceiver = RTCRtpTransceiver::create(sender.copyRef(), WTFMove(receiver), WTFMove(transceiverBackend));
@@ -385,6 +345,16 @@ void GStreamerPeerConnectionBackend::applyRotationForOutgoingVideoSources()
                 videoSource->setApplyRotation(true);
         }
     }
+}
+
+void GStreamerPeerConnectionBackend::gatherDecoderImplementationName(Function<void(String&&)>&& callback)
+{
+    m_endpoint->gatherDecoderImplementationName(WTFMove(callback));
+}
+
+bool GStreamerPeerConnectionBackend::isNegotiationNeeded(uint32_t) const
+{
+    return m_endpoint->isNegotiationNeeded();
 }
 
 } // namespace WebCore

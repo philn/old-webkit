@@ -62,6 +62,8 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         platform/mediastream/gstreamer/GStreamerDisplayCaptureDeviceManager.cpp
         platform/mediastream/gstreamer/GStreamerDTMFSenderBackend.cpp
         platform/mediastream/gstreamer/GStreamerDataChannelHandler.cpp
+        platform/mediastream/gstreamer/GStreamerDtlsTransportBackend.cpp
+        platform/mediastream/gstreamer/GStreamerIceTransportBackend.cpp
         platform/mediastream/gstreamer/GStreamerMediaEndpoint.cpp
         platform/mediastream/gstreamer/GStreamerMediaStreamSource.cpp
         platform/mediastream/gstreamer/GStreamerPeerConnectionBackend.cpp

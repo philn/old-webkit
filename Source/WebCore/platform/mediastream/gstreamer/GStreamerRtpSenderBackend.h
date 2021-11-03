@@ -34,14 +34,14 @@ class GStreamerRtpSenderBackend final : public RTCRtpSenderBackend {
     WTF_MAKE_FAST_ALLOCATED;
 public:
     GStreamerRtpSenderBackend(GStreamerPeerConnectionBackend& backend, GRefPtr<GstWebRTCRTPSender>&& rtcSender)
-        : m_peerConnectionBackend(makeWeakPtr(&backend))
+        : m_peerConnectionBackend(WeakPtr { &backend })
         , m_rtcSender(WTFMove(rtcSender))
     {
     }
 
-    using Source = Variant<std::nullptr_t, Ref<RealtimeOutgoingAudioSourceGStreamer>, Ref<RealtimeOutgoingVideoSourceGStreamer>>;
+    using Source = std::variant<std::nullptr_t, Ref<RealtimeOutgoingAudioSourceGStreamer>, Ref<RealtimeOutgoingVideoSourceGStreamer>>;
     GStreamerRtpSenderBackend(GStreamerPeerConnectionBackend& backend, GRefPtr<GstWebRTCRTPSender>&& rtcSender, Source&& source)
-        : m_peerConnectionBackend(makeWeakPtr(&backend))
+        : m_peerConnectionBackend(WeakPtr { &backend })
         , m_rtcSender(WTFMove(rtcSender))
         , m_source(WTFMove(source))
     {
@@ -102,6 +102,7 @@ private:
     std::unique_ptr<RTCDTMFSenderBackend> createDTMFBackend() final;
     Ref<RTCRtpTransformBackend> rtcRtpTransformBackend() final;
     void setMediaStreamIds(const Vector<String>&) final;
+    std::unique_ptr<RTCDtlsTransportBackend> dtlsTransportBackend() final;
 
     void startSource();
 

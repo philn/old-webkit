@@ -22,6 +22,7 @@
 #if ENABLE(WEB_RTC) && USE(GSTREAMER_WEBRTC)
 
 #include "GStreamerDTMFSenderBackend.h"
+#include "GStreamerDtlsTransportBackend.h"
 #include "GStreamerPeerConnectionBackend.h"
 #include "GStreamerRtpSenderTransformBackend.h"
 #include "GStreamerWebRTCUtils.h"
@@ -160,6 +161,13 @@ void GStreamerRtpSenderBackend::setMediaStreamIds(const Vector<String>& streamId
     for (auto& id : streamIds)
         gst_printerrln(">>>>>>>> set stream %s for this=%p", id.ascii().data(), this);
     notImplemented();
+}
+
+std::unique_ptr<RTCDtlsTransportBackend> GStreamerRtpSenderBackend::dtlsTransportBackend()
+{
+    GRefPtr<GstWebRTCDTLSTransport> transport;
+    g_object_get(m_rtcSender.get(), "transport", &transport.outPtr(), nullptr);
+    return transport ? makeUnique<GStreamerDtlsTransportBackend>(WTFMove(transport)) : nullptr;
 }
 
 } // namespace WebCore

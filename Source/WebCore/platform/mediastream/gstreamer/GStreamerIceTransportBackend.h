@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2019 Igalia S.L. All rights reserved.
+ *  Copyright (C) 2021 Igalia S.L. All rights reserved.
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -20,31 +20,33 @@
 
 #if ENABLE(WEB_RTC) && USE(GSTREAMER_WEBRTC)
 
-#include "RealtimeMediaSource.h"
-#include "RTCRtpReceiverBackend.h"
 #include "GRefPtrGStreamer.h"
+#include "RTCIceTransportBackend.h"
+#include <wtf/WeakPtr.h>
+
+typedef struct _GstWebRTCICETransport GstWebRTCICETransport;
 
 namespace WebCore {
 
-class GStreamerRtpReceiverBackend final : public RTCRtpReceiverBackend {
+class GStreamerIceTransportBackend final : public RTCIceTransportBackend, public CanMakeWeakPtr<GStreamerIceTransportBackend> {
     WTF_MAKE_FAST_ALLOCATED;
-public:
-    explicit GStreamerRtpReceiverBackend(GRefPtr<GstWebRTCRTPReceiver>&& rtcReceiver)
-        : m_rtcReceiver(WTFMove(rtcReceiver))
-    {
-    }
 
-    GstWebRTCRTPReceiver* rtcReceiver() { return m_rtcReceiver.get(); }
-    Ref<RealtimeMediaSource> createSource(const String& trackKind, const String& trackId);
+public:
+    explicit GStreamerIceTransportBackend(GRefPtr<GstWebRTCICETransport>&&);
+    ~GStreamerIceTransportBackend();
+
+    void stateChanged();
+    void gatheringStateChanged();
 
 private:
-    RTCRtpParameters getParameters() final;
-    Vector<RTCRtpContributingSource> getContributingSources() const final;
-    Vector<RTCRtpSynchronizationSource> getSynchronizationSources() const final;
-    Ref<RTCRtpTransformBackend> rtcRtpTransformBackend() final;
-    std::unique_ptr<RTCDtlsTransportBackend> dtlsTransportBackend() final;
+    // RTCIceTransportBackend
+    const void* backend() const final { return m_backend.get(); }
 
-    GRefPtr<GstWebRTCRTPReceiver> m_rtcReceiver;
+    void registerClient(Client&) final;
+    void unregisterClient() final;
+
+    GRefPtr<GstWebRTCICETransport> m_backend;
+    WeakPtr<Client> m_client;
 };
 
 } // namespace WebCore

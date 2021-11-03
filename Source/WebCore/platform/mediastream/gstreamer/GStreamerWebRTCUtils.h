@@ -24,8 +24,10 @@
 #include "PeerConnectionBackend.h"
 #include "RTCBundlePolicy.h"
 #include "RTCCertificate.h"
+#include "RTCDtlsTransport.h"
 #include "RTCIceConnectionState.h"
 #include "RTCIceTransportPolicy.h"
+#include "RTCIceTransportState.h"
 #include "RTCRtpSendParameters.h"
 #include "RTCRtpTransceiverDirection.h"
 #include "RTCSdpType.h"
@@ -52,7 +54,7 @@ inline RTCRtpTransceiverDirection toRTCRtpTransceiverDirection(GstWebRTCRTPTrans
     case GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV:
         return RTCRtpTransceiverDirection::Sendrecv;
     }
-    ASSERT_NOT_REACHED();
+    RELEASE_ASSERT_NOT_REACHED();
     return RTCRtpTransceiverDirection::Inactive;
 }
 
@@ -68,7 +70,7 @@ inline GstWebRTCRTPTransceiverDirection fromRTCRtpTransceiverDirection(RTCRtpTra
     case RTCRtpTransceiverDirection::Sendrecv:
         return GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV;
     }
-    ASSERT_NOT_REACHED();
+    RELEASE_ASSERT_NOT_REACHED();
     return GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_NONE;
 }
 
@@ -90,7 +92,7 @@ static inline GstWebRTCSDPType toSessionDescriptionType(RTCSdpType sdpType)
         return GST_WEBRTC_SDP_TYPE_ROLLBACK;
     }
 
-    ASSERT_NOT_REACHED();
+    RELEASE_ASSERT_NOT_REACHED();
     return GST_WEBRTC_SDP_TYPE_OFFER;
 }
 
@@ -123,7 +125,7 @@ static inline RTCSignalingState toSignalingState(GstWebRTCSignalingState state)
         return RTCSignalingState::Stable;
     }
 
-    ASSERT_NOT_REACHED();
+    RELEASE_ASSERT_NOT_REACHED();
     return RTCSignalingState::Stable;
 }
 
@@ -146,8 +148,64 @@ static inline RTCIceConnectionState toRTCIceConnectionState(GstWebRTCICEConnecti
         return RTCIceConnectionState::Closed;
     }
 
-    ASSERT_NOT_REACHED();
+    RELEASE_ASSERT_NOT_REACHED();
     return RTCIceConnectionState::New;
+}
+
+static inline RTCDtlsTransportState toRTCDtlsTransportState(GstWebRTCDTLSTransportState state)
+{
+    switch (state) {
+    case GST_WEBRTC_DTLS_TRANSPORT_STATE_NEW:
+        return RTCDtlsTransportState::New;
+    case GST_WEBRTC_DTLS_TRANSPORT_STATE_CONNECTING:
+        return RTCDtlsTransportState::Connecting;
+    case GST_WEBRTC_DTLS_TRANSPORT_STATE_CONNECTED:
+        return RTCDtlsTransportState::Connected;
+    case GST_WEBRTC_DTLS_TRANSPORT_STATE_CLOSED:
+        return RTCDtlsTransportState::Closed;
+    case GST_WEBRTC_DTLS_TRANSPORT_STATE_FAILED:
+        return RTCDtlsTransportState::Failed;
+    }
+
+    RELEASE_ASSERT_NOT_REACHED();
+}
+
+static inline RTCIceTransportState toRTCIceTransportState(GstWebRTCICEConnectionState state)
+{
+    // FIXME: No GstWebRTCICETransportState ?
+    switch (state) {
+    case GST_WEBRTC_ICE_CONNECTION_STATE_NEW:
+        return RTCIceTransportState::New;
+    case GST_WEBRTC_ICE_CONNECTION_STATE_CHECKING:
+        return RTCIceTransportState::Checking;
+    case GST_WEBRTC_ICE_CONNECTION_STATE_CONNECTED:
+        return RTCIceTransportState::Connected;
+    case GST_WEBRTC_ICE_CONNECTION_STATE_COMPLETED:
+        return RTCIceTransportState::Completed;
+    case GST_WEBRTC_ICE_CONNECTION_STATE_FAILED:
+        return RTCIceTransportState::Failed;
+    case GST_WEBRTC_ICE_CONNECTION_STATE_DISCONNECTED:
+        return RTCIceTransportState::Disconnected;
+    case GST_WEBRTC_ICE_CONNECTION_STATE_CLOSED:
+        return RTCIceTransportState::Closed;
+    }
+
+    RELEASE_ASSERT_NOT_REACHED();
+    return RTCIceTransportState::New;
+}
+
+static inline RTCIceGatheringState toRTCIceGatheringState(GstWebRTCICEGatheringState state)
+{
+    switch (state) {
+    case GST_WEBRTC_ICE_GATHERING_STATE_NEW:
+        return RTCIceGatheringState::New;
+    case GST_WEBRTC_ICE_GATHERING_STATE_GATHERING:
+        return RTCIceGatheringState::Gathering;
+    case GST_WEBRTC_ICE_GATHERING_STATE_COMPLETE:
+        return RTCIceGatheringState::Complete;
+    }
+
+    RELEASE_ASSERT_NOT_REACHED();
 }
 
 static inline GstWebRTCBundlePolicy bundlePolicyFromConfiguration(MediaEndpointConfiguration& configuration)
@@ -161,7 +219,7 @@ static inline GstWebRTCBundlePolicy bundlePolicyFromConfiguration(MediaEndpointC
         return GST_WEBRTC_BUNDLE_POLICY_MAX_BUNDLE;
     }
 
-    ASSERT_NOT_REACHED();
+    RELEASE_ASSERT_NOT_REACHED();
     return GST_WEBRTC_BUNDLE_POLICY_NONE;
 }
 
@@ -174,7 +232,7 @@ static inline GstWebRTCICETransportPolicy iceTransportPolicyFromConfiguration(Me
         return GST_WEBRTC_ICE_TRANSPORT_POLICY_RELAY;
     }
 
-    ASSERT_NOT_REACHED();
+    RELEASE_ASSERT_NOT_REACHED();
     return GST_WEBRTC_ICE_TRANSPORT_POLICY_ALL;
 }
 
