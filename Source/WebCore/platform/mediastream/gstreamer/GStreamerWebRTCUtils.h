@@ -121,8 +121,7 @@ static inline RTCSignalingState toSignalingState(GstWebRTCSignalingState state)
     case GST_WEBRTC_SIGNALING_STATE_HAVE_REMOTE_PRANSWER:
         return RTCSignalingState::HaveRemotePranswer;
     case GST_WEBRTC_SIGNALING_STATE_CLOSED:
-        // ¯\_(ツ)_/¯
-        return RTCSignalingState::Stable;
+        return RTCSignalingState::Closed;
     }
 
     RELEASE_ASSERT_NOT_REACHED();

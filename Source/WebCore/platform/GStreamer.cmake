@@ -73,6 +73,7 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         platform/mediastream/gstreamer/GStreamerRtpSenderTransformBackend.cpp
         platform/mediastream/gstreamer/GStreamerRtpTransceiverBackend.cpp
         platform/mediastream/gstreamer/GStreamerRtpTransformBackend.cpp
+        platform/mediastream/gstreamer/GStreamerSctpTransportBackend.cpp
         platform/mediastream/gstreamer/GStreamerStatsCollector.cpp
         platform/mediastream/gstreamer/GStreamerVideoCaptureSource.cpp
         platform/mediastream/gstreamer/GStreamerVideoCapturer.cpp

@@ -100,7 +100,8 @@ static inline ExceptionOr<GstCaps*> toRtpCodecCapability(const RTCRtpCodecCapabi
     if (codec.channels)
         gst_caps_set_simple(caps, "channels", G_TYPE_INT, *codec.channels, nullptr);
 
-    GST_FIXME("Unprocessed SDP FmtpLine: %s", codec.sdpFmtpLine.utf8().data());
+    if (!codec.sdpFmtpLine.isEmpty())
+        GST_FIXME("Unprocessed SDP FmtpLine: %s", codec.sdpFmtpLine.utf8().data());
     GST_DEBUG("Codec capability: %" GST_PTR_FORMAT, caps);
     return caps;
 }

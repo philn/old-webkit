@@ -135,6 +135,8 @@ private:
     void storeRemoteMLineInfo(GstSDPMessage*);
     void flushPendingSources();
 
+    GRefPtr<GstPad>&& requestPad(unsigned mlineIndex, const GstCaps*);
+
 #if !RELEASE_LOG_DISABLED
     void gatherStatsForLogging();
     void startLoggingStats();

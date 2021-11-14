@@ -84,6 +84,7 @@ void RealtimeOutgoingMediaSourceGStreamer::stop()
 
         auto parent = adoptGRef(gst_pad_get_parent_element(peer.get()));
         gst_element_release_request_pad(parent.get(), peer.get());
+        gst_element_set_locked_state(m_outgoingSource.get(), false);
     }
     m_isStopped = true;
 }
@@ -119,25 +120,26 @@ void RealtimeOutgoingMediaSourceGStreamer::initializeFromTrack()
     webkitMediaStreamSrcAddTrack(WEBKIT_MEDIA_STREAM_SRC(m_outgoingSource.get()), m_source->ptr(), true);
 }
 
-void RealtimeOutgoingMediaSourceGStreamer::linkTo(GstPad* sinkPad)
+void RealtimeOutgoingMediaSourceGStreamer::link()
 {
     gst_element_link(m_postEncoderQueue.get(), m_capsFilter.get());
 
     auto srcPad = adoptGRef(gst_element_get_static_pad(m_bin.get(), "src"));
-    gst_pad_link(srcPad.get(), sinkPad);
-
-    GRefPtr<GstWebRTCRTPTransceiver> transceiver;
-    g_object_get(sinkPad, "transceiver", &transceiver.outPtr(), nullptr);
-    g_object_get(transceiver.get(), "sender", &m_sender.outPtr(), nullptr);
-
+    gst_pad_link(srcPad.get(), m_webrtcSinkPad.get());
     gst_element_sync_state_with_parent(m_bin.get());
 }
 
-GRefPtr<GstPad>&& RealtimeOutgoingMediaSourceGStreamer::pad() const
+const GRefPtr<GstPad>& RealtimeOutgoingMediaSourceGStreamer::pad() const
 {
-    auto srcPad = adoptGRef(gst_element_get_static_pad(m_bin.get(), "src"));
-    auto peer = adoptGRef(gst_pad_get_peer(srcPad.get()));
-    return WTFMove(peer);
+    return m_webrtcSinkPad;
+}
+
+void RealtimeOutgoingMediaSourceGStreamer::setSinkPad(GRefPtr<GstPad>&& pad)
+{
+    m_webrtcSinkPad = WTFMove(pad);
+    GRefPtr<GstWebRTCRTPTransceiver> transceiver;
+    g_object_get(m_webrtcSinkPad.get(), "transceiver", &transceiver.outPtr(), nullptr);
+    g_object_get(transceiver.get(), "sender", &m_sender.outPtr(), nullptr);
 }
 
 } // namespace WebCore

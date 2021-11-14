@@ -37,9 +37,9 @@ public:
 
     GRefPtr<GstCaps> allowedCaps() const { return m_allowedCaps; }
 
-    void linkTo(GstPad*);
-
-    GRefPtr<GstPad>&& pad() const;
+    void link();
+    const GRefPtr<GstPad>& pad() const;
+    void setSinkPad(GRefPtr<GstPad>&&);
 
     GRefPtr<GstWebRTCRTPSender> sender() const { return m_sender; }
     GRefPtr<GstElement> bin() const { return m_bin; }
@@ -66,6 +66,7 @@ protected:
     GRefPtr<GstElement> m_capsFilter;
     GRefPtr<GstCaps> m_allowedCaps;
     GRefPtr<GstWebRTCRTPSender> m_sender;
+    GRefPtr<GstPad> m_webrtcSinkPad;
 
 private:
     void sourceMutedChanged();
