@@ -223,18 +223,8 @@ void PeerConnectionBackend::setRemoteDescriptionSucceeded(std::optional<Descript
         if (descriptionStates)
             m_peerConnection.updateDescriptions(WTFMove(*descriptionStates));
 
-        for (auto& event : events) {
-            auto& track = event.track.get();
-
-            m_peerConnection.dispatchEvent(RTCTrackEvent::create(eventNames().trackEvent, Event::CanBubble::No, Event::IsCancelable::No, WTFMove(event.receiver), WTFMove(event.track), WTFMove(event.streams), WTFMove(event.transceiver)));
-            ALWAYS_LOG(LOGIDENTIFIER, "Dispatched if feasible track of type ", track.source().type());
-
-            if (m_peerConnection.isClosed())
-                return;
-
-            // FIXME: As per spec, we should set muted to 'false' when starting to receive the content from network.
-            track.source().setMuted(false);
-        }
+        for (auto& event : events)
+            dispatchTrackEvent(event);
 
         if (m_peerConnection.isClosed())
             return;
@@ -244,6 +234,20 @@ void PeerConnectionBackend::setRemoteDescriptionSucceeded(std::optional<Descript
         m_peerConnection.processIceTransportChanges();
         callback({ });
     });
+}
+
+void PeerConnectionBackend::dispatchTrackEvent(PendingTrackEvent& event)
+{
+    auto& track = event.track.get();
+
+    m_peerConnection.dispatchEvent(RTCTrackEvent::create(eventNames().trackEvent, Event::CanBubble::No, Event::IsCancelable::No, WTFMove(event.receiver), WTFMove(event.track), WTFMove(event.streams), WTFMove(event.transceiver)));
+    ALWAYS_LOG(LOGIDENTIFIER, "Dispatched if feasible track of type ", track.source().type());
+
+    if (m_peerConnection.isClosed())
+        return;
+
+    // FIXME: As per spec, we should set muted to 'false' when starting to receive the content from network.
+    track.source().setMuted(false);
 }
 
 void PeerConnectionBackend::setRemoteDescriptionFailed(Exception&& exception)

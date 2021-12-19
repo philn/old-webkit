@@ -23,6 +23,7 @@
 
 #include <gst/rtp/rtp.h>
 #include "MediaSampleGStreamer.h"
+#include "VideoFrameMetadataGStreamer.h"
 
 namespace WebCore {
 
@@ -35,6 +36,22 @@ RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(Strin
     constraints.setSupportsHeight(true);
     m_currentSettings = RealtimeMediaSourceSettings { };
     m_currentSettings->setSupportedConstraints(WTFMove(constraints));
+
+    auto sinkPad = adoptGRef(gst_element_get_static_pad(m_valve.get(), "sink"));
+    gst_pad_add_probe(sinkPad.get(), static_cast<GstPadProbeType>(GST_PAD_PROBE_TYPE_BUFFER), [](GstPad*, GstPadProbeInfo* info, gpointer) -> GstPadProbeReturn {
+        auto videoSampleMetadata = std::make_optional<VideoSampleMetadata>({});
+        videoSampleMetadata->receiveTime = MonotonicTime::now().secondsSinceEpoch();
+
+        auto* buffer = GST_BUFFER_CAST(GST_PAD_PROBE_INFO_DATA(info));
+        GstRTPBuffer rtpBuffer GST_RTP_BUFFER_INIT;
+        if (gst_rtp_buffer_map(buffer, GST_MAP_READ, &rtpBuffer)) {
+            videoSampleMetadata->rtpTimestamp = gst_rtp_buffer_get_timestamp(&rtpBuffer);
+            gst_rtp_buffer_unmap(&rtpBuffer);
+        }
+        buffer = webkitGstBufferSetVideoSampleMetadata(buffer, WTFMove(videoSampleMetadata));
+        GST_PAD_PROBE_INFO_DATA(info) = buffer;
+        return GST_PAD_PROBE_OK;
+    }, nullptr, nullptr);
 
     // notifyMutedChange(!m_videoTrack);
     start();
@@ -82,18 +99,7 @@ void RealtimeIncomingVideoSourceGStreamer::settingsDidChange(OptionSet<RealtimeM
 
 void RealtimeIncomingVideoSourceGStreamer::dispatchSample(GRefPtr<GstSample>&& gstSample)
 {
-    auto videoSampleMetadata = std::make_optional<VideoSampleMetadata>({ });
-    videoSampleMetadata->receiveTime = MonotonicTime::now().secondsSinceEpoch();
-
-    auto* buffer = gst_sample_get_buffer(gstSample.get());
-    GstRTPBuffer rtpBuffer GST_RTP_BUFFER_INIT;
-    if (gst_rtp_buffer_map(buffer, GST_MAP_READ, &rtpBuffer)) {
-        videoSampleMetadata->rtpTimestamp = gst_rtp_buffer_get_timestamp(&rtpBuffer);
-        gst_rtp_buffer_unmap(&rtpBuffer);
-    }
-
-    auto sample = MediaSampleGStreamer::create(WTFMove(gstSample), { }, { }, MediaSample::VideoRotation::None, false, WTFMove(videoSampleMetadata));
-    videoSampleAvailable(sample, { });
+    videoSampleAvailable(MediaSampleGStreamer::createWrappedSample(gstSample), { });
 }
 
 } // namespace WebCore

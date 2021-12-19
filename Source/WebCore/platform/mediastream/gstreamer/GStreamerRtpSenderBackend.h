@@ -109,7 +109,6 @@ private:
     WeakPtr<GStreamerPeerConnectionBackend> m_peerConnectionBackend;
     GRefPtr<GstWebRTCRTPSender> m_rtcSender;
     Source m_source;
-    /* mutable Optional<webrtc::RtpParameters> m_currentParameters; */
 };
 
 } // namespace WebCore

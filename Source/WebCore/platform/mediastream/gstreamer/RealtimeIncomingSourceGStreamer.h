@@ -35,11 +35,12 @@ protected:
     void lockValve() const;
     void releaseValve() const;
 
+    GRefPtr<GstElement> m_valve;
+
 private:
     virtual void dispatchSample(GRefPtr<GstSample>&&) { }
 
     GRefPtr<GstElement> m_bin;
-    GRefPtr<GstElement> m_valve;
     GRefPtr<GstElement> m_tee;
 };
 

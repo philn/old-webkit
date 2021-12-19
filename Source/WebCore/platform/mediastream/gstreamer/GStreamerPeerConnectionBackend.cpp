@@ -45,6 +45,7 @@ namespace WebCore {
 
 static std::unique_ptr<PeerConnectionBackend> createGStreamerPeerConnectionBackend(RTCPeerConnection& peerConnection)
 {
+    ensureGStreamerInitialized();
     if (!isGStreamerPluginAvailable("webrtc")) {
         g_warning("GstWebRTC plugin not found. Make sure to install gst-plugins-bad >= 1.20 with the webrtc plugin enabled.");
         return nullptr;
@@ -107,6 +108,7 @@ GStreamerPeerConnectionBackend::GStreamerPeerConnectionBackend(RTCPeerConnection
     : PeerConnectionBackend(peerConnection)
     , m_endpoint(GStreamerMediaEndpoint::create(*this))
 {
+    disableICECandidateFiltering();
 }
 
 GStreamerPeerConnectionBackend::~GStreamerPeerConnectionBackend() = default;
@@ -330,6 +332,18 @@ RTCRtpTransceiver& GStreamerPeerConnectionBackend::newRemoteTransceiver(std::uni
 void GStreamerPeerConnectionBackend::collectTransceivers()
 {
     m_endpoint->collectTransceivers();
+}
+
+void GStreamerPeerConnectionBackend::addPendingTrackEvent(PendingTrackEvent&& event)
+{
+    m_pendingTrackEvents.append(WTFMove(event));
+}
+
+void GStreamerPeerConnectionBackend::dispatchPendingTrackEvents()
+{
+    auto events = WTFMove(m_pendingTrackEvents);
+    for (auto& event : events)
+        dispatchTrackEvent(event);
 }
 
 void GStreamerPeerConnectionBackend::removeTrack(RTCRtpSender& sender)

@@ -24,7 +24,6 @@
 #include "GStreamerRtpReceiverBackend.h"
 #include "GStreamerRtpSenderBackend.h"
 #include "GStreamerWebRTCUtils.h"
-#include "JSDOMPromiseDeferred.h"
 #include "NotImplemented.h"
 #include "RTCRtpCodecCapability.h"
 #include <wtf/glib/GUniquePtr.h>
@@ -33,6 +32,12 @@ GST_DEBUG_CATEGORY_EXTERN(webkit_webrtc_endpoint_debug);
 #define GST_CAT_DEFAULT webkit_webrtc_endpoint_debug
 
 namespace WebCore {
+
+GStreamerRtpTransceiverBackend::GStreamerRtpTransceiverBackend(GRefPtr<GstWebRTCRTPTransceiver>&& rtcTransceiver)
+    : m_rtcTransceiver(WTFMove(rtcTransceiver))
+{
+    g_object_set(m_rtcTransceiver.get(), "do-nack", true, "fec-type", GST_WEBRTC_FEC_TYPE_ULP_RED, nullptr);
+}
 
 std::unique_ptr<GStreamerRtpReceiverBackend> GStreamerRtpTransceiverBackend::createReceiverBackend()
 {

@@ -31,13 +31,13 @@ namespace WebCore {
 RealtimeOutgoingVideoSourceGStreamer::RealtimeOutgoingVideoSourceGStreamer(Ref<MediaStreamTrackPrivate>&& source)
     : RealtimeOutgoingMediaSourceGStreamer()
 {
+    registerWebKitGStreamerElements();
+
     m_allowedCaps = adoptGRef(gst_caps_new_empty());
     // FIXME: Add VP9 here, if we manage to make the encoder less CPU hungry.
-    auto encodings = { "VP8", "VP9", "H264" };
     // TODO: Probe for encoder before advertizing as supported.
-    for (auto& encoding : encodings)
-        gst_caps_append_structure(m_allowedCaps.get(), gst_structure_new("application/x-rtp", "media", G_TYPE_STRING, "video",
-            "encoding-name", G_TYPE_STRING, encoding, nullptr));
+    for (auto& encodingName : { "VP8", "VP9", "H264" })
+        gst_caps_append_structure(m_allowedCaps.get(), gst_structure_new("application/x-rtp", "media", G_TYPE_STRING, "video", "encoding-name", G_TYPE_STRING, encodingName, "clock-rate", G_TYPE_INT, 90000, nullptr));
 
     m_videoConvert = gst_element_factory_make("videoconvert", nullptr);
     m_encoder = gst_element_factory_make("webrtcvideoencoder", nullptr);
