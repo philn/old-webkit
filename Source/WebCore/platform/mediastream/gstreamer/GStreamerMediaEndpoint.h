@@ -135,7 +135,9 @@ private:
     void storeRemoteMLineInfo(GstSDPMessage*);
     void flushPendingSources();
 
-    GRefPtr<GstPad>&& requestPad(unsigned mlineIndex, const GstCaps*);
+    GRefPtr<GstPad>&& requestPad(unsigned mlineIndex, const GRefPtr<GstCaps>&);
+
+    void setRemoteDescriptionSucceeded();
 
 #if !RELEASE_LOG_DISABLED
     void gatherStatsForLogging();
@@ -179,6 +181,7 @@ private:
     Vector<Ref<RealtimeOutgoingMediaSourceGStreamer>> m_pendingSources;
     Vector<Ref<RealtimeOutgoingMediaSourceGStreamer>> m_sources;
 
+    Vector<RefPtr<MediaStream>> m_pendingStreams;
     unsigned m_pendingIncomingStreams { 0 };
 
     bool m_isInitiator { false };

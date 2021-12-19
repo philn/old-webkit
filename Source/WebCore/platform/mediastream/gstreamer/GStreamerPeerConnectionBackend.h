@@ -74,8 +74,7 @@ private:
 
     bool isNegotiationNeeded(uint32_t) const final;
 
-    // TODO: GstWebRTC doesn't expose API for this?
-    std::optional<bool> canTrickleIceCandidates() const { return false; };
+    std::optional<bool> canTrickleIceCandidates() const { return true; };
 
     friend class GStreamerMediaEndpoint;
     friend class GStreamerRtpSenderBackend;
@@ -95,6 +94,9 @@ private:
 
     void collectTransceivers() final;
 
+    void addPendingTrackEvent(PendingTrackEvent&&);
+    void dispatchPendingTrackEvents();
+
 private:
     bool isLocalDescriptionSet() const final { return m_isLocalDescriptionSet; }
 
@@ -112,6 +114,7 @@ private:
 
     Vector<std::unique_ptr<GStreamerIceCandidate>> m_pendingCandidates;
     Vector<Ref<RTCRtpReceiver>> m_pendingReceivers;
+    Vector<PendingTrackEvent> m_pendingTrackEvents;
 };
 
 } // namespace WebCore

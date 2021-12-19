@@ -59,16 +59,18 @@ void GStreamerRtpSenderBackend::startSource()
 
 GRefPtr<GstElement> GStreamerRtpSenderBackend::stopSource()
 {
-    switchOn(
-        m_source, [](Ref<RealtimeOutgoingAudioSourceGStreamer>& source) {
+    switchOn(m_source, [](Ref<RealtimeOutgoingAudioSourceGStreamer>& source) {
         source->stop();
         gst_printerrln("is audio");
-        return GRefPtr<GstElement>(source->bin()); }, [](Ref<RealtimeOutgoingVideoSourceGStreamer>& source) {
+        return GRefPtr<GstElement>(source->bin());
+    }, [](Ref<RealtimeOutgoingVideoSourceGStreamer>& source) {
         source->stop();
         gst_printerrln("is video");
-        return GRefPtr<GstElement>(source->bin()); }, [](std::nullptr_t&) {
+        return GRefPtr<GstElement>(source->bin());
+    }, [](std::nullptr_t&) {
         gst_printerrln("is null");
-        return GRefPtr<GstElement>(nullptr); });
+        return GRefPtr<GstElement>(nullptr);
+    });
     //m_source = nullptr;
     return nullptr;
 }

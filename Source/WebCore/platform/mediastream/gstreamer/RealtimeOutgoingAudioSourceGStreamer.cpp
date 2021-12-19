@@ -33,7 +33,7 @@ RealtimeOutgoingAudioSourceGStreamer::RealtimeOutgoingAudioSourceGStreamer(Ref<M
     : RealtimeOutgoingMediaSourceGStreamer()
 {
     m_allowedCaps = adoptGRef(gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "audio",
-        "encoding-name", G_TYPE_STRING, "OPUS", nullptr));
+        "encoding-name", G_TYPE_STRING, "OPUS", "clock-rate", G_TYPE_INT, 48000, nullptr));
 
     m_audioconvert = gst_element_factory_make("audioconvert", nullptr);
     m_audioresample = gst_element_factory_make("audioresample", nullptr);

@@ -45,7 +45,7 @@ class GStreamerDtlsTransportBackend final : public RTCDtlsTransportBackend, publ
     void unregisterClient() final;
 
     GRefPtr<GstWebRTCDTLSTransport> m_backend;
-    WeakPtr<Client> m_client;
+    std::optional<WeakPtr<Client>> m_client;
 };
 
 } // namespace WebCore

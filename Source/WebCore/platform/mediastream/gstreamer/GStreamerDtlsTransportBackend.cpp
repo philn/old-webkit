@@ -32,8 +32,11 @@ GStreamerDtlsTransportBackend::GStreamerDtlsTransportBackend(GRefPtr<GstWebRTCDT
     : m_backend(WTFMove(transport))
 {
     ASSERT(m_backend);
+    ASSERT(isMainThread());
     g_signal_connect_swapped(m_backend.get(), "notify::state", G_CALLBACK(+[](GStreamerDtlsTransportBackend* backend) {
-        backend->stateChanged();
+        callOnMainThread([backend] {
+            backend->stateChanged();
+        });
     }), this);
 }
 
@@ -57,7 +60,7 @@ void GStreamerDtlsTransportBackend::registerClient(Client& client)
 void GStreamerDtlsTransportBackend::unregisterClient()
 {
     ASSERT(m_client);
-    m_client.clear();
+    m_client.reset();
 }
 
 void GStreamerDtlsTransportBackend::stateChanged()
@@ -67,11 +70,16 @@ void GStreamerDtlsTransportBackend::stateChanged()
 
     GUniqueOutPtr<char> remoteCertificate;
     GstWebRTCDTLSTransportState state;
+    // FIXME "certificate" too?
     g_object_get(m_backend.get(), "state", &state, "remote-certificate", &remoteCertificate.outPtr(), nullptr);
 
-    auto certificateString = makeString(remoteCertificate.get());
-    auto certificate = JSC::ArrayBuffer::create(certificateString.ascii().data(), certificateString.ascii().length());
-    m_client->onStateChanged(toRTCDtlsTransportState(state),  { certificate });
+    Vector<Ref<JSC::ArrayBuffer>> certificates;
+    if (remoteCertificate) {
+        auto certificateString = makeString(remoteCertificate.get());
+        auto certificate = JSC::ArrayBuffer::create(certificateString.characters8(), certificateString.sizeInBytes());
+        certificates.append(WTFMove(certificate));
+    }
+    (*m_client)->onStateChanged(toRTCDtlsTransportState(state), WTFMove(certificates));
 }
 
 } // namespace WebCore

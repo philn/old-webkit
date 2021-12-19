@@ -1754,7 +1754,7 @@ webkit.org/b/158923 media/airplay-allows-buffering.html [ Skip ]
 webkit.org/b/214166 imported/w3c/web-platform-tests/media-source/idlharness.window.html [ Skip ]
 
 # TODO: There is no reason to entirely skip those. Needs to be unskipped and triaged.
-imported/w3c/web-platform-tests/webrtc/ [ Skip ]
+#imported/w3c/web-platform-tests/webrtc/ [ Skip ]
 http/tests/webrtc [ Skip ]
 
 # Accessibility-related

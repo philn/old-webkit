@@ -31,10 +31,7 @@ class GStreamerRtpReceiverBackend;
 class GStreamerRtpTransceiverBackend final : public RTCRtpTransceiverBackend {
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    explicit GStreamerRtpTransceiverBackend(GRefPtr<GstWebRTCRTPTransceiver>&& rtcTransceiver)
-        : m_rtcTransceiver(rtcTransceiver)
-    {
-    }
+    GStreamerRtpTransceiverBackend(GRefPtr<GstWebRTCRTPTransceiver>&&);
 
     std::unique_ptr<GStreamerRtpReceiverBackend> createReceiverBackend();
     std::unique_ptr<GStreamerRtpSenderBackend> createSenderBackend(GStreamerPeerConnectionBackend&, GStreamerRtpSenderBackend::Source&&);
