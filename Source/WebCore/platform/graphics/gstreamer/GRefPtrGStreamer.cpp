@@ -653,6 +653,44 @@ template <> void derefGPtr<GstWebRTCDataChannel>(GstWebRTCDataChannel* ptr)
         g_object_unref(ptr);
 }
 
+template <> GRefPtr<GstWebRTCDTLSTransport> adoptGRef(GstWebRTCDTLSTransport* ptr)
+{
+    return GRefPtr<GstWebRTCDTLSTransport>(ptr, GRefPtrAdopt);
+}
+
+template <> GstWebRTCDTLSTransport* refGPtr<GstWebRTCDTLSTransport>(GstWebRTCDTLSTransport* ptr)
+{
+    if (ptr)
+        gst_object_ref(GST_OBJECT(ptr));
+
+    return ptr;
+}
+
+template <> void derefGPtr<GstWebRTCDTLSTransport>(GstWebRTCDTLSTransport* ptr)
+{
+    if (ptr)
+        gst_object_unref(ptr);
+}
+
+template <> GRefPtr<GstWebRTCIceTransport> adoptGRef(GstWebRTCIceTransport* ptr)
+{
+    return GRefPtr<GstWebRTCIceTransport>(ptr, GRefPtrAdopt);
+}
+
+template <> GstWebRTCIceTransport* refGPtr<GstWebRTCIceTransport>(GstWebRTCIceTransport* ptr)
+{
+    if (ptr)
+        gst_object_ref(GST_OBJECT(ptr));
+
+    return ptr;
+}
+
+template <> void derefGPtr<GstWebRTCIceTransport>(GstWebRTCIceTransport* ptr)
+{
+    if (ptr)
+        gst_object_unref(ptr);
+}
+
 #endif // USE(GSTREAMER_WEBRTC)
 
 } // namespace WTF

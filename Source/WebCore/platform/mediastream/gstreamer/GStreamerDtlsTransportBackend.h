@@ -20,11 +20,10 @@
 
 #if ENABLE(WEB_RTC) && USE(GSTREAMER_WEBRTC)
 
+#include "GRefPtrGStreamer.h"
 #include "GStreamerPeerConnectionBackend.h"
 #include "RTCDtlsTransportBackend.h"
 #include <wtf/WeakPtr.h>
-
-typedef struct _GstWebRTCDTLSTransport GstWebRTCDTLSTransport;
 
 namespace WebCore {
 
@@ -32,7 +31,7 @@ class GStreamerDtlsTransportBackend final : public RTCDtlsTransportBackend, publ
     WTF_MAKE_FAST_ALLOCATED;
 
  public:
-    explicit GStreamerDtlsTransportBackend(GRefPtr<GstWebRTCDTLSTransport>&&);
+    explicit GStreamerDtlsTransportBackend(const GRefPtr<GstWebRTCDTLSTransport>&);
     ~GStreamerDtlsTransportBackend();
 
     void stateChanged();

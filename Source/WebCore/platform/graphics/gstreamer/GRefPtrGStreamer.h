@@ -38,6 +38,8 @@ typedef struct _GstWebRTCDataChannel GstWebRTCDataChannel;
 typedef struct _GstWebRTCRTPReceiver GstWebRTCRTPReceiver;
 typedef struct _GstWebRTCRTPSender GstWebRTCRTPSender;
 typedef struct _GstWebRTCRTPTransceiver GstWebRTCRTPTransceiver;
+typedef struct _GstWebRTCDTLSTransport GstWebRTCDTLSTransport;
+typedef struct _GstWebRTCIceTransport GstWebRTCIceTransport;
 #endif
 
 namespace WTF {
@@ -169,6 +171,15 @@ template <> void derefGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver*);
 template <> GRefPtr<GstWebRTCDataChannel> adoptGRef(GstWebRTCDataChannel*);
 template <> GstWebRTCDataChannel* refGPtr<GstWebRTCDataChannel>(GstWebRTCDataChannel*);
 template <> void derefGPtr<GstWebRTCDataChannel>(GstWebRTCDataChannel*);
+
+template <> GRefPtr<GstWebRTCDTLSTransport> adoptGRef(GstWebRTCDTLSTransport*);
+template <> GstWebRTCDTLSTransport* refGPtr<GstWebRTCDTLSTransport>(GstWebRTCDTLSTransport*);
+template <> void derefGPtr<GstWebRTCDTLSTransport>(GstWebRTCDTLSTransport*);
+
+template <> GRefPtr<GstWebRTCIceTransport> adoptGRef(GstWebRTCIceTransport*);
+template <> GstWebRTCIceTransport* refGPtr<GstWebRTCIceTransport>(GstWebRTCIceTransport*);
+template <> void derefGPtr<GstWebRTCIceTransport>(GstWebRTCIceTransport*);
+
 #endif
 
 } // namespace WTF

@@ -54,7 +54,7 @@ UniqueRef<RTCDtlsTransportBackend> GStreamerSctpTransportBackend::dtlsTransportB
 {
     GRefPtr<GstWebRTCDTLSTransport> transport;
     g_object_get(m_backend.get(), "transport", &transport.outPtr(), nullptr);
-    return makeUniqueRef<GStreamerDtlsTransportBackend>(WTFMove(transport));
+    return makeUniqueRef<GStreamerDtlsTransportBackend>(transport);
 }
 
 void GStreamerSctpTransportBackend::registerClient(Client& client)

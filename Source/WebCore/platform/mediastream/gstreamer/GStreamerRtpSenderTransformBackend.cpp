@@ -31,9 +31,9 @@ static inline GStreamerRtpSenderTransformBackend::MediaType mediaTypeFromSender(
     return RTCRtpTransformBackend::MediaType::Video;
 }
 
-GStreamerRtpSenderTransformBackend::GStreamerRtpSenderTransformBackend(GRefPtr<GstWebRTCRTPSender> rtcSender)
+GStreamerRtpSenderTransformBackend::GStreamerRtpSenderTransformBackend(const GRefPtr<GstWebRTCRTPSender>& rtcSender)
     : GStreamerRtpTransformBackend(mediaTypeFromSender(*rtcSender), Side::Sender)
-    , m_rtcSender(WTFMove(rtcSender))
+    , m_rtcSender(rtcSender)
 {
 }
 

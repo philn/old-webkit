@@ -46,12 +46,21 @@ RealtimeOutgoingMediaSourceGStreamer::RealtimeOutgoingMediaSourceGStreamer()
     gst_element_add_pad(m_bin.get(), gst_ghost_pad_new("src", srcPad.get()));
 }
 
+RealtimeOutgoingMediaSourceGStreamer::~RealtimeOutgoingMediaSourceGStreamer()
+{
+    stop();
+
+    gst_element_set_state(m_bin.get(), GST_STATE_NULL);
+    if (auto pipeline = adoptGRef(gst_element_get_parent(m_bin.get())))
+        gst_bin_remove(GST_BIN_CAST(pipeline.get()), m_bin.get());
+}
+
 void RealtimeOutgoingMediaSourceGStreamer::setSource(Ref<MediaStreamTrackPrivate>&& newSource)
 {
-    if (m_source.has_value() && !m_initialSettings)
+    if (m_source && !m_initialSettings)
         m_initialSettings = m_source.value()->settings();
 
-    if (m_source.has_value())
+    if (m_source)
         m_source.value()->removeObserver(*this);
     m_source = WTFMove(newSource);
     initializeFromTrack();
@@ -65,7 +74,7 @@ void RealtimeOutgoingMediaSourceGStreamer::start()
 
 void RealtimeOutgoingMediaSourceGStreamer::stop()
 {
-    if (m_source.has_value()) {
+    if (m_source) {
         m_source.value()->removeObserver(*this);
 
         auto srcPad = adoptGRef(gst_element_get_static_pad(m_bin.get(), "src"));
@@ -85,13 +94,14 @@ void RealtimeOutgoingMediaSourceGStreamer::stop()
         auto parent = adoptGRef(gst_pad_get_parent_element(peer.get()));
         gst_element_release_request_pad(parent.get(), peer.get());
         gst_element_set_locked_state(m_outgoingSource.get(), false);
+        m_source.reset();
     }
     m_isStopped = true;
 }
 
 void RealtimeOutgoingMediaSourceGStreamer::sourceMutedChanged()
 {
-    if (!m_source.has_value())
+    if (!m_source)
         return;
     ASSERT(m_muted != m_source.value()->muted());
     m_muted = m_source.value()->muted();
@@ -100,7 +110,7 @@ void RealtimeOutgoingMediaSourceGStreamer::sourceMutedChanged()
 
 void RealtimeOutgoingMediaSourceGStreamer::sourceEnabledChanged()
 {
-    if (!m_source.has_value())
+    if (!m_source)
         return;
 
     m_enabled = m_source.value()->enabled();
@@ -129,14 +139,9 @@ void RealtimeOutgoingMediaSourceGStreamer::link()
     gst_element_sync_state_with_parent(m_bin.get());
 }
 
-const GRefPtr<GstPad>& RealtimeOutgoingMediaSourceGStreamer::pad() const
+void RealtimeOutgoingMediaSourceGStreamer::setSinkPad(const GRefPtr<GstPad>& pad)
 {
-    return m_webrtcSinkPad;
-}
-
-void RealtimeOutgoingMediaSourceGStreamer::setSinkPad(GRefPtr<GstPad>&& pad)
-{
-    m_webrtcSinkPad = WTFMove(pad);
+    m_webrtcSinkPad = pad;
     GRefPtr<GstWebRTCRTPTransceiver> transceiver;
     g_object_get(m_webrtcSinkPad.get(), "transceiver", &transceiver.outPtr(), nullptr);
     g_object_get(transceiver.get(), "sender", &m_sender.outPtr(), nullptr);

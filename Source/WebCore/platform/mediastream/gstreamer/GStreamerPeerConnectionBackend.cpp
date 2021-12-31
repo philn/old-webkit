@@ -47,7 +47,7 @@ static std::unique_ptr<PeerConnectionBackend> createGStreamerPeerConnectionBacke
 {
     ensureGStreamerInitialized();
     if (!isGStreamerPluginAvailable("webrtc")) {
-        g_warning("GstWebRTC plugin not found. Make sure to install gst-plugins-bad >= 1.20 with the webrtc plugin enabled.");
+        WTFLogAlways("GstWebRTC plugin not found. Make sure to install gst-plugins-bad >= 1.20 with the webrtc plugin enabled.");
         return nullptr;
     }
     return std::make_unique<GStreamerPeerConnectionBackend>(peerConnection);
@@ -72,7 +72,10 @@ std::optional<RTCRtpCapabilities> PeerConnectionBackend::receiverCapabilities(Sc
             .sdpFmtpLine = "" });
         capabilities.codecs.append({ .mimeType = "video/VP9",
             .clockRate = 90000,
-            .sdpFmtpLine = "" });
+            .sdpFmtpLine = "profile-id=0" });
+        capabilities.codecs.append({ .mimeType = "video/VP9",
+            .clockRate = 90000,
+            .sdpFmtpLine = "profile-id=1" });
         capabilities.codecs.append({ .mimeType = "video/H264",
             .clockRate = 90000,
             .sdpFmtpLine = "" });
@@ -96,7 +99,10 @@ std::optional<RTCRtpCapabilities> PeerConnectionBackend::senderCapabilities(Scri
             .sdpFmtpLine = "" });
         capabilities.codecs.append({ .mimeType = "video/VP9",
             .clockRate = 90000,
-            .sdpFmtpLine = "" });
+            .sdpFmtpLine = "profile-id=0" });
+        capabilities.codecs.append({ .mimeType = "video/VP9",
+            .clockRate = 90000,
+            .sdpFmtpLine = "profile-id=1" });
         capabilities.codecs.append({ .mimeType = "video/H264",
             .clockRate = 90000,
             .sdpFmtpLine = "" });
@@ -167,16 +173,18 @@ void GStreamerPeerConnectionBackend::getStats(RTCRtpReceiver& receiver, Ref<Defe
         return;
     }
 
-    notImplemented();
-#if 0
-    auto& backend = backendFromRTPReceiver(receiver);
-    GstPad* pad = nullptr;
-    if (RealtimeIncomingAudioSourceGStreamer* source = backend.audioSource())
-        pad = source->pad();
-    else if (RealtimeOutgoingVideoSourceGStreamer* source = backend.videoSource())
-        pad = source->pad();
-    m_endpoint->getStats(pad, WTFMove(promise));
-#endif
+    GstElement* bin = nullptr;
+    auto& source = receiver.track().privateTrack().source();
+    if (source.isIncomingAudioSource())
+        bin = static_cast<RealtimeIncomingAudioSourceGStreamer&>(source).bin();
+    else if (source.isIncomingVideoSource())
+        bin = static_cast<RealtimeIncomingVideoSourceGStreamer&>(source).bin();
+    else
+        RELEASE_ASSERT_NOT_REACHED();
+
+    auto sinkPad = adoptGRef(gst_element_get_static_pad(bin, "sink"));
+    auto srcPad = adoptGRef(gst_pad_get_peer(sinkPad.get()));
+    m_endpoint->getStats(srcPad.get(), WTFMove(promise));
 }
 
 void GStreamerPeerConnectionBackend::doSetLocalDescription(const RTCSessionDescription* description)
@@ -253,7 +261,7 @@ static inline RefPtr<RTCRtpSender> findExistingSender(const Vector<RefPtr<RTCRtp
     return nullptr;
 }
 
-ExceptionOr<Ref<RTCRtpSender>> GStreamerPeerConnectionBackend::addTrack(MediaStreamTrack& track, Vector<String>&& mediaStreamIds)
+ExceptionOr<Ref<RTCRtpSender>> GStreamerPeerConnectionBackend::addTrack(MediaStreamTrack& track, FixedVector<String>&& mediaStreamIds)
 {
     auto senderBackend = std::make_unique<GStreamerRtpSenderBackend>(*this, nullptr);
     if (!m_endpoint->addTrack(*senderBackend, track, mediaStreamIds))

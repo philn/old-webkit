@@ -158,7 +158,7 @@ Ref<RTCRtpTransformBackend> GStreamerRtpSenderBackend::rtcRtpTransformBackend()
     return GStreamerRtpSenderTransformBackend::create(m_rtcSender);
 }
 
-void GStreamerRtpSenderBackend::setMediaStreamIds(const Vector<String>& streamIds)
+void GStreamerRtpSenderBackend::setMediaStreamIds(const FixedVector<String>& streamIds)
 {
     for (auto& id : streamIds)
         gst_printerrln(">>>>>>>> set stream %s for this=%p", id.ascii().data(), this);
@@ -169,7 +169,7 @@ std::unique_ptr<RTCDtlsTransportBackend> GStreamerRtpSenderBackend::dtlsTranspor
 {
     GRefPtr<GstWebRTCDTLSTransport> transport;
     g_object_get(m_rtcSender.get(), "transport", &transport.outPtr(), nullptr);
-    return transport ? makeUnique<GStreamerDtlsTransportBackend>(WTFMove(transport)) : nullptr;
+    return transport ? makeUnique<GStreamerDtlsTransportBackend>(transport) : nullptr;
 }
 
 } // namespace WebCore

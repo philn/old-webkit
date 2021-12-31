@@ -28,8 +28,8 @@
 #define GST_USE_UNSTABLE_API
 #include <gst/webrtc/webrtc.h>
 #undef GST_USE_UNSTABLE_API
+
 #include <wtf/MainThread.h>
-#include <wtf/Scope.h>
 
 GST_DEBUG_CATEGORY_EXTERN(webkit_webrtc_endpoint_debug);
 #define GST_CAT_DEFAULT webkit_webrtc_endpoint_debug
@@ -239,18 +239,24 @@ void GStreamerStatsCollector::getStats(CollectorCallback&& callback, GstPad* pad
 
     auto holder = std::make_unique<CallbackHolder>(WTFMove(callback));
     auto* promise = gst_promise_new_with_change_func([](GstPromise* promise, gpointer userData) {
-        auto scopeExit = makeScopeExit([&] {
-            gst_promise_unref(promise);
-        });
-
-        if (gst_promise_wait(promise) != GST_PROMISE_RESULT_REPLIED)
-            return;
-
         std::unique_ptr<CallbackHolder> holder(reinterpret_cast<CallbackHolder*>(userData));
-        callOnMainThreadAndWait([stats = gst_promise_get_reply(promise), holder = holder.get()]() {
-            holder->callback(RTCStatsReport::create([stats](auto& mapAdapter) {
-                if (stats)
-                    gst_structure_foreach(stats, fillReportCallback, &mapAdapter);
+        if (gst_promise_wait(promise) != GST_PROMISE_RESULT_REPLIED) {
+            holder->callback(nullptr);
+            gst_promise_unref(promise);
+            return;
+        }
+
+        const auto* stats = gst_promise_get_reply(promise);
+        if (!stats) {
+            holder->callback(nullptr);
+            gst_promise_unref(promise);
+            return;
+        }
+
+        callOnMainThreadAndWait([stats, promise, holder = holder.get()] {
+            holder->callback(RTCStatsReport::create([stats, promise](auto& mapAdapter) {
+                gst_structure_foreach(stats, fillReportCallback, &mapAdapter);
+                gst_promise_unref(promise);
             }));
         });
     }, holder.release(), nullptr);

@@ -75,7 +75,7 @@ public:
 
     void configureAndLinkSource(RealtimeOutgoingMediaSourceGStreamer&);
 
-    bool addTrack(GStreamerRtpSenderBackend&, MediaStreamTrack&, const Vector<String>&);
+    bool addTrack(GStreamerRtpSenderBackend&, MediaStreamTrack&, const FixedVector<String>&);
     void removeTrack(GStreamerRtpSenderBackend&);
 
     struct Backends {
@@ -135,7 +135,7 @@ private:
     void storeRemoteMLineInfo(GstSDPMessage*);
     void flushPendingSources();
 
-    GRefPtr<GstPad>&& requestPad(unsigned mlineIndex, const GRefPtr<GstCaps>&);
+    GRefPtr<GstPad> requestPad(unsigned mlineIndex, const GRefPtr<GstCaps>&);
 
     void setRemoteDescriptionSucceeded();
 

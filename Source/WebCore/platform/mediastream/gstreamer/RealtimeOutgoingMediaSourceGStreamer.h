@@ -28,7 +28,7 @@ namespace WebCore {
 
 class RealtimeOutgoingMediaSourceGStreamer : public ThreadSafeRefCounted<RealtimeOutgoingMediaSourceGStreamer>, public MediaStreamTrackPrivate::Observer {
 public:
-    ~RealtimeOutgoingMediaSourceGStreamer() { stop(); }
+    ~RealtimeOutgoingMediaSourceGStreamer();
 
     void start();
     void stop();
@@ -38,8 +38,8 @@ public:
     GRefPtr<GstCaps> allowedCaps() const { return m_allowedCaps; }
 
     void link();
-    const GRefPtr<GstPad>& pad() const;
-    void setSinkPad(GRefPtr<GstPad>&&);
+    const GRefPtr<GstPad>& pad() const { return m_webrtcSinkPad; }
+    void setSinkPad(const GRefPtr<GstPad>&);
 
     GRefPtr<GstWebRTCRTPSender> sender() const { return m_sender; }
     GRefPtr<GstElement> bin() const { return m_bin; }

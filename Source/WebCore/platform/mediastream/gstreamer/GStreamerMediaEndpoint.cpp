@@ -431,6 +431,11 @@ void GStreamerMediaEndpoint::setDescription(const RTCSessionDescription& descrip
 
         const auto* reply = gst_promise_get_reply(promise);
         if (result != GST_PROMISE_RESULT_REPLIED || (reply && gst_structure_has_field(reply, "error"))) {
+            if (reply) {
+                GUniqueOutPtr<GError> error;
+                gst_structure_get(reply, "error", G_TYPE_ERROR, &error.outPtr(), nullptr);
+                GST_ERROR_OBJECT(data->endPoint.pipeline(), "Unable to set description, error: %s", error->message);
+            }
             callOnMainThread([protectedThis = Ref(data->endPoint), failureCallback = WTFMove(data->failureCallback)] {
                 if (protectedThis->isStopped())
                     return;
@@ -573,8 +578,7 @@ void GStreamerMediaEndpoint::configureAndLinkSource(RealtimeOutgoingMediaSourceG
     found->first.isUsed = true;
 
     if (!source.pad()) {
-        auto sinkPad = requestPad(m_requestPadCounter, source.allowedCaps());
-        source.setSinkPad(WTFMove(sinkPad));
+        source.setSinkPad(requestPad(m_requestPadCounter, source.allowedCaps()));
         m_requestPadCounter++;
     }
 
@@ -589,7 +593,7 @@ void GStreamerMediaEndpoint::configureAndLinkSource(RealtimeOutgoingMediaSourceG
     GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, dotFileName.utf8().data());
 }
 
-GRefPtr<GstPad>&& GStreamerMediaEndpoint::requestPad(unsigned mlineIndex, const GRefPtr<GstCaps>& allowedCaps)
+GRefPtr<GstPad> GStreamerMediaEndpoint::requestPad(unsigned mlineIndex, const GRefPtr<GstCaps>& allowedCaps)
 {
     auto padId = makeString("sink_", mlineIndex);
     auto caps = adoptGRef(gst_caps_copy(allowedCaps.get()));
@@ -607,11 +611,12 @@ GRefPtr<GstPad>&& GStreamerMediaEndpoint::requestPad(unsigned mlineIndex, const 
     auto sinkPad = adoptGRef(gst_element_request_pad(m_webrtcBin.get(), padTemplate, padId.utf8().data(), caps.get()));
     GRefPtr<GstWebRTCRTPTransceiver> transceiver;
     g_object_get(sinkPad.get(), "transceiver", &transceiver.outPtr(), nullptr);
-    g_object_set(transceiver.get(), "direction", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV, "codec-preferences", caps.get(), nullptr);
-    return WTFMove(sinkPad);
+    g_object_set(transceiver.get(), //"direction", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV,
+                 "codec-preferences", caps.get(), nullptr);
+    return sinkPad;
 }
 
-bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaStreamTrack& track, const Vector<String>& mediaStreamIds)
+bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaStreamTrack& track, const FixedVector<String>& mediaStreamIds)
 {
     GStreamerRtpSenderBackend::Source source;
     GRefPtr<GstWebRTCRTPSender> rtcSender;
@@ -621,8 +626,7 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
         GST_DEBUG_OBJECT(m_pipeline.get(), "Adding outgoing audio source");
         auto audioSource = RealtimeOutgoingAudioSourceGStreamer::create(track.privateTrack());
         if (m_delayedNegotiation) {
-            auto sinkPad = requestPad(m_mlineIndex, audioSource->allowedCaps());
-            audioSource->setSinkPad(WTFMove(sinkPad));
+            audioSource->setSinkPad(requestPad(m_mlineIndex, audioSource->allowedCaps()));
             m_mlineIndex++;
             m_pendingSources.append(audioSource.copyRef());
         } else
@@ -636,8 +640,7 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
         GST_DEBUG_OBJECT(m_pipeline.get(), "Adding outgoing video source");
         auto videoSource = RealtimeOutgoingVideoSourceGStreamer::create(track.privateTrack());
         if (m_delayedNegotiation) {
-            auto sinkPad = requestPad(m_mlineIndex, videoSource->allowedCaps());
-            videoSource->setSinkPad(WTFMove(sinkPad));
+            videoSource->setSinkPad(requestPad(m_mlineIndex, videoSource->allowedCaps()));
             m_mlineIndex++;
             m_pendingSources.append(videoSource.copyRef());
         } else
@@ -659,17 +662,9 @@ bool GStreamerMediaEndpoint::addTrack(GStreamerRtpSenderBackend& sender, MediaSt
         return true;
     }
 
-    // std::vector<std::string> ids;
-    // for (auto& id : mediaStreamIds)
-    //     g_printerr(">>> mediaStreamId %s\n", id.utf8().data());
-    //     ids.push_back();
-
-    // auto newRTPSender = m_backend->AddTrack(rtcTrack.get(), WTFMove(ids));
-    // if (!newRTPSender.ok())
-    //     return false;
-    // sender.setRTCSender(newRTPSender.MoveValue());
     sender.setRTCSender(WTFMove(rtcSender));
 
+    // FIXME: This is fishy.
     if (m_delayedNegotiation && (m_sources.size() > 1 || m_pendingSources.size() > 1)) {
         m_delayedNegotiation = false;
         m_mlineIndex = 0;
@@ -889,30 +884,21 @@ std::optional<GStreamerMediaEndpoint::Backends> GStreamerMediaEndpoint::addTrans
 
 GStreamerRtpSenderBackend::Source GStreamerMediaEndpoint::createSourceForTrack(MediaStreamTrack& track)
 {
-    GStreamerRtpSenderBackend::Source source;
     switch (track.privateTrack().type()) {
     case RealtimeMediaSource::Type::None:
         ASSERT_NOT_REACHED();
         break;
-    case RealtimeMediaSource::Type::Audio: {
-        auto audioSource = RealtimeOutgoingAudioSourceGStreamer::create(track.privateTrack());
-        source = WTFMove(audioSource);
-        break;
+    case RealtimeMediaSource::Type::Audio:
+        return RealtimeOutgoingAudioSourceGStreamer::create(track.privateTrack());
+    case RealtimeMediaSource::Type::Video:
+        return RealtimeOutgoingVideoSourceGStreamer::create(track.privateTrack());
     }
-    case RealtimeMediaSource::Type::Video: {
-        auto videoSource = RealtimeOutgoingVideoSourceGStreamer::create(track.privateTrack());
-        source = WTFMove(videoSource);
-        break;
-    }
-    }
-    return source;
+    return { };
 }
 
 std::optional<GStreamerMediaEndpoint::Backends> GStreamerMediaEndpoint::addTransceiver(MediaStreamTrack& track, const RTCRtpTransceiverInit& init)
 {
-    auto source = createSourceForTrack(track);
-    String kind(track.kind());
-    return createTransceiverBackends(kind, init, WTFMove(source));
+    return createTransceiverBackends(track.kind(), init, createSourceForTrack(track));
 }
 
 void GStreamerMediaEndpoint::setSenderSourceFromTrack(GStreamerRtpSenderBackend& sender, MediaStreamTrack& track)

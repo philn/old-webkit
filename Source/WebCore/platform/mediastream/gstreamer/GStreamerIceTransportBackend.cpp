@@ -28,8 +28,8 @@
 
 namespace WebCore {
 
-GStreamerIceTransportBackend::GStreamerIceTransportBackend(GRefPtr<GstWebRTCICETransport>&& transport)
-    : m_backend(WTFMove(transport))
+GStreamerIceTransportBackend::GStreamerIceTransportBackend(const GRefPtr<GstWebRTCICETransport>& transport)
+    : m_backend(transport)
 {
     ASSERT(m_backend);
     g_signal_connect_swapped(m_backend.get(), "notify::state", G_CALLBACK(+[](GStreamerIceTransportBackend* backend) {

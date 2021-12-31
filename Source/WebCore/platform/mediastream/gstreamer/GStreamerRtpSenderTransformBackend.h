@@ -32,11 +32,11 @@ class GStreamerSenderTransformer;
 class GStreamerRtpSenderTransformBackend final : public GStreamerRtpTransformBackend {
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    static Ref<GStreamerRtpSenderTransformBackend> create(GRefPtr<GstWebRTCRTPSender> sender) { return adoptRef(*new GStreamerRtpSenderTransformBackend(WTFMove(sender))); }
+    static Ref<GStreamerRtpSenderTransformBackend> create(const GRefPtr<GstWebRTCRTPSender>& sender) { return adoptRef(*new GStreamerRtpSenderTransformBackend(sender)); }
     ~GStreamerRtpSenderTransformBackend();
 
 private:
-    explicit GStreamerRtpSenderTransformBackend(GRefPtr<GstWebRTCRTPSender>);
+    explicit GStreamerRtpSenderTransformBackend(const GRefPtr<GstWebRTCRTPSender>&);
 
     // RTCRtpTransformBackend
     void setTransformableFrameCallback(Callback&&) final;

@@ -34,21 +34,19 @@ namespace WebCore {
 RTCRtpParameters GStreamerRtpReceiverBackend::getParameters()
 {
     notImplemented();
-    return RTCRtpParameters { };
+    return { };
 }
 
 Vector<RTCRtpContributingSource> GStreamerRtpReceiverBackend::getContributingSources() const
 {
-    Vector<RTCRtpContributingSource> sources;
     notImplemented();
-    return sources;
+    return { };
 }
 
 Vector<RTCRtpSynchronizationSource> GStreamerRtpReceiverBackend::getSynchronizationSources() const
 {
-    Vector<RTCRtpSynchronizationSource> sources;
     notImplemented();
-    return sources;
+    return { };
 }
 
 Ref<RealtimeMediaSource> GStreamerRtpReceiverBackend::createSource(const String& trackKind, const String& trackId)
@@ -69,7 +67,7 @@ std::unique_ptr<RTCDtlsTransportBackend> GStreamerRtpReceiverBackend::dtlsTransp
 {
     GRefPtr<GstWebRTCDTLSTransport> transport;
     g_object_get(m_rtcReceiver.get(), "transport", &transport.outPtr(), nullptr);
-    return transport ? makeUnique<GStreamerDtlsTransportBackend>(WTFMove(transport)) : nullptr;
+    return transport ? makeUnique<GStreamerDtlsTransportBackend>(transport) : nullptr;
 }
 
 } // namespace WebCore

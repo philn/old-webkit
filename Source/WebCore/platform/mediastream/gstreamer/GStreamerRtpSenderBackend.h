@@ -101,7 +101,7 @@ private:
     void setParameters(const RTCRtpSendParameters&, DOMPromiseDeferred<void>&&) final;
     std::unique_ptr<RTCDTMFSenderBackend> createDTMFBackend() final;
     Ref<RTCRtpTransformBackend> rtcRtpTransformBackend() final;
-    void setMediaStreamIds(const Vector<String>&) final;
+    void setMediaStreamIds(const FixedVector<String>&) final;
     std::unique_ptr<RTCDtlsTransportBackend> dtlsTransportBackend() final;
 
     void startSource();

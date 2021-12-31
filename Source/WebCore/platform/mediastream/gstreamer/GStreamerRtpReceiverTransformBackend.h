@@ -29,11 +29,11 @@ namespace WebCore {
 
 class GStreamerRtpReceiverTransformBackend final : public GStreamerRtpTransformBackend {
 public:
-    static Ref<GStreamerRtpReceiverTransformBackend> create(GRefPtr<GstWebRTCRTPReceiver> receiver) { return adoptRef(*new GStreamerRtpReceiverTransformBackend(WTFMove(receiver))); }
+    static Ref<GStreamerRtpReceiverTransformBackend> create(const GRefPtr<GstWebRTCRTPReceiver>& receiver) { return adoptRef(*new GStreamerRtpReceiverTransformBackend(receiver)); }
     ~GStreamerRtpReceiverTransformBackend();
 
 private:
-    explicit GStreamerRtpReceiverTransformBackend(GRefPtr<GstWebRTCRTPReceiver>);
+    explicit GStreamerRtpReceiverTransformBackend(const GRefPtr<GstWebRTCRTPReceiver>&);
 
     // RTCRtpTransformBackend
     void setTransformableFrameCallback(Callback&&) final;
