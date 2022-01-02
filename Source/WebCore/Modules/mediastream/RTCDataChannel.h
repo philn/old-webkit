@@ -69,7 +69,7 @@ public:
     RTCDataChannelState readyState() const {return m_readyState; }
     size_t bufferedAmount() const { return m_bufferedAmount; }
     size_t bufferedAmountLowThreshold() const { return m_bufferedAmountLowThreshold; }
-    void setBufferedAmountLowThreshold(size_t value) { m_bufferedAmountLowThreshold = value; }
+    void setBufferedAmountLowThreshold(size_t);
 
     const AtomString& binaryType() const;
     ExceptionOr<void> setBinaryType(const AtomString&);
@@ -115,6 +115,7 @@ private:
     void didReceiveRawData(const uint8_t*, size_t) final;
     void didDetectError(Ref<RTCError>&&) final;
     void bufferedAmountIsDecreasing(size_t) final;
+    void bufferedAmountChanged(uint64_t) final;
 
     std::unique_ptr<RTCDataChannelHandler> m_handler;
     RTCDataChannelIdentifier m_identifier;

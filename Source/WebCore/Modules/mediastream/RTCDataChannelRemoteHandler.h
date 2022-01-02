@@ -53,6 +53,7 @@ public:
     WEBCORE_EXPORT void didReceiveRawData(const uint8_t*, size_t);
     WEBCORE_EXPORT void didDetectError(Ref<RTCError>&&);
     WEBCORE_EXPORT void bufferedAmountIsDecreasing(size_t);
+    WEBCORE_EXPORT void bufferedAmountChanged(uint64_t) { }
 
     WEBCORE_EXPORT void readyToSend();
 
@@ -61,6 +62,7 @@ public:
 private:
     // RTCDataChannelHandler
     void setClient(RTCDataChannelHandlerClient&, ScriptExecutionContextIdentifier) final;
+    void setBufferedAmountLowThreshold(size_t) final { }
     bool sendStringData(const CString&) final;
     bool sendRawData(const uint8_t*, size_t) final;
     void close() final;

@@ -104,6 +104,12 @@ RTCDataChannel::RTCDataChannel(ScriptExecutionContext& context, std::unique_ptr<
 {
 }
 
+void RTCDataChannel::setBufferedAmountLowThreshold(size_t value)
+{
+    m_bufferedAmountLowThreshold = value;
+    m_handler->setBufferedAmountLowThreshold(value);
+}
+
 const AtomString& RTCDataChannel::binaryType() const
 {
     switch (m_binaryType) {
@@ -137,7 +143,9 @@ ExceptionOr<void> RTCDataChannel::send(const String& data)
 
     // FIXME: We might want to use strict conversion like WebSocket.
     auto utf8 = data.utf8();
+#if USE(LIBWEBRTC)
     m_bufferedAmount += utf8.length();
+#endif
     m_messageQueue.enqueue(WTFMove(utf8));
     return { };
 }
@@ -147,7 +155,9 @@ ExceptionOr<void> RTCDataChannel::send(ArrayBuffer& data)
     if (m_readyState != RTCDataChannelState::Open)
         return Exception { InvalidStateError };
 
+#if USE(LIBWEBRTC)
     m_bufferedAmount += data.byteLength();
+#endif
     m_messageQueue.enqueue(data, 0, data.byteLength());
     return { };
 }
@@ -157,7 +167,9 @@ ExceptionOr<void> RTCDataChannel::send(ArrayBufferView& data)
     if (m_readyState != RTCDataChannelState::Open)
         return Exception { InvalidStateError };
 
+#if USE(LIBWEBRTC)
     m_bufferedAmount += data.byteLength();
+#endif
     m_messageQueue.enqueue(*data.unsharedBuffer(), data.byteOffset(), data.byteLength());
     return { };
 }
@@ -167,7 +179,9 @@ ExceptionOr<void> RTCDataChannel::send(Blob& blob)
     if (m_readyState != RTCDataChannelState::Open)
         return Exception { InvalidStateError };
 
+#if USE(LIBWEBRTC)
     m_bufferedAmount += blob.size();
+#endif
     m_messageQueue.enqueue(blob);
     return { };
 }
@@ -248,11 +262,21 @@ void RTCDataChannel::didDetectError(Ref<RTCError>&& error)
 void RTCDataChannel::bufferedAmountIsDecreasing(size_t amount)
 {
     queueTaskKeepingObjectAlive(*this, TaskSource::Networking, [this, amount] {
+#if USE(LIBWEBRTC)
         auto previousBufferedAmount = m_bufferedAmount;
         m_bufferedAmount -= amount;
         if (previousBufferedAmount > m_bufferedAmountLowThreshold && m_bufferedAmount <= m_bufferedAmountLowThreshold)
             dispatchEvent(Event::create(eventNames().bufferedamountlowEvent, Event::CanBubble::No, Event::IsCancelable::No));
+#else
+        UNUSED_VARIABLE(amount);
+        dispatchEvent(Event::create(eventNames().bufferedamountlowEvent, Event::CanBubble::No, Event::IsCancelable::No));
+#endif
     });
+}
+
+void RTCDataChannel::bufferedAmountChanged(uint64_t bufferedAmount)
+{
+    m_bufferedAmount = bufferedAmount;
 }
 
 void RTCDataChannel::stop()
