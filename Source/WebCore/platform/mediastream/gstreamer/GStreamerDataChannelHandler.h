@@ -23,6 +23,8 @@
 #include "GRefPtrGStreamer.h"
 #include "GUniquePtrGStreamer.h"
 #include "RTCDataChannelHandler.h"
+#include <wtf/Lock.h>
+#include <wtf/WeakPtr.h>
 
 namespace WebCore {
 
@@ -58,9 +60,13 @@ private:
     void close() final;
 
     void disconnectSignalHandlers();
+    void postTask(Function<void()>&&);
 
+    Lock m_clientLock;
     GRefPtr<GstWebRTCDataChannel> m_channel;
-    RTCDataChannelHandlerClient* m_client { nullptr };
+    WeakPtr<RTCDataChannelHandlerClient> m_client WTF_GUARDED_BY_LOCK(m_clientLock) { nullptr };
+    bool m_hasClient WTF_GUARDED_BY_LOCK(m_clientLock) { false };
+    ScriptExecutionContextIdentifier m_contextIdentifier;
 };
 
 } // namespace WebCore
