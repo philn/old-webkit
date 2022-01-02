@@ -79,6 +79,14 @@ static inline std::optional<RTCIceCandidateType> toRTCIceCandidateType(const Str
     return RTCIceCandidateType::Relay;
 }
 
+RefPtr<RTCError> toRTCError(GError* rtcError)
+{
+    auto detail = toRTCErrorDetailType(static_cast<GstWebRTCErrorDetailType>(rtcError->code));
+    if (!detail)
+        return nullptr;
+    return RTCError::create(*detail, rtcError->message);
+}
+
 static void ensureDebugCategoryInitialized()
 {
     static std::once_flag onceFlag;

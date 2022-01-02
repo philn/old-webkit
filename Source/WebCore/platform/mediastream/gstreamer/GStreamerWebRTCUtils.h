@@ -25,6 +25,7 @@
 #include "RTCBundlePolicy.h"
 #include "RTCCertificate.h"
 #include "RTCDtlsTransport.h"
+#include "RTCError.h"
 #include "RTCIceConnectionState.h"
 #include "RTCIceTransportPolicy.h"
 #include "RTCIceTransportState.h"
@@ -234,6 +235,29 @@ static inline GstWebRTCICETransportPolicy iceTransportPolicyFromConfiguration(Me
     RELEASE_ASSERT_NOT_REACHED();
     return GST_WEBRTC_ICE_TRANSPORT_POLICY_ALL;
 }
+
+static inline std::optional<RTCErrorDetailType> toRTCErrorDetailType(GstWebRTCErrorDetailType code)
+{
+    switch (code) {
+    case GST_WEBRTC_ERROR_DATA_CHANNEL_FAILURE:
+        return RTCErrorDetailType::DataChannelFailure;
+    case GST_WEBRTC_ERROR_DTLS_FAILURE:
+        return RTCErrorDetailType::DtlsFailure;
+    case GST_WEBRTC_ERROR_FINGERPRINT_FAILURE:
+        return RTCErrorDetailType::FingerprintFailure;
+    case GST_WEBRTC_ERROR_SCTP_FAILURE:
+        return RTCErrorDetailType::SctpFailure;
+    case GST_WEBRTC_ERROR_SDP_SYNTAX_ERROR:
+        return RTCErrorDetailType::SdpSyntaxError;
+    case GST_WEBRTC_ERROR_HARDWARE_ENCODER_NOT_AVAILABLE:
+    case GST_WEBRTC_ERROR_ENCODER_ERROR:
+        // FIXME
+    default:
+        return { };
+    };
+}
+
+RefPtr<RTCError> toRTCError(GError*);
 
 std::optional<Ref<RTCCertificate>> generateCertificate(Ref<SecurityOrigin>&&, const PeerConnectionBackend::CertificateInformation&);
 
