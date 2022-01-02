@@ -48,6 +48,7 @@ public:
 protected:
     void onMessageData(GBytes*);
     void onMessageString(char*);
+    void onError(GError*);
     void onBufferedAmountLow();
     void readyStateChanged();
 

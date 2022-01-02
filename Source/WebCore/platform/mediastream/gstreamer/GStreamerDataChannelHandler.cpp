@@ -111,6 +111,8 @@ void GStreamerDataChannelHandler::setClient(RTCDataChannelHandlerClient& client,
     }), this);
     g_signal_connect(m_channel.get(), "on-message-string", G_CALLBACK(+[](GstWebRTCDataChannel*, char* str, GStreamerDataChannelHandler* handler) {
         handler->onMessageString(str);
+    g_signal_connect_swapped(m_channel.get(), "on-error", G_CALLBACK(+[](GStreamerDataChannelHandler* handler, GError* error) {
+        handler->onError(error);
     }), this);
     g_signal_connect(m_channel.get(), "on-buffered-amount-low", G_CALLBACK(+[](GstWebRTCDataChannel*, GStreamerDataChannelHandler* handler) {
         handler->onBufferedAmountLow();
@@ -199,6 +201,24 @@ void GStreamerDataChannelHandler::onMessageString(char* string)
     CString buffer(string, strlen(string));
     callOnMainThread([client = m_client, buffer = WTFMove(buffer)] {
         client->didReceiveStringData(String::fromUTF8(buffer));
+    });
+}
+
+void GStreamerDataChannelHandler::onError(GError* error)
+{
+    Locker locker { m_clientLock };
+    if (!m_client)
+        return;
+
+    GST_WARNING("Got data-channel error %s", error->message);
+    postTask([client = m_client, error] {
+        if (!client || !error)
+            return;
+
+        auto rtcError = toRTCError(error);
+        if (!rtcError)
+            rtcError = RTCError::create(RTCError::Init { RTCErrorDetailType::DataChannelFailure, { }, { }, { }, { } }, { });
+        client->didDetectError(rtcError.releaseNonNull());
     });
 }
 
