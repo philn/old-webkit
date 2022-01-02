@@ -32,7 +32,7 @@ class GStreamerSctpTransportBackend final : public RTCSctpTransportBackend, publ
     WTF_MAKE_FAST_ALLOCATED;
 public:
     explicit GStreamerSctpTransportBackend(GRefPtr<GstWebRTCSCTPTransport>&&);
-    ~GStreamerSctpTransportBackend() = default;
+    ~GStreamerSctpTransportBackend();
 
 protected:
     void stateChanged();

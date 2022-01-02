@@ -22,15 +22,16 @@
 #if USE(GSTREAMER_WEBRTC)
 
 #include "EventNames.h"
+#include "GStreamerWebRTCUtils.h"
 #include "RTCDataChannel.h"
 #include "RTCDataChannelEvent.h"
+#include "RTCError.h"
 #include "RTCPriorityType.h"
 
-#include <gst/gst.h>
-#define GST_USE_UNSTABLE_API
-#include <gst/webrtc/webrtc.h>
-#undef GST_USE_UNSTABLE_API
 #include <wtf/MainThread.h>
+
+GST_DEBUG_CATEGORY_EXTERN(webkit_webrtc_endpoint_debug);
+#define GST_CAT_DEFAULT webkit_webrtc_endpoint_debug
 
 namespace WebCore {
 
@@ -92,38 +93,71 @@ Ref<RTCDataChannelEvent> GStreamerDataChannelHandler::channelEvent(Document& doc
     return RTCDataChannelEvent::create(eventNames().datachannelEvent, Event::CanBubble::No, Event::IsCancelable::No, WTFMove(channel));
 }
 
-GStreamerDataChannelHandler::~GStreamerDataChannelHandler()
+GStreamerDataChannelHandler::GStreamerDataChannelHandler(GRefPtr<GstWebRTCDataChannel>&& channel)
+    : m_channel(WTFMove(channel))
 {
-    if (m_client)
-        disconnectSignalHandlers();
-}
+    ASSERT(m_channel);
 
-void GStreamerDataChannelHandler::setClient(RTCDataChannelHandlerClient& client, ScriptExecutionContextIdentifier)
-{
-    ASSERT(!m_client);
-    m_client = &client;
+    {
+        Locker locker { m_clientLock };
+        checkState();
+    }
 
     g_signal_connect_swapped(m_channel.get(), "notify::ready-state", G_CALLBACK(+[](GStreamerDataChannelHandler* handler) {
         handler->readyStateChanged();
     }), this);
-    g_signal_connect(m_channel.get(), "on-message-data", G_CALLBACK(+[](GstWebRTCDataChannel*, GBytes* bytes, GStreamerDataChannelHandler* handler) {
+    g_signal_connect_swapped(m_channel.get(), "on-message-data", G_CALLBACK(+[](GStreamerDataChannelHandler* handler, GBytes* bytes) {
         handler->onMessageData(bytes);
     }), this);
-    g_signal_connect(m_channel.get(), "on-message-string", G_CALLBACK(+[](GstWebRTCDataChannel*, char* str, GStreamerDataChannelHandler* handler) {
-        handler->onMessageString(str);
+    g_signal_connect_swapped(m_channel.get(), "on-message-string", G_CALLBACK(+[](GStreamerDataChannelHandler* handler, char* message) {
+        handler->onMessageString(message);
+    }), this);
     g_signal_connect_swapped(m_channel.get(), "on-error", G_CALLBACK(+[](GStreamerDataChannelHandler* handler, GError* error) {
         handler->onError(error);
     }), this);
     g_signal_connect(m_channel.get(), "on-buffered-amount-low", G_CALLBACK(+[](GstWebRTCDataChannel*, GStreamerDataChannelHandler* handler) {
         handler->onBufferedAmountLow();
     }), this);
-
-    checkState();
+    g_signal_connect_swapped(m_channel.get(), "notify::buffered-amount", G_CALLBACK(+[](GStreamerDataChannelHandler* handler) {
+        handler->bufferedAmountChanged();
+    }), this);
 }
 
-void GStreamerDataChannelHandler::disconnectSignalHandlers()
+GStreamerDataChannelHandler::~GStreamerDataChannelHandler()
 {
     g_signal_handlers_disconnect_by_data(m_channel.get(), this);
+}
+
+void GStreamerDataChannelHandler::setClient(RTCDataChannelHandlerClient& client, ScriptExecutionContextIdentifier contextIdentifier)
+{
+    Locker locker { m_clientLock };
+    ASSERT(!m_hasClient);
+    m_hasClient = true;
+    ASSERT(!m_client);
+    m_client = &client;
+    m_contextIdentifier = contextIdentifier;
+
+    checkState();
+
+    for (auto& message : m_bufferedMessages) {
+        switchOn(message, [&](Ref<FragmentedSharedBuffer>& data) {
+            client.didReceiveRawData(data->makeContiguous()->data(), data->size());
+        }, [&](String& text) {
+            client.didReceiveStringData(text);
+        }, [&](StateChange stateChange) {
+            if (stateChange.error) {
+                if (auto rtcError = toRTCError(*stateChange.error))
+                    client.didDetectError(rtcError.releaseNonNull());
+            }
+            client.didChangeReadyState(stateChange.state);
+        });
+    }
+    m_bufferedMessages.clear();
+}
+
+void GStreamerDataChannelHandler::setBufferedAmountLowThreshold(size_t value)
+{
+    g_object_set(m_channel.get(), "buffered-amount-low-threshold", value, nullptr);
 }
 
 bool GStreamerDataChannelHandler::sendStringData(const CString& text)
@@ -134,24 +168,23 @@ bool GStreamerDataChannelHandler::sendStringData(const CString& text)
 
 bool GStreamerDataChannelHandler::sendRawData(const uint8_t* data, size_t length)
 {
-    GRefPtr<GBytes> bytes = adoptGRef(g_bytes_new(data, length));
+    auto bytes = adoptGRef(g_bytes_new(data, length));
     g_signal_emit_by_name(m_channel.get(), "send-data", bytes.get());
     return true;
 }
 
 void GStreamerDataChannelHandler::close()
 {
-    if (m_client) {
-        disconnectSignalHandlers();
-        m_client = nullptr;
-    }
     g_signal_emit_by_name(m_channel.get(), "close");
 }
 
 void GStreamerDataChannelHandler::checkState()
 {
+    ASSERT(m_clientLock.isHeld());
+
     GstWebRTCDataChannelState channelState;
     g_object_get(m_channel.get(), "ready-state", &channelState, nullptr);
+
     RTCDataChannelState state;
     switch (channelState) {
     case GST_WEBRTC_DATA_CHANNEL_STATE_NEW:
@@ -168,38 +201,59 @@ void GStreamerDataChannelHandler::checkState()
         state = RTCDataChannelState::Closed;
         break;
     }
-    callOnMainThread([client = m_client, state] {
+
+    if (!m_hasClient) {
+        m_bufferedMessages.append(StateChange { state, { } });
+        return;
+    }
+
+    if (!m_client)
+        return;
+
+    postTask([client = m_client, state] {
         client->didChangeReadyState(state);
     });
 }
 
 void GStreamerDataChannelHandler::readyStateChanged()
 {
-    if (!m_client)
-        return;
-
+    Locker locker { m_clientLock };
     checkState();
 }
 
 void GStreamerDataChannelHandler::onMessageData(GBytes* bytes)
 {
+    Locker locker { m_clientLock };
+
+    if (!m_hasClient) {
+        m_bufferedMessages.append(SharedBuffer::create(bytes));
+        return;
+    }
+
     if (!m_client)
         return;
 
     gsize size = 0;
     const auto* data = reinterpret_cast<const uint8_t*>(g_bytes_get_data(bytes, &size));
-    callOnMainThread([client = m_client, data, size] {
+    postTask([client = m_client, data, size] {
         client->didReceiveRawData(data, size);
     });
 }
 
 void GStreamerDataChannelHandler::onMessageString(char* string)
 {
+    Locker locker { m_clientLock };
+
+    CString buffer(string, strlen(string));
+    if (!m_hasClient) {
+        m_bufferedMessages.append(String::fromUTF8(buffer));
+        return;
+    }
+
     if (!m_client)
         return;
 
-    CString buffer(string, strlen(string));
-    callOnMainThread([client = m_client, buffer = WTFMove(buffer)] {
+    postTask([client = m_client, buffer = WTFMove(buffer)] {
         client->didReceiveStringData(String::fromUTF8(buffer));
     });
 }
@@ -224,17 +278,25 @@ void GStreamerDataChannelHandler::onError(GError* error)
 
 void GStreamerDataChannelHandler::onBufferedAmountLow()
 {
+    Locker locker { m_clientLock };
+    if (!m_client)
+        return;
+
+    postTask([client = m_client] {
+        client->bufferedAmountIsDecreasing(0);
+    });
+}
+
+void GStreamerDataChannelHandler::bufferedAmountChanged()
+{
+    Locker locker { m_clientLock };
     if (!m_client)
         return;
 
     uint64_t bufferedAmount = 0;
     g_object_get(m_channel.get(), "buffered-amount", &bufferedAmount, nullptr);
-    // if (previousAmount <= m_channel->buffered_amount())
-    //     return;
-
-    callOnMainThread([client = m_client, bufferedAmount] {
-        // FIXME: This might wrap around.
-        client->bufferedAmountIsDecreasing(static_cast<size_t>(bufferedAmount));
+    postTask([client = m_client, bufferedAmount] {
+        client->bufferedAmountChanged(bufferedAmount);
     });
 }
 

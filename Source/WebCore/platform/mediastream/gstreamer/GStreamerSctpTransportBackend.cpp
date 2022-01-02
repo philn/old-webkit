@@ -45,9 +45,11 @@ GStreamerSctpTransportBackend::GStreamerSctpTransportBackend(GRefPtr<GstWebRTCSC
     : m_backend(WTFMove(transport))
 {
     ASSERT(m_backend);
-    g_signal_connect_swapped(m_backend.get(), "notify::state", G_CALLBACK(+[](GStreamerSctpTransportBackend* backend) {
-        backend->stateChanged();
-    }), this);
+}
+
+GStreamerSctpTransportBackend::~GStreamerSctpTransportBackend()
+{
+    unregisterClient();
 }
 
 UniqueRef<RTCDtlsTransportBackend> GStreamerSctpTransportBackend::dtlsTransportBackend()
@@ -61,11 +63,14 @@ void GStreamerSctpTransportBackend::registerClient(Client& client)
 {
     ASSERT(!m_client);
     m_client = client;
+    g_signal_connect_swapped(m_backend.get(), "notify::state", G_CALLBACK(+[](GStreamerSctpTransportBackend* backend) {
+        backend->stateChanged();
+    }), this);
 }
 
 void GStreamerSctpTransportBackend::unregisterClient()
 {
-    ASSERT(m_client);
+    g_signal_handlers_disconnect_by_data(m_backend.get(), this);
     m_client.clear();
 }
 
@@ -78,11 +83,11 @@ void GStreamerSctpTransportBackend::stateChanged()
     guint16 maxChannels;
     uint64_t maxMessageSize;
     g_object_get(m_backend.get(), "state", &transportState, "max-message-size", &maxMessageSize, "max-channels", &maxChannels, nullptr);
-    callOnMainThread([protectedThis = WeakPtr { *this }, transportState, maxChannels, maxMessageSize] {
-        if (!protectedThis->m_client)
+    callOnMainThread([this, transportState, maxChannels, maxMessageSize] {
+        if (!m_client)
             return;
 
-        protectedThis->m_client->onStateChanged(toRTCSctpTransportState(transportState), maxMessageSize, maxChannels);
+        m_client->onStateChanged(toRTCSctpTransportState(transportState), maxMessageSize, maxChannels);
     });
 }
 

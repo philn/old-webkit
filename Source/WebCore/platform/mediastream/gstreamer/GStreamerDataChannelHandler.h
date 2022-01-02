@@ -23,6 +23,8 @@
 #include "GRefPtrGStreamer.h"
 #include "GUniquePtrGStreamer.h"
 #include "RTCDataChannelHandler.h"
+#include "RTCDataChannelState.h"
+#include "SharedBuffer.h"
 #include <wtf/Lock.h>
 #include <wtf/WeakPtr.h>
 
@@ -36,10 +38,7 @@ struct RTCDataChannelInit;
 class GStreamerDataChannelHandler final : public RTCDataChannelHandler {
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    explicit GStreamerDataChannelHandler(GRefPtr<GstWebRTCDataChannel>&& channel) {
-        m_channel = channel;
-        ASSERT(m_channel);
-    }
+    explicit GStreamerDataChannelHandler(GRefPtr<GstWebRTCDataChannel>&&);
     ~GStreamerDataChannelHandler();
 
     static GUniquePtr<GstStructure> fromRTCDataChannelInit(const RTCDataChannelInit&);
@@ -51,23 +50,33 @@ protected:
     void onError(GError*);
     void onBufferedAmountLow();
     void readyStateChanged();
+    void bufferedAmountChanged();
 
 private:
     // RTCDataChannelHandler API
     void setClient(RTCDataChannelHandlerClient&, ScriptExecutionContextIdentifier) final;
-    void checkState();
+    void setBufferedAmountLowThreshold(size_t) final;
     bool sendStringData(const CString&) final;
     bool sendRawData(const uint8_t*, size_t) final;
     void close() final;
 
-    void disconnectSignalHandlers();
+    void checkState();
     void postTask(Function<void()>&&);
+
+    struct StateChange {
+        RTCDataChannelState state;
+        std::optional<GError*> error;
+    };
+    using Message = std::variant<StateChange, String, Ref<FragmentedSharedBuffer>>;
+    using PendingMessages = Vector<Message>;
 
     Lock m_clientLock;
     GRefPtr<GstWebRTCDataChannel> m_channel;
     WeakPtr<RTCDataChannelHandlerClient> m_client WTF_GUARDED_BY_LOCK(m_clientLock) { nullptr };
     bool m_hasClient WTF_GUARDED_BY_LOCK(m_clientLock) { false };
     ScriptExecutionContextIdentifier m_contextIdentifier;
+    std::optional<uint64_t> m_previousBufferedAmount;
+    PendingMessages m_bufferedMessages WTF_GUARDED_BY_LOCK(m_clientLock);
 };
 
 } // namespace WebCore
