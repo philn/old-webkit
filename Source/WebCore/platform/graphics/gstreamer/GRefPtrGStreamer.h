@@ -33,6 +33,15 @@ typedef struct _GstGLContext GstGLContext;
 typedef struct _GstEGLImage GstEGLImage;
 #endif
 
+#if USE(GSTREAMER_WEBRTC)
+typedef struct _GstWebRTCDataChannel GstWebRTCDataChannel;
+typedef struct _GstWebRTCRTPReceiver GstWebRTCRTPReceiver;
+typedef struct _GstWebRTCRTPSender GstWebRTCRTPSender;
+typedef struct _GstWebRTCRTPTransceiver GstWebRTCRTPTransceiver;
+typedef struct _GstWebRTCDTLSTransport GstWebRTCDTLSTransport;
+typedef struct _GstWebRTCIceTransport GstWebRTCIceTransport;
+#endif
+
 namespace WTF {
 
 template<> GRefPtr<GstPlugin> adoptGRef(GstPlugin* ptr);
@@ -144,6 +153,33 @@ template<> void derefGPtr<GstGLContext>(GstGLContext* ptr);
 template<> GRefPtr<GstEGLImage> adoptGRef(GstEGLImage* ptr);
 template<> GstEGLImage* refGPtr<GstEGLImage>(GstEGLImage* ptr);
 template<> void derefGPtr<GstEGLImage>(GstEGLImage* ptr);
+#endif
+
+#if USE(GSTREAMER_WEBRTC)
+template <> GRefPtr<GstWebRTCRTPReceiver> adoptGRef(GstWebRTCRTPReceiver*);
+template <> GstWebRTCRTPReceiver* refGPtr<GstWebRTCRTPReceiver>(GstWebRTCRTPReceiver*);
+template <> void derefGPtr<GstWebRTCRTPReceiver>(GstWebRTCRTPReceiver*);
+
+template <> GRefPtr<GstWebRTCRTPSender> adoptGRef(GstWebRTCRTPSender*);
+template <> GstWebRTCRTPSender* refGPtr<GstWebRTCRTPSender>(GstWebRTCRTPSender*);
+template <> void derefGPtr<GstWebRTCRTPSender>(GstWebRTCRTPSender*);
+
+template <> GRefPtr<GstWebRTCRTPTransceiver> adoptGRef(GstWebRTCRTPTransceiver*);
+template <> GstWebRTCRTPTransceiver* refGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver*);
+template <> void derefGPtr<GstWebRTCRTPTransceiver>(GstWebRTCRTPTransceiver*);
+
+template <> GRefPtr<GstWebRTCDataChannel> adoptGRef(GstWebRTCDataChannel*);
+template <> GstWebRTCDataChannel* refGPtr<GstWebRTCDataChannel>(GstWebRTCDataChannel*);
+template <> void derefGPtr<GstWebRTCDataChannel>(GstWebRTCDataChannel*);
+
+template <> GRefPtr<GstWebRTCDTLSTransport> adoptGRef(GstWebRTCDTLSTransport*);
+template <> GstWebRTCDTLSTransport* refGPtr<GstWebRTCDTLSTransport>(GstWebRTCDTLSTransport*);
+template <> void derefGPtr<GstWebRTCDTLSTransport>(GstWebRTCDTLSTransport*);
+
+template <> GRefPtr<GstWebRTCIceTransport> adoptGRef(GstWebRTCIceTransport*);
+template <> GstWebRTCIceTransport* refGPtr<GstWebRTCIceTransport>(GstWebRTCIceTransport*);
+template <> void derefGPtr<GstWebRTCIceTransport>(GstWebRTCIceTransport*);
+
 #endif
 
 } // namespace WTF

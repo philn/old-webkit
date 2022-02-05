@@ -867,13 +867,15 @@ webkit.org/b/231811 media/video-system-sleep.html [ Timeout ]
 webkit.org/b/231811 webaudio/audiocontext-state-interrupted.html [ Timeout ]
 webkit.org/b/231811 webaudio/suspend-context-while-interrupted.html [ Timeout ]
 
+# rvfc related failures
 imported/w3c/web-platform-tests/video-rvfc [ Pass ]
 fast/mediastream/getUserMedia-rvfc.html [ Pass Failure ]
 webrtc/peerConnection-rvfc.html [ Failure ]
-webrtc/canvas-to-peer-connection.html [ Failure ]
 imported/w3c/web-platform-tests/video-rvfc/request-video-frame-callback-webrtc.https.html [ Skip ]
 imported/w3c/web-platform-tests/video-rvfc/request-video-frame-callback-before-xr-session.https.html [ Skip ]
 imported/w3c/web-platform-tests/video-rvfc/request-video-frame-callback-during-xr-session.https.html [ Skip ]
+
+webrtc/canvas-to-peer-connection.html [ Failure ]
 
 webkit.org/b/233731 fast/mediastream/getDisplayMedia-size.html [ Failure ]
 
@@ -887,6 +889,8 @@ webkit.org/b/234084 media/track/audio-track-configuration.html [ Failure ]
 # low, probably because we would need a playing pipeline to have better average
 # bitrate estimation.
 webkit.org/b/234084 media/track/video-track-configuration.html [ Failure ]
+
+webrtc/datachannel [ Skip ]
 
 #////////////////////////////////////////////////////////////////////////////////////////
 # End of GStreamer-related bugs
