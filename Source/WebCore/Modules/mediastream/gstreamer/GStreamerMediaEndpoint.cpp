@@ -1001,11 +1001,11 @@ void GStreamerMediaEndpoint::onNegotiationNeeded()
     m_isNegotiationNeeded = true;
 
     GST_DEBUG_OBJECT(m_pipeline.get(), "Checking negotiation status");
-    if (m_pendingSources.isEmpty() && m_sources.isEmpty()) {
-        GST_DEBUG_OBJECT(m_pipeline.get(), "Delaying negotiation");
-        m_delayedNegotiation = true;
-        return;
-    }
+    // if (m_pendingSources.isEmpty() && m_sources.isEmpty()) {
+    //     GST_DEBUG_OBJECT(m_pipeline.get(), "Delaying negotiation");
+    //     m_delayedNegotiation = true;
+    //     return;
+    // }
 
     callOnMainThread([protectedThis = Ref(*this)] {
         if (protectedThis->isStopped())
